@@ -8,7 +8,7 @@
  *   its/<node>/info     {"emac":"aa:bb:..","ver":"...","hwv":"..."}  (on connect)
  *   its/<node>/packet   raw 802.11 frame (radiotap stripped), QoS 0
  *
- * <node> defaults to the eth0 MAC as 12 lowercase hex chars.
+ * <node> defaults to the capture interface MAC as 12 lowercase hex chars.
  */
 
 #include <errno.h>
@@ -33,6 +33,7 @@ static char topic_packet[160];
 static char topic_status[160];
 static char topic_info[160];
 
+static const char *cap_iface = "mon0";
 static int verbose;
 static unsigned long pkt_published;
 static unsigned long pkt_pcap_err;
@@ -68,14 +69,21 @@ static int read_mac_hex12_from(const char *path, char *out13)
 	return j == 12 ? 0 : -1;
 }
 
-/* Try a list of stable MAC sources. eth0 is intentionally last because on
- * lantiq/DSA setups it often gets a randomly-generated locally-administered
- * address that changes per boot, breaking the node identity across reboots. */
-static int read_mac_hex12(const char *unused, char *out13)
+/* Try a list of stable MAC sources. The capture interface comes first: a
+ * monitor vif carries the permanent address of the radio that actually
+ * receives (on dual-radio boards like the WDR4300 that is not phy0). eth0 is
+ * intentionally last because on lantiq/DSA setups it often gets a
+ * randomly-generated locally-administered address that changes per boot,
+ * breaking the node identity across reboots. */
+static int read_mac_hex12(const char *iface, char *out13)
 {
-	(void)unused;
+	char path[96];
+	snprintf(path, sizeof(path), "/sys/class/net/%s/address", iface);
+	if (read_mac_hex12_from(path, out13) == 0)
+		return 0;
+
 	static const char *sources[] = {
-		"/sys/class/ieee80211/phy0/macaddress",  /* AR9580, hardware-burned */
+		"/sys/class/ieee80211/phy0/macaddress",
 		"/sys/class/net/lan1/address",
 		"/sys/class/net/br-lan/address",
 		"/sys/class/net/eth0/address",
@@ -86,6 +94,25 @@ static int read_mac_hex12(const char *unused, char *out13)
 			return 0;
 	}
 	return -1;
+}
+
+/* Board name as OpenWrt knows it, made safe for a JSON string. */
+static void read_model(char *out, size_t len)
+{
+	FILE *f = fopen("/tmp/sysinfo/model", "r");
+	out[0] = 0;
+	if (f) {
+		if (!fgets(out, (int)len, f))
+			out[0] = 0;
+		fclose(f);
+	}
+	for (char *p = out; *p; p++) {
+		if (*p == '\n' || *p == '\r') { *p = 0; break; }
+		if (*p == '"' || *p == '\\' || (unsigned char)*p < 0x20)
+			*p = ' ';
+	}
+	if (!out[0])
+		snprintf(out, len, "OpenWrt");
 }
 
 static void format_mac_colon(const char *hex12, char out[18])
@@ -126,12 +153,13 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 	mosquitto_publish(m, NULL, topic_status,
 			  (int)strlen("online"), "online", 1, true);
 
-	char info[256], hex12[13] = "000000000000", mac_colon[18];
-	read_mac_hex12("eth0", hex12);
+	char info[256], hex12[13] = "000000000000", mac_colon[18], model[96];
+	read_mac_hex12(cap_iface, hex12);
 	format_mac_colon(hex12, mac_colon);
+	read_model(model, sizeof(model));
 	int n = snprintf(info, sizeof(info),
-		 "{\"emac\":\"%s\",\"ver\":\"otm-bridge-%s\",\"hwv\":\"FRITZ!Box 3390\"}",
-		 mac_colon, OTM_BRIDGE_VERSION);
+		 "{\"emac\":\"%s\",\"ver\":\"otm-bridge-%s\",\"hwv\":\"%s\"}",
+		 mac_colon, OTM_BRIDGE_VERSION, model);
 	mosquitto_publish(m, NULL, topic_info, n, info, 0, false);
 }
 
@@ -193,7 +221,7 @@ static void usage(void)
 	    "usage: otm-bridge [options]\n"
 	    "  -i IFACE   capture interface (default mon0)\n"
 	    "  -b URI     broker URI (default mqtts://cits1.opentrafficmap.org)\n"
-	    "  -n NODE    node id (default eth0 MAC as 12 hex chars)\n"
+	    "  -n NODE    node id (default: MAC of the capture interface, 12 hex chars)\n"
 	    "  -c CAFILE  TLS CA file (default /etc/ssl/certs/ca-certificates.crt)\n"
 	    "  -s SNAP    pcap snap length (default 2300)\n"
 	    "  -v         verbose (repeat for more)\n"
@@ -202,7 +230,6 @@ static void usage(void)
 
 int main(int argc, char **argv)
 {
-	const char *iface       = "mon0";
 	const char *broker_uri  = "mqtts://cits1.opentrafficmap.org";
 	const char *cafile      = "/etc/ssl/certs/ca-certificates.crt";
 	char node_id[64]        = { 0 };
@@ -212,7 +239,7 @@ int main(int argc, char **argv)
 	int opt;
 	while ((opt = getopt(argc, argv, "i:b:n:c:s:vfh")) != -1) {
 		switch (opt) {
-		case 'i': iface       = optarg; break;
+		case 'i': cap_iface   = optarg; break;
 		case 'b': broker_uri  = optarg; break;
 		case 'n': strncpy(node_id, optarg, sizeof(node_id) - 1); break;
 		case 'c': cafile      = optarg; break;
@@ -224,8 +251,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!node_id[0] && read_mac_hex12("eth0", node_id) != 0) {
-		fprintf(stderr, "failed to derive node id from eth0 MAC; pass -n\n");
+	if (!node_id[0] && read_mac_hex12(cap_iface, node_id) != 0) {
+		fprintf(stderr, "failed to derive node id from a MAC address; pass -n\n");
 		return 1;
 	}
 
@@ -244,19 +271,19 @@ int main(int argc, char **argv)
 	 * every line twice. Only mirror to stderr on an interactive terminal. */
 	openlog("otm-bridge", LOG_PID | (foreground && isatty(2) ? LOG_PERROR : 0), LOG_DAEMON);
 	syslog(LOG_INFO, "starting v%s iface=%s broker=%s://%s:%d node=%s",
-	       OTM_BRIDGE_VERSION, iface, tls ? "mqtts" : "mqtt",
+	       OTM_BRIDGE_VERSION, cap_iface, tls ? "mqtts" : "mqtt",
 	       host, port, node_id);
 
 	char errbuf[PCAP_ERRBUF_SIZE];
-	pc = pcap_open_live(iface, snaplen, 1, 100, errbuf);
+	pc = pcap_open_live(cap_iface, snaplen, 1, 100, errbuf);
 	if (!pc) {
-		syslog(LOG_ERR, "pcap_open_live(%s): %s", iface, errbuf);
+		syslog(LOG_ERR, "pcap_open_live(%s): %s", cap_iface, errbuf);
 		return 1;
 	}
 	int dlt = pcap_datalink(pc);
 	if (dlt != DLT_IEEE802_11_RADIO)
 		syslog(LOG_WARNING, "iface %s datalink is %s, not radiotap; "
-		       "server may reject payloads", iface,
+		       "server may reject payloads", cap_iface,
 		       pcap_datalink_val_to_name(dlt));
 
 	mosquitto_lib_init();
