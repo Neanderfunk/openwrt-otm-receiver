@@ -3,7 +3,7 @@
 all compile: otm-bridge
 
 otm-bridge: otm-bridge.c
-	$(CC) $(CFLAGS) -Wall -Wextra -O2 -o $@ $< $(LDFLAGS) -lpcap -lmosquitto
+	$(CC) $(CFLAGS) -Wall -Wextra -O2 -o $@ $< $(LDFLAGS) -lpcap -lmosquitto -lpthread
 
 clean:
 	rm -f otm-bridge

@@ -7,6 +7,7 @@
  *   its/<node>/status   "online"/"offline" (LWT, retained)
  *   its/<node>/info     {"emac":"aa:bb:..","ver":"...","hwv":"..."}  (on connect)
  *   its/<node>/packet   raw 802.11 frame (radiotap stripped), QoS 0
+ *   its/<node>/stats    {"rbt":<seconds since boot>}  (on connect, every 60 s)
  *
  * <node> defaults to the capture interface MAC as 12 lowercase hex chars.
  */
@@ -14,6 +15,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pcap.h>
+#include <pthread.h>
 #include <mosquitto.h>
 #include <signal.h>
 #include <stdio.h>
@@ -32,6 +34,7 @@ static volatile sig_atomic_t running = 1;
 static char topic_packet[160];
 static char topic_status[160];
 static char topic_info[160];
+static char topic_stats[160];
 
 static const char *cap_iface = "mon0";
 static int verbose;
@@ -141,6 +144,34 @@ static int parse_broker_uri(const char *uri, char host[128], int *port, int *tls
 	return 0;
 }
 
+/* its/<node>/stats like the ESP32 firmware: {"rbt":<seconds since boot>}
+ * on connect and every STATS_INTERVAL seconds. No temperature: ath79 and
+ * ath9k expose none. */
+#define STATS_INTERVAL 60
+
+static void publish_stats(struct mosquitto *m)
+{
+	struct timespec ts;
+	char stats[64];
+	clock_gettime(CLOCK_BOOTTIME, &ts);
+	int n = snprintf(stats, sizeof(stats), "{\"rbt\":%lld}", (long long)ts.tv_sec);
+	mosquitto_publish(m, NULL, topic_stats, n, stats, 0, false);
+}
+
+/* Own thread: pcap_loop may block indefinitely on a quiet channel
+ * (TPACKET_V3 polls without timeout), so it cannot drive the timer. */
+static void *stats_thread(void *arg)
+{
+	(void)arg;
+	while (running) {
+		for (int i = 0; i < STATS_INTERVAL && running; i++)
+			sleep(1);
+		if (running)
+			publish_stats(mosq);
+	}
+	return NULL;
+}
+
 static void on_connect(struct mosquitto *m, void *ud, int rc)
 {
 	(void)ud;
@@ -161,6 +192,7 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 		 "{\"emac\":\"%s\",\"ver\":\"otm-bridge-%s\",\"hwv\":\"%s\"}",
 		 mac_colon, OTM_BRIDGE_VERSION, model);
 	mosquitto_publish(m, NULL, topic_info, n, info, 0, false);
+	publish_stats(m);
 }
 
 static void on_disconnect(struct mosquitto *m, void *ud, int rc)
@@ -266,6 +298,7 @@ int main(int argc, char **argv)
 	snprintf(topic_packet, sizeof(topic_packet), "its/%s/packet", node_id);
 	snprintf(topic_status, sizeof(topic_status), "its/%s/status", node_id);
 	snprintf(topic_info,   sizeof(topic_info),   "its/%s/info",   node_id);
+	snprintf(topic_stats,  sizeof(topic_stats),  "its/%s/stats",  node_id);
 
 	/* Under procd stderr already ends up in syslog; LOG_PERROR would log
 	 * every line twice. Only mirror to stderr on an interactive terminal. */
@@ -321,7 +354,15 @@ int main(int argc, char **argv)
 	}
 	mosquitto_loop_start(mosq);
 
+	pthread_t stats_tid;
+	int have_stats = pthread_create(&stats_tid, NULL, stats_thread, NULL) == 0;
+	if (!have_stats)
+		syslog(LOG_WARNING, "stats thread not started");
+
 	pcap_loop(pc, -1, pkt_handler, NULL);
+	running = 0;
+	if (have_stats)
+		pthread_join(stats_tid, NULL);
 
 	syslog(LOG_INFO, "shutting down, published=%lu errs=%lu",
 	       pkt_published, pkt_pcap_err);
