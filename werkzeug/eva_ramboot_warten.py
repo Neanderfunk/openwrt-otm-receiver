@@ -46,6 +46,9 @@ while True:
 			sys.exit('EVA nach %d s nicht erreicht (%d Versuche, zuletzt: %s)' % (args.timeout, tries, e))
 		time.sleep(0.3)
 print('EVA erreicht nach %.1f s, Versuch %d' % (time.monotonic() - start, tries), flush=True)
+# Der kurze Timeout gilt nur fuer den Verbindungsaufbau. Nach STOR laesst sich
+# EVA mit der Abschlussmeldung Zeit (bzw. bootet sofort): nicht abbrechen.
+ftp.sock.settimeout(120)
 
 def adam(cmd):
 	print('> %s' % cmd, flush=True)
