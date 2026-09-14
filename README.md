@@ -69,10 +69,13 @@ und alle Ports hängen im Uplink. Deshalb geht SSH nur mit Key auf.
 | Gerät | Stand |
 |---|---|
 | TP-Link TL-WDR4300 v1 | Image gebaut, Test am Gerät steht aus |
-| TP-Link TL-WDR3600 v1 | Image gebaut, ungetestet |
+| TP-Link TL-WDR3600 v1 | am Gerät getestet (14.09.2026), läuft out of the box |
 | Ubiquiti NanoStation/Bullet/Rocket M5 (XM, XW), TP-Link CPE510 | Kandidaten (ath9k, Images in 21.02.7) |
 | LiteBeam M5 (XW) | Kandidat, fehlt in 21.02, braucht einen Backport |
 | LiteBeam 5AC, UniFi AC Mesh | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
+
+Die vollständige Liste mit Verbreitung und Gebrauchtpreisen steht in
+[docs/geraete-kandidaten.md](docs/geraete-kandidaten.md).
 
 ## Lizenz
 
