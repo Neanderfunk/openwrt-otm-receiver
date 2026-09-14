@@ -240,7 +240,9 @@ int main(int argc, char **argv)
 	snprintf(topic_status, sizeof(topic_status), "its/%s/status", node_id);
 	snprintf(topic_info,   sizeof(topic_info),   "its/%s/info",   node_id);
 
-	openlog("otm-bridge", LOG_PID | (foreground ? LOG_PERROR : 0), LOG_DAEMON);
+	/* Under procd stderr already ends up in syslog; LOG_PERROR would log
+	 * every line twice. Only mirror to stderr on an interactive terminal. */
+	openlog("otm-bridge", LOG_PID | (foreground && isatty(2) ? LOG_PERROR : 0), LOG_DAEMON);
 	syslog(LOG_INFO, "starting v%s iface=%s broker=%s://%s:%d node=%s",
 	       OTM_BRIDGE_VERSION, iface, tls ? "mqtts" : "mqtt",
 	       host, port, node_id);
