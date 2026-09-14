@@ -34,6 +34,12 @@ PATCHES="$HERE/patches/openwrt-${OWRT_VER%.*}"
 # Pakete im Image: Standard des Profils plus/minus diese Liste.
 # Kein DHCP/RA-Server, kein PPP, kein wpad (netifd fasst die Radios nicht an).
 IMAGE_PACKAGES="otm-bridge -dnsmasq -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
+# lantiq (FRITZ!Box 3390 u. a.): DSL-Stack wird fuer den Empfaenger nicht gebraucht
+case "$TARGET" in
+lantiq) IMAGE_PACKAGES="$IMAGE_PACKAGES -ppp-mod-pppoa -ltq-vdsl-app -ltq-vdsl-vr9-vectoring-fw-installer \
+	-kmod-ltq-vdsl-vr9 -kmod-ltq-vdsl-vr9-mei -kmod-ltq-atm-vr9 -kmod-ltq-ptm-vr9 \
+	-dsl-vrx200-firmware-xdsl-a -dsl-vrx200-firmware-xdsl-b-patch" ;;
+esac
 
 log()  { printf '\033[1;34m[otm]\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31m[otm]\033[0m %s\n' "$*" >&2; exit 1; }
