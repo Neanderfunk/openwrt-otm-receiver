@@ -1,0 +1,41 @@
+# /lib/otm-bridge/functions.sh - shared by otm-bridge-run and 99-otm-setup,
+# so the MQTT node id and the hostname (DHCP) are built the same way.
+
+# Short board name for node id and hostname.
+otm_board_short() {
+	case "$(cat /tmp/sysinfo/board_name 2>/dev/null)" in
+	tplink,tl-wdr4300-v1*)		echo WR4300 ;;
+	tplink,tl-wdr3600-v1)		echo WR3600 ;;
+	avm,fritz3390)			echo FB3390 ;;
+	ubnt,nanostation-m-xw)		echo NSM5XW ;;
+	ubnt,nanostation-m)		echo NSM5XM ;;
+	ubnt,nanostation-loco-m-xw)	echo NSLM5XW ;;
+	ubnt,nanostation-loco-m)	echo NSLM5XM ;;
+	ubnt,litebeam-m5-xw)		echo LBEM5 ;;
+	ubnt,bullet-m*)			echo BM5 ;;
+	ubnt,rocket-m*)			echo RM5 ;;
+	tplink,cpe510-v*)		echo CPE510 ;;
+	*)	# fallback: first word of the model with a digit, vendor prefix off
+		awk '{ for (i = 1; i <= NF; i++) if ($i ~ /[0-9]/) { sub(/^TL-/, "", $i); print $i; exit } }' \
+			/tmp/sysinfo/model 2>/dev/null | tr -cd 'A-Za-z0-9' ;;
+	esac
+}
+
+# <board short name>-<last 4 hex digits of mac, lowercase>, e.g. WR4300-902f
+otm_node_name() {
+	local mac short
+	mac=$(echo "$1" | tr -d ':\n' | tr 'A-F' 'a-f')
+	short=$(otm_board_short)
+	echo "${short:-OpenWrt}-${mac#${mac%????}}"
+}
+
+# First phy that knows freq at all (also while regulatory still disables it,
+# e.g. at first boot before the regdomain is set).
+otm_its_phy() {
+	local p
+	for p in /sys/class/ieee80211/*; do
+		p=${p##*/}
+		iw phy "$p" info 2>/dev/null | grep -qE "\* $1(\.0)? MHz" && { echo "$p"; return 0; }
+	done
+	return 1
+}

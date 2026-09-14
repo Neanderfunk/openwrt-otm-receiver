@@ -10,7 +10,7 @@
 #     without a key SSH stays closed
 #   - netifd leaves the radios alone (an enabled radio deletes every vif it
 #     did not create itself, i.e. our monitor interface)
-#   - hostname "opentrafficmap"
+#   - hostname = MQTT node id (<board>-<last 4 MAC hex>), e.g. WR4300-902f
 #
 # Idempotent.
 
@@ -103,9 +103,18 @@ for r in $(uci -q show wireless | sed -n "s/^wireless\.\([^.=]*\)=wifi-device$/\
 done
 uci -q commit wireless
 
-# --- Hostname ---------------------------------------------------------------
+# --- Hostname = MQTT node id, e.g. WR4300-902f ------------------------------
+# Tells receivers apart in the DHCP server's lease list at a glance.
 
-uci set system.@system[0].hostname='opentrafficmap'
+. /lib/otm-bridge/functions.sh
+freq=$(uci -q get otm-bridge.main.freq)
+phy=$(otm_its_phy "${freq:-5900}")
+if [ -n "$phy" ]; then
+	name=$(otm_node_name "$(cat /sys/class/ieee80211/$phy/macaddress)")
+else
+	name=opentrafficmap
+fi
+uci set system.@system[0].hostname="$name"
 uci commit system
 
 exit 0

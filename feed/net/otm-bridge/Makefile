@@ -42,6 +42,8 @@ define Package/otm-bridge/install
 	$(INSTALL_CONF) ./files/otm-bridge.config $(1)/etc/config/otm-bridge
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/otm-bridge.init $(1)/etc/init.d/otm-bridge
+	$(INSTALL_DIR) $(1)/lib/otm-bridge
+	$(INSTALL_DATA) ./files/otm-bridge.functions $(1)/lib/otm-bridge/functions.sh
 	$(INSTALL_DIR) $(1)/usr/libexec
 	$(INSTALL_BIN) ./files/otm-bridge.run $(1)/usr/libexec/otm-bridge-run
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/ntp
