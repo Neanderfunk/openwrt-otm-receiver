@@ -122,6 +122,9 @@ EOF
 OUT="$BUILD/out/$OWRT_VER"
 for prof in $PROFILES; do
 	log "Image $prof"
+	# alte Images dieses Profils weg, sonst landen sie mit in out/
+	rm -f bin/targets/$TARGET/$SUBTARGET/*"$prof"*
+	rm -rf "${OUT:?}/$prof"
 	make image PROFILE="$prof" PACKAGES="$IMAGE_PACKAGES" FILES="$FILES" \
 		EXTRA_IMAGE_NAME="otm-$OTM_COMMIT" > "$BUILD/ib-$prof.log" 2>&1 ||
 		die "ImageBuilder $prof fehlgeschlagen, siehe $BUILD/ib-$prof.log"
