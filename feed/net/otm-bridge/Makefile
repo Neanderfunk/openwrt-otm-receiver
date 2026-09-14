@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=otm-bridge
-PKG_VERSION:=0.11
+PKG_VERSION:=0.11.1
 PKG_RELEASE:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -10,7 +10,7 @@ define Package/otm-bridge
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=opentrafficmap.org C-ITS MQTT bridge
-  DEPENDS:=+libpcap +libmosquitto-ssl +ca-bundle +iw-full +tcpdump-mini
+  DEPENDS:=+libpcap +libmosquitto-ssl +ca-bundle +iw-full
 endef
 
 define Package/otm-bridge/description
@@ -42,6 +42,10 @@ define Package/otm-bridge/install
 	$(INSTALL_CONF) ./files/otm-bridge.config $(1)/etc/config/otm-bridge
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/otm-bridge.init $(1)/etc/init.d/otm-bridge
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) ./files/otm-bridge.run $(1)/usr/libexec/otm-bridge-run
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/ntp
+	$(INSTALL_DATA) ./files/otm-bridge.ntp-hotplug $(1)/etc/hotplug.d/ntp/25-otm-bridge
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files/uci-defaults/99-otm-setup $(1)/etc/uci-defaults/99-otm-setup
 endef

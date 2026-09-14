@@ -1,0 +1,89 @@
+#!/bin/sh
+# /usr/libexec/otm-bridge-run - runs as the procd instance "bridge".
+#
+# Sets the regulatory domain, finds the radio that offers the ITS frequency,
+# (re)creates the monitor vif, waits for NTP and execs otm-bridge. Because
+# procd respawns this wrapper and not the daemon alone, a vanished monitor
+# interface (wifi reload, driver reset) is rebuilt on the next respawn.
+
+. /lib/functions.sh
+
+log() { logger -t otm-bridge "$*"; }
+
+# phy offers freq and it is not disabled by regulatory rules
+freq_ok() {
+	iw phy "$1" info 2>/dev/null | grep -E "\* $2(\.0)? MHz" | grep -qv disabled
+}
+
+# configured phy first, otherwise the first one that offers freq
+find_phy() {
+	local p
+	[ -n "$1" ] && freq_ok "$1" "$2" && { echo "$1"; return 0; }
+	for p in /sys/class/ieee80211/*; do
+		p=${p##*/}
+		freq_ok "$p" "$2" && { echo "$p"; return 0; }
+	done
+	return 1
+}
+
+config_load otm-bridge
+config_get iface    main iface    mon0
+config_get phy      main phy      ''
+config_get freq     main freq     5900
+config_get bw       main bw       10MHz
+config_get country  main country  DE
+config_get broker   main broker   'mqtts://cits1.opentrafficmap.org'
+config_get node     main node     ''
+config_get verbose  main verbose  1
+config_get timefile main timefile /var/state/otm-bridge-time
+
+# 5850-5925 MHz only exist in the patched regdb entry for $country; after
+# boot the global domain is 00. The change is applied asynchronously, so
+# poll, and repeat the request now and then in case something reset it.
+iw reg set "$country"
+i=0
+until p=$(find_phy "$phy" "$freq"); do
+	i=$((i + 1))
+	if [ $i -ge 30 ]; then
+		log "no radio offers $freq MHz (wanted country $country, have $(iw reg get | awk '/^country/ { print $2; exit }'))"
+		exit 1
+	fi
+	[ $((i % 10)) -eq 0 ] && iw reg set "$country"
+	sleep 1
+done
+[ -n "$phy" ] && [ "$p" != "$phy" ] && log "phy $phy does not offer $freq MHz, using $p"
+
+iw dev "$iface" del 2>/dev/null
+iw phy "$p" interface add "$iface" type monitor flags otherbss &&
+	ip link set "$iface" up &&
+	iw dev "$iface" set freq "$freq" "$bw" || {
+		log "monitor bring-up failed (iface=$iface phy=$p freq=$freq bw=$bw)"
+		exit 1
+	}
+log "$iface on $p: $(iw dev "$iface" info | awk '/channel/ { sub(/^[ \t]+/, ""); print; exit }')"
+
+# WLAN LED of this radio blinks per received frame instead of throughput
+for l in /sys/class/leds/*; do
+	grep -q "\[${p}tpt\]" "$l/trigger" 2>/dev/null && echo "${p}rx" > "$l/trigger"
+done
+
+# TLS needs a valid clock. The ntp hotplug script creates $timefile once
+# ntpd is synchronised. Wait at most 120 s, then start anyway; libmosquitto
+# reconnects by itself. Right after the sync the clock step may still be in
+# flight, hence the slack (5 s was not enough on the 3390, 15 s was).
+i=0
+while [ ! -e "$timefile" ] && [ $i -lt 120 ]; do
+	sleep 2
+	i=$((i + 2))
+done
+if [ ! -e "$timefile" ]; then
+	log "no NTP sync after 120 s, starting anyway"
+elif [ $(( $(date +%s) - $(date -r "$timefile" +%s) )) -lt 30 ]; then
+	sleep 15
+fi
+
+set -- -f -i "$iface" -b "$broker"
+[ -n "$node" ] && set -- "$@" -n "$node"
+[ "$verbose" -ge 1 ] 2>/dev/null && set -- "$@" -v
+[ "$verbose" -ge 2 ] 2>/dev/null && set -- "$@" -v
+exec /usr/bin/otm-bridge "$@"
