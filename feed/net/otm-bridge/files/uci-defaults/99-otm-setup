@@ -6,10 +6,10 @@
 #   - every Ethernet port is a DHCP client (IPv4 + IPv6), plug in anywhere:
 #     all LAN ports and the WAN port go into one bridge, interface "wan",
 #     so the stock wan firewall zone applies; no DHCP/RA server on the box
-#   - SSH is allowed from that zone
+#   - if an SSH key is baked in: SSH allowed from that zone, key only;
+#     without a key SSH stays closed
 #   - netifd leaves the radios alone (an enabled radio deletes every vif it
 #     did not create itself, i.e. our monitor interface)
-#   - password logins are switched off if an SSH key is present
 #   - hostname "opentrafficmap"
 #
 # Idempotent.
@@ -69,9 +69,24 @@ uci -q get dhcp.lan >/dev/null && {
 	uci commit dhcp
 }
 
-# --- Firewall: SSH from the (only) zone ------------------------------------
+# --- SSH: only with a key ---------------------------------------------------
+# Fresh OpenWrt lets root in without a password. With every port in the wan
+# zone, opening SSH without a key would hand the box to the uplink network,
+# so without a key it stays closed (the receiver works anyway; failsafe mode
+# remains for local access).
 
-if ! uci -q show firewall | grep -q "name='Allow-SSH-WAN'"; then
+has_key=0
+grep -q '^ssh-\|^ecdsa-' /etc/dropbear/authorized_keys 2>/dev/null && has_key=1
+
+if [ $has_key = 1 ]; then
+	uci set dropbear.@dropbear[0].PasswordAuth='off'
+	uci set dropbear.@dropbear[0].RootPasswordAuth='off'
+	uci commit dropbear
+fi
+
+# --- Firewall: SSH from the (only) zone, if a key is present --------------
+
+if [ $has_key = 1 ] && ! uci -q show firewall | grep -q "name='Allow-SSH-WAN'"; then
 	sec=$(uci add firewall rule)
 	uci set "firewall.${sec}.name=Allow-SSH-WAN"
 	uci set "firewall.${sec}.src=wan"
@@ -87,14 +102,6 @@ for r in $(uci -q show wireless | sed -n "s/^wireless\.\([^.=]*\)=wifi-device$/\
 	uci set wireless.$r.disabled='1'
 done
 uci -q commit wireless
-
-# --- SSH: keys only, but never lock out an image without keys -------------
-
-if grep -q '^ssh-\|^ecdsa-' /etc/dropbear/authorized_keys 2>/dev/null; then
-	uci set dropbear.@dropbear[0].PasswordAuth='off'
-	uci set dropbear.@dropbear[0].RootPasswordAuth='off'
-	uci commit dropbear
-fi
 
 # --- Hostname ---------------------------------------------------------------
 
