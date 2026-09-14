@@ -1,0 +1,46 @@
+From: Florian Klingler <klingler@ccs-labs.org>
+Subject: ath9k: add ITS-G5 / 802.11p channels 170-185 (5850-5925 MHz)
+
+Extend the ath9k 5 GHz channel table and ATH9K_NUM_CHANNELS by the 16
+DSRC / ITS-G5 channels. Originally by Florian Klingler (CCS Labs,
+Paderborn), 2017-03-15; via OpenWrt-V2X 21.02.1 (Raviglione) and
+MPW1412/avm-fritz3390-802.11p-otm. Rebased onto OpenWrt 21.02.7 /
+backports-5.10.168-1 for the OTM receiver images.
+
+--- a/drivers/net/wireless/ath/ath9k/common-init.c
++++ b/drivers/net/wireless/ath/ath9k/common-init.c
+@@ -86,6 +86,23 @@
+ 	CHAN5G(5785, 35), /* Channel 157 */
+ 	CHAN5G(5805, 36), /* Channel 161 */
+ 	CHAN5G(5825, 37), /* Channel 165 */
++	/* ITS-G5 / 802.11p, 5850-5925 MHz */
++	CHAN5G(5850, 38), /* Channel 170 */
++	CHAN5G(5855, 39), /* Channel 171 */
++	CHAN5G(5860, 40), /* Channel 172 */
++	CHAN5G(5865, 41), /* Channel 173 */
++	CHAN5G(5870, 42), /* Channel 174 */
++	CHAN5G(5875, 43), /* Channel 175 */
++	CHAN5G(5880, 44), /* Channel 176 */
++	CHAN5G(5885, 45), /* Channel 177 */
++	CHAN5G(5890, 46), /* Channel 178 - IEEE CCH */
++	CHAN5G(5895, 47), /* Channel 179 */
++	CHAN5G(5900, 48), /* Channel 180 - EU ITS-G5 CCH */
++	CHAN5G(5905, 49), /* Channel 181 */
++	CHAN5G(5910, 50), /* Channel 182 */
++	CHAN5G(5915, 51), /* Channel 183 */
++	CHAN5G(5920, 52), /* Channel 184 */
++	CHAN5G(5925, 53), /* Channel 185 */
+ };
+ 
+ /* Atheros hardware rate code addition for short preamble */
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -73,7 +73,7 @@
+ 
+ #define ATH9K_RSSI_BAD			-128
+ 
+-#define ATH9K_NUM_CHANNELS	38
++#define ATH9K_NUM_CHANNELS	54 /* + 16 ITS-G5 channels */
+ 
+ /* Register read/write primitives */
+ #define REG_WRITE(_ah, _reg, _val) \
