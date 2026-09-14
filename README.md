@@ -31,11 +31,18 @@ ssh root@<gerät> 'sysupgrade -T /tmp/openwrt-*-sysupgrade.bin && sysupgrade -n 
 
 Die Host-Keys werden dabei neu erzeugt. Den alten `known_hosts`-Eintrag vorher entfernen.
 
+## SSH-Keys
+
+Eigene Keys gehören nach `files/local/etc/dropbear/authorized_keys`. Der Ordner ist
+gitignored, `build.sh` legt ihn über `files/common`. Ohne Key baut das Image trotzdem,
+es bleibt dann aber ohne Fernzugang: Frisches OpenWrt lässt root ohne Passwort herein,
+und alle Ports hängen im Uplink. Deshalb geht SSH nur mit Key auf.
+
 ## Was das Gerät nach dem ersten Boot tut
 
 - **Netz**: Alle Ports hängen in einer Bridge (STP an) und beziehen per DHCP IPv4 und IPv6.
-  Auf dem Gerät läuft kein DHCP- oder RA-Server. SSH ist erlaubt, aber nur per Key
-  (`files/common/etc/dropbear/authorized_keys`).
+  Auf dem Gerät läuft kein DHCP- oder RA-Server. SSH ist nur erlaubt, wenn ein Key
+  eingebacken ist, und dann nur per Key.
 - **Funk**: Die Radios sind in `/etc/config/wireless` deaktiviert, damit netifd das
   Monitor-Interface nicht löscht. `/usr/libexec/otm-bridge-run` setzt die Regdomain (`DE`),
   sucht das phy mit 5900 MHz, legt `mon0` an (10 MHz, Half-Rate), wartet auf NTP und startet
@@ -53,10 +60,9 @@ Die Host-Keys werden dabei neu erzeugt. Den alten `known_hosts`-Eintrag vorher e
 |---|---|
 | `feed/net/otm-bridge/` | Fork von otm-bridge (0.11.1), als `src-link`-Feed eingebunden |
 | `patches/openwrt-21.02/` | ath9k-Kanäle 170–185, ath-regd bis 5925 MHz, Half-Rate, regdb DE ITS |
-| `files/common/` | Dateien, die ins Image eingebacken werden (authorized_keys) |
+| `files/common/`, `files/local/` | Dateien fürs Image; `local` ist gitignored (SSH-Keys) |
 | `werkzeug/baseline-24h.sh` | 24-h-Messung am laufenden Empfänger, schreibt nur nach `/tmp` |
 | `geraete/` | Config-Backups einzelner Geräte (gitignored, enthalten Host-Keys) |
-| `UEBERGABE-openwrt-targets.md` | Wissen aus dem Neanderfunk-Build zu Targets und Patches |
 
 ## Geräte
 
@@ -68,5 +74,8 @@ Die Host-Keys werden dabei neu erzeugt. Den alten `known_hosts`-Eintrag vorher e
 | LiteBeam M5 (XW) | Kandidat, fehlt in 21.02, braucht einen Backport |
 | LiteBeam 5AC, UniFi AC Mesh | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
 
-Lizenz: Die otm-bridge-Teile stehen weiter unter WTFPL (`feed/LICENSE.otm-bridge`), die
-Kernel-Patches unter GPL-2.0 wie die Dateien, die sie ändern.
+## Lizenz
+
+- Eigene Teile (Build-Skript, Werkzeuge, Doku): BSD-3-Clause, siehe `LICENSE`
+- `feed/net/otm-bridge/`: Fork, bleibt unter WTFPL (`feed/LICENSE.otm-bridge`)
+- `patches/`: GPL-2.0 wie die Kernel- und regdb-Dateien, die sie ändern

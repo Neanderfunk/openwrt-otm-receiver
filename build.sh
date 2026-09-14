@@ -5,7 +5,8 @@
 #   1. SDK baut die gepatchten Pakete: mac80211 (ath9k ITS-Kanaele, regd,
 #      Half-Rate), wireless-regdb (DE ITS, NO-IR) und otm-bridge.
 #   2. ImageBuilder baut daraus je Profil ein sysupgrade-Image, mit
-#      files/common (authorized_keys) und /etc/otm-build-info.
+#      files/common, files/local (eigene authorized_keys, nicht im Repo)
+#      und /etc/otm-build-info.
 #
 # Kein Komplettbau: Kernel und alle anderen Pakete kommen aus dem Release.
 # Die kmods aus dem SDK passen zum Release-Kernel (gleiche vermagic).
@@ -109,8 +110,14 @@ ls packages/otm/*-"$OTM_RELEASE"_*.ipk >/dev/null 2>&1 || die "keine Pakete mit 
 # Herkunft ins Image (was laeuft da drei Wochen spaeter?)
 OTM_COMMIT=$(git -C "$HERE" rev-parse --short HEAD)
 git -C "$HERE" diff --quiet HEAD -- feed patches files build.sh || OTM_COMMIT="$OTM_COMMIT-dirty"
+# files/common (im Repo) und files/local (gitignored, eigene SSH-Keys u. a.)
 FILES="$BUILD/files"
-rm -rf "$FILES" && cp -a "$HERE/files/common" "$FILES"
+rm -rf "$FILES" && mkdir -p "$FILES/etc"
+for d in "$HERE/files/common" "$HERE/files/local"; do
+	[ -d "$d" ] && cp -a "$d/." "$FILES/"
+done
+grep -qE '^(ssh-|ecdsa-)' "$FILES/etc/dropbear/authorized_keys" 2>/dev/null ||
+	printf '\033[1;33m[otm]\033[0m %s\n' "kein SSH-Key in files/local/etc/dropbear/authorized_keys: Image ohne Fernzugang (SSH bleibt zu)" >&2
 cat > "$FILES/etc/otm-build-info" <<EOF
 otm_commit=$OTM_COMMIT
 built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
