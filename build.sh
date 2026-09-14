@@ -74,7 +74,14 @@ MAC=package/kernel/mac80211
 REGDB=package/firmware/wireless-regdb
 git -C feeds/base checkout -q -- "$MAC" "$REGDB"
 git -C feeds/base clean -q -fdx -- "$MAC" "$REGDB"
-cp "$PATCHES"/mac80211/ath/*.patch "feeds/base/$MAC/patches/ath/"
+[ -d "$PATCHES" ] || die "keine Patches fuer ${OWRT_VER%.*}: $PATCHES fehlt"
+# je Unterordner (ath, ath9k, ...) in den gleichnamigen des Pakets: die
+# Ordner-Reihenfolge von mac80211 bestimmt, auf welchem Stand ein Patch aufsetzt
+for d in "$PATCHES"/mac80211/*/; do
+	d=${d%/}
+	mkdir -p "feeds/base/$MAC/patches/${d##*/}"
+	cp "$d"/*.patch "feeds/base/$MAC/patches/${d##*/}/"
+done
 cp "$PATCHES"/wireless-regdb/*.patch "feeds/base/$REGDB/patches/"
 sed -i "s/^PKG_RELEASE:=.*/PKG_RELEASE:=$OTM_RELEASE/" "feeds/base/$MAC/Makefile" "feeds/base/$REGDB/Makefile"
 
