@@ -6,3 +6,8 @@ build/
 UEBERGABE-openwrt-targets.md
 # eigene SSH-Keys und weitere lokale Dateien fuers Image
 files/local/
+# Fotos (z. B. Aufkleber mit serviceKey) nie ins oeffentliche Repo
+*.jpg
+*.jpeg
+*.png
+*.heic
