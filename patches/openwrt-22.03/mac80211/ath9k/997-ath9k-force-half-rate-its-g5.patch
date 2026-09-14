@@ -1,0 +1,34 @@
+From: Matthias Walther <m.walther@kluteq.de>
+Subject: ath9k: force half-rate OFDM for ITS-G5 / DSRC band (5850-5925 MHz)
+
+The ITS-G5 channels are 10 MHz wide, but for monitor interfaces the
+width often gets lost on the way down and arrives as 20_NOHT. Without
+CHANNEL_HALF the AR9xxx PLL and OFDM timing stay at full rate and the
+half-rate frames die as CRC errors. Treat the band as authoritative.
+
+From MPW1412/avm-fritz3390-802.11p-otm (610-ath9k_force_half_rate_for_
+dsrc_band.patch), backported unchanged to backports-5.10.168-1.
+
+Signed-off-by: Matthias Walther <m.walther@kluteq.de>
+--- a/drivers/net/wireless/ath/ath9k/common.c
++++ b/drivers/net/wireless/ath/ath9k/common.c
+@@ -345,6 +345,19 @@
+ 		WARN_ON(1);
+ 	}
+ 
++	/*
++	 * ITS-G5 / DSRC: 5850-5925 MHz channels are regulatorily defined
++	 * as 10 MHz wide. cfg80211 / iw sometimes loses the width on the
++	 * way down (especially for monitor-mode interfaces) and we end up
++	 * here with chandef->width = NL80211_CHAN_WIDTH_20_NOHT. Force
++	 * half-rate based on the frequency alone so the PLL/PHY in hw.c
++	 * and ar9002_phy.c reprogram correctly without needing the chanbw
++	 * debugfs workaround.
++	 */
++	if (chan->band == NL80211_BAND_5GHZ &&
++	    chan->center_freq >= 5850 && chan->center_freq <= 5925)
++		flags = (flags & CHANNEL_5GHZ) | CHANNEL_HALF;
++
+ 	ichan->channelFlags = flags;
+ }
+ 

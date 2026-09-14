@@ -1,0 +1,20 @@
+Subject: wireless-regdb: DE - ITS-G5 5850-5925 MHz, receive only
+
+Adds the ITS-G5 / 802.11p band to country DE so the ath9k ITS channels
+can be tuned. Unlike OpenWrt-V2X and MPW1412/avm-fritz3390-802.11p-otm
+the rule carries NO-IR: the OTM receiver must not transmit; monitor mode
+only needs the channel not to be DISABLED, while OCB join and monitor
+injection require reg_can_beacon and are refused.
+
+--- a/db.txt
++++ b/db.txt
+@@ -542,6 +542,9 @@
+ 	(5470 - 5725 @ 160), (500 mW), DFS, wmmrule=ETSI
+ 	# short range devices (ETSI EN 300 440-1)
+ 	(5725 - 5875 @ 80), (25 mW)
++	# ITS-G5 / 802.11p (ETSI EN 302 571), receive only: NO-IR keeps
++	# monitor tuning possible but blocks OCB join and monitor injection
++	(5850 - 5925 @ 20), (33), NO-IR
+ 	# WiFi 6E
+ 	(5945 - 6425 @ 160), (23), NO-OUTDOOR, wmmrule=ETSI
+ 	# 60 GHz band channels 1-4 (ETSI EN 302 567)

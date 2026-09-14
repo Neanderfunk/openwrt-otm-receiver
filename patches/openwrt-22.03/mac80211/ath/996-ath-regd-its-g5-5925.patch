@@ -1,0 +1,22 @@
+From: Florian Klingler <klingler@ccs-labs.org>
+Subject: ath: extend the ath world regulatory rules up to 5925 MHz
+
+So that the ITS-G5 channels added to ath9k are not disabled on boards
+whose EEPROM carries an Atheros world regdomain. Applied after OpenWrt's
+403-world_regd_fixup.patch; macro names kept, only the upper edge moves.
+Via OpenWrt-V2X 21.02.1 and MPW1412/avm-fritz3390-802.11p-otm.
+
+--- a/drivers/net/wireless/ath/regd.c
++++ b/drivers/net/wireless/ath/regd.c
+@@ -47,9 +47,9 @@
+ #define ATH_5GHZ_5150_5350	REG_RULE(5150-10, 5240+10, 80, 0, 30, 0),\
+ 				REG_RULE(5260-10, 5350+10, 80, 0, 30,\
+ 					 NL80211_RRF_NO_IR)
+-#define ATH_5GHZ_5470_5850	REG_RULE(5470-10, 5850+10, 80, 0, 30,\
++#define ATH_5GHZ_5470_5850	REG_RULE(5470-10, 5925+10, 80, 0, 30,\
+ 					 NL80211_RRF_NO_IR)
+-#define ATH_5GHZ_5725_5850	REG_RULE(5725-10, 5850+10, 80, 0, 30,\
++#define ATH_5GHZ_5725_5850	REG_RULE(5725-10, 5925+10, 80, 0, 30,\
+ 					 NL80211_RRF_NO_IR)
+ 
+ #define ATH_2GHZ_ALL		ATH_2GHZ_CH01_11, \
