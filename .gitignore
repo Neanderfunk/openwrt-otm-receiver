@@ -2,3 +2,4 @@ upstream-*/
 scratch-*/
 # enthaelt Host-Keys und shadow
 geraete/**/*.tar.gz
+build/
