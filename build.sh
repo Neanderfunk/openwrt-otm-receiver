@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# OTM-Empfaenger-Images: OpenWrt 21.02.7 (ath79/generic), plain, ohne LuCI.
+# OTM-Empfaenger-Images: OpenWrt 21.02/22.03/25.12 (Standard 21.02.7 ath79/generic),
+# plain, ohne LuCI.
 #
 #   1. SDK baut die gepatchten Pakete: mac80211 (ath9k ITS-Kanaele, regd,
 #      Half-Rate), wireless-regdb (DE ITS, NO-IR) und otm-bridge.
@@ -17,6 +18,15 @@
 
 set -euo pipefail
 
+# Von einer Kopie laufen: bash liest Skripte waehrend der Ausfuehrung nach,
+# eine Aenderung an build.sh mitten im Lauf fuehrte sonst zu Syntaxfehlern.
+if [ -z "${OTM_BUILD_RUNCOPY:-}" ]; then
+	OTM_HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	mkdir -p "$OTM_HERE/build"
+	cp "${BASH_SOURCE[0]}" "$OTM_HERE/build/.build.sh.run"
+	OTM_BUILD_RUNCOPY=1 OTM_HERE="$OTM_HERE" exec bash "$OTM_HERE/build/.build.sh.run" "$@"
+fi
+
 OWRT_VER="${OWRT_VER:-21.02.7}"
 TARGET="${TARGET:-ath79}"
 SUBTARGET="${SUBTARGET:-generic}"
@@ -26,7 +36,7 @@ PROFILES="${PROFILES:-tplink_tl-wdr4300-v1 tplink_tl-wdr3600-v1}"
 OTM_RELEASE="${OTM_RELEASE:-91}"
 JOBS="${JOBS:-$(nproc)}"
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HERE="${OTM_HERE:?}"
 BUILD="$HERE/build"
 DL_BASE="https://downloads.openwrt.org/releases/$OWRT_VER/targets/$TARGET/$SUBTARGET"
 PATCHES="$HERE/patches/openwrt-${OWRT_VER%.*}"
@@ -34,6 +44,8 @@ PATCHES="$HERE/patches/openwrt-${OWRT_VER%.*}"
 # Pakete im Image: Standard des Profils plus/minus diese Liste.
 # Kein DHCP/RA-Server, kein PPP, kein wpad (netifd fasst die Radios nicht an).
 IMAGE_PACKAGES="otm-bridge -dnsmasq -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
+# ab 25.12 heisst das Standard-wpad anders
+case "$OWRT_VER" in 2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -wpad-basic-mbedtls" ;; esac
 # lantiq (FRITZ!Box 3390 u. a.): DSL-Stack wird fuer den Empfaenger nicht gebraucht
 case "$TARGET" in
 lantiq) IMAGE_PACKAGES="$IMAGE_PACKAGES -ppp-mod-pppoa -ltq-vdsl-app -ltq-vdsl-vr9-vectoring-fw-installer \
@@ -115,10 +127,10 @@ make -j"$JOBS" package/mac80211/compile package/wireless-regdb/compile \
 
 cd "$IB"
 rm -rf packages/otm && mkdir -p packages/otm
-find "$SDK/bin" -name '*.ipk' \( -name "kmod-*" -o -name "wireless-regdb_*" -o -name "otm-bridge_*" \) \
-	-exec cp {} packages/otm/ \;
-# Nur die Pakete mit unserer Revision (kmods: ...-<ver>-$OTM_RELEASE_<arch>.ipk)
-ls packages/otm/*-"$OTM_RELEASE"_*.ipk >/dev/null 2>&1 || die "keine Pakete mit Revision $OTM_RELEASE"
+# opkg (bis 24.10): *.ipk, Revision ...-91_<arch>.ipk; apk (ab 25.12): *.apk, Revision ...-r91.apk
+find "$SDK/bin" \( -name '*.ipk' -o -name '*.apk' \) \
+	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" \) -exec cp {} packages/otm/ \;
+ls packages/otm/ | grep -qE -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" || die "keine Pakete mit Revision $OTM_RELEASE"
 
 # Herkunft ins Image (was laeuft da drei Wochen spaeter?)
 OTM_COMMIT=$(git -C "$HERE" rev-parse --short HEAD)
