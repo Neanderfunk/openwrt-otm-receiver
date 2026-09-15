@@ -60,6 +60,25 @@ spezifiziert. Wie viel bei 5,9 GHz verloren geht, muss man je Gerät messen
 „Bullet M“) unterscheiden **nicht zwischen M2 und M5**. M2 (2,4 GHz) ist ungeeignet und
 bei Freifunk häufiger. Die Zahlen sind deshalb Obergrenzen.
 
+## Antennen als Kaufkriterium
+
+Bei **abnehmbaren Antennen** ist unklar, womit das Gerät tatsächlich läuft. Gebraucht
+bekommt man oft beliebige Antennen dazu, auch reine 2,4-GHz-Dipole. Ohne einen VNA über
+6 GHz lässt sich das nicht nachprüfen, und im Betrieb fällt es nie auf. **Eingebaute
+Antennen** sind zwar auch nur bis 5,85 GHz spezifiziert, aber bei jedem Exemplar gleich.
+Messergebnisse gelten dann für alle Geräte dieses Typs.
+
+Empfehlung: Geräte mit eingebauten Antennen vorziehen. Wer ein Gerät mit abnehmbaren
+Antennen nutzt, sollte die Antennen per Referenzmessung prüfen (siehe
+`docs/testmatrix.md`, Abschnitt Antennen).
+
+| Antennen | Geräte |
+|---|---|
+| **eingebaut** | FRITZ!Box 3370 und 3390, FRITZ!WLAN Repeater 300E, Enterasys WS-AP3710i/3705i, Aerohive HiveAP-121/330, Netgear WNDR3700/3800/4300, UniFi AP Pro, Aruba AP-105, Meraki MR16 |
+| **eingebaut, für 5 GHz ausgelegt (outdoor)** | NanoStation (Loco) M5, LiteBeam/NanoBeam/PowerBeam M5, TP-Link CPE510/CPE610, MikroTik SXT/LHG |
+| **abnehmbar** | TL-WDR3600 (2×), TL-WDR4300 (3×), D-Link DIR-825 (prüfen), Bullet M5 und Rocket M5 (N-Buchse; Außenantennen tragen meist ein Band-Etikett) |
+| prüfen | TL-WDR4900 v1, Buffalo WZR-HP-AG300H |
+
 ## Sonderfälle (unerprobt)
 
 - **x86 mit mPCIe-Karte** (PC Engines APU, alte Thin Clients) mit AR9280/AR938x/AR958x-Karte.
