@@ -53,17 +53,37 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 
 | Gerät | 21-ours | 22-ours | 25-ours | 25-MPW |
 |---|---|---|---|---|
-| TL-WDR3600 v1 (AR9582, 2x2) | R1 | | | |
+| TL-WDR3600 v1 (AR9582, 2x2) | R1 | R2 | | |
 | TL-WDR4300 v1 (AR9580, 3x3) | | | | Referenz 14./15.09. (anderer Standort) |
-| FRITZ!Box 3390 (AR9580) | – (nicht in 21.02) | Image fertig | | R1 |
+| FRITZ!Box 3390 (AR9580) | – (nicht in 21.02) | R2 | | R1 |
 | ESP32 node749 | Referenz in jeder Runde | | | |
 
 ## Runden
 
 | Runde | Zeitraum (UTC) | Belegung | Status |
 |---|---|---|---|
-| R1 | 14.09. 20:23 bis 15.09. 20:23 | WDR3600 21-ours · 3390 25-MPW · node749 | läuft |
-| R2 … | offen | Rotation, bis jede Zelle mindestens einmal belegt ist | geplant |
+| R1 | 14.09. 20:23 bis 15.09. 20:23 | WDR3600 21-ours · 3390 25-MPW · node749 | fertig, siehe unten |
+| R2 | 15.09. 21:01 bis 16.09. 21:01 | WDR3600 22-ours · 3390 22-ours · node749 (+stats) | läuft: gleiche Software, reiner Hardwarevergleich |
+| R3 … | offen | Rotation, dazu WDR4300 und Antennen | geplant |
+
+### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
+
+| Empfänger | Frames | Anteil | RSSI Median |
+|---|---|---|---|
+| node749 (ESP32) | 474 | 67 % | – |
+| FB3390, 25-MPW | 417 | 59 % | −80 dBm |
+| WDR3600, 21-ours, unbekannte Antennen | 312 | 44 % | −84 dBm |
+
+- Nur 164 Frames (23 %) hatten alle drei, jeder hat exklusive Frames (node749 194,
+  3390 126, WDR3600 47). Am Rand der Reichweite ergänzen sich Empfänger.
+- Bei gemeinsam empfangenen Frames liegt der WDR3600 im Median **5 dB unter der 3390**
+  (Antennen unbekannt, siehe oben).
+- Die 3390 hat rund um die Uhr Fehlauslösungen: 3,8 Mio. in 24 h, busy 45 %, nachts am
+  meisten. Der WDR3600 daneben hat praktisch keine. In R2 unter 22-ours genauso
+  (59 % busy), das liegt also an Hardware oder Umgebung, nicht an der Software. Ob das
+  Frames kostet, ist offen.
+- node749 hatte eine Lücke von 16:21 bis 17:32 (Grund offen, ab R2 wird `stats`
+  mitgeschnitten).
 
 Jede Software kommt auf mindestens zwei Geräte und jedes Gerät bekommt mindestens zwei
 Softwarestände. Nur so lassen sich die Einflüsse von Hardware und Software trennen.
