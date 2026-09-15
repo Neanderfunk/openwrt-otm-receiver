@@ -1,7 +1,7 @@
 upstream-*/
 scratch-*/
-# enthaelt Host-Keys und shadow
-geraete/**/*.tar.gz
+# Config-Backups (Host-Keys, shadow) und Messdaten (CAMs mit Positionen) - nie oeffentlich
+geraete/
 build/
 UEBERGABE-openwrt-targets.md
 # eigene SSH-Keys und weitere lokale Dateien fuers Image
