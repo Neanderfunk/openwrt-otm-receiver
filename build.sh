@@ -52,10 +52,10 @@ cd "$BUILD"
 SDK_TAR=$(curl -fsS "$DL_BASE/" | grep -oE "openwrt-sdk-$OWRT_VER-$TARGET-${SUBTARGET}_[^\"]*\.tar\.(xz|zst)" | head -n 1)
 IB_TAR=$(curl -fsS "$DL_BASE/" | grep -oE "openwrt-imagebuilder-$OWRT_VER-$TARGET-$SUBTARGET\.[^\"]*\.tar\.(xz|zst)" | head -n 1)
 [ -n "$SDK_TAR" ] && [ -n "$IB_TAR" ] || die "SDK/ImageBuilder fuer $OWRT_VER $TARGET/$SUBTARGET nicht gefunden"
-[ -f "sha256sums-$OWRT_VER" ] || curl -fsS -o "sha256sums-$OWRT_VER" "$DL_BASE/sha256sums"
+[ -f "sha256sums-$OWRT_VER-$TARGET-$SUBTARGET" ] || curl -fsS -o "sha256sums-$OWRT_VER-$TARGET-$SUBTARGET" "$DL_BASE/sha256sums"
 for t in "$SDK_TAR" "$IB_TAR"; do
 	[ -f "$t" ] || { log "lade $t"; curl -fsS -o "$t" "$DL_BASE/$t"; }
-	grep " \*\?$t\$" "sha256sums-$OWRT_VER" | sed 's/ \*/  /' | sha256sum -c --quiet - || die "Pruefsumme $t"
+	grep " \*\?$t\$" "sha256sums-$OWRT_VER-$TARGET-$SUBTARGET" | sed 's/ \*/  /' | sha256sum -c --quiet - || die "Pruefsumme $t"
 done
 SDK="$BUILD/${SDK_TAR%.tar.*}"
 IB="$BUILD/${IB_TAR%.tar.*}"
