@@ -15,6 +15,21 @@ ist das Ergebnis „Jacke wie Hose“. Auch das wäre eine Erkenntnis.
 - Messung je Gerät: `werkzeug/baseline-24h.sh` (pcap von `mon0` plus Zähler, nur tmpfs),
   Auswertung mit `werkzeug/baseline-auswertung.py`, dazu ein Frame-für-Frame-Abgleich.
 
+## Vorab: Antennen
+
+Die Antennen am WDR3600 sind unbekannt: TP-Link-Antennen ohne Angabe, womöglich
+2,4-GHz-Dipole (etwa vom WR1043ND). Ein VNA über 3 GHz ist nicht vorhanden. Solange
+das offen ist, lassen sich Software-Unterschiede nicht von Antennen-Unterschieden trennen.
+Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
+
+- **Messsender sind fremde 5-GHz-Access-Points**: Deren Beacons (~10/s) werden
+  gleichzeitig vom Prüfling und von einer festen Referenz (3390, interne Antennen)
+  empfangen. Wir senden dafür nichts.
+- **ΔRSSI je Access Point** zur Referenz, je Antennensatz einige Minuten. Dazu der RSSI je
+  Empfangskette aus dem Radiotap, also je Antennenbuchse. Mit überkreuz getauschten
+  Antennen lässt sich Buchse von Antenne trennen.
+- **Nullmessung ohne Antennen** zeigt, wie viel die Antennen überhaupt bringen.
+
 ## Messgrößen
 
 1. Gute ITS-Frames in 24 h (GeoNetworking 0x8947) und das **Verhältnis zu node749**.
