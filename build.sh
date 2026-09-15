@@ -42,8 +42,11 @@ DL_BASE="https://downloads.openwrt.org/releases/$OWRT_VER/targets/$TARGET/$SUBTA
 PATCHES="$HERE/patches/openwrt-${OWRT_VER%.*}"
 
 # Pakete im Image: Standard des Profils plus/minus diese Liste.
-# Kein DHCP/RA-Server, kein PPP, kein wpad (netifd fasst die Radios nicht an).
-IMAGE_PACKAGES="otm-bridge -dnsmasq -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
+# Kein RA/DHCPv6-Server, kein PPP, kein wpad (netifd fasst die Radios nicht an).
+# dnsmasq bleibt als reiner DNS-Forwarder: ab 22.03 laeuft ntpd in einer ujail
+# ohne resolv.conf und fragt 127.0.0.1 - ohne dnsmasq keine Zeit, kein TLS.
+# DHCP verteilt er nicht (99-otm-setup loescht dhcp.lan), die wan-Zone blockt 53.
+IMAGE_PACKAGES="otm-bridge -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
 # ab 25.12 heisst das Standard-wpad anders
 case "$OWRT_VER" in 2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -wpad-basic-mbedtls" ;; esac
 # lantiq (FRITZ!Box 3390 u. a.): DSL-Stack wird fuer den Empfaenger nicht gebraucht
