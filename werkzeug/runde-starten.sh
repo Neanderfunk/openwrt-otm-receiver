@@ -36,13 +36,18 @@ case "${1:-}" in
 messung)
 	host=$2 phy=$3
 	read -r ver arch < <(geraeteversion "$host")
-	case "$ver" in 2[5-9].*) echo "OpenWrt $ver (apk) noch nicht unterstuetzt" >&2; exit 1 ;; esac
-	hole "$ver" "$arch" base tcpdump-mini
-	hole "$ver" "$arch" base libpcap1
 	ssh "${K[@]}" root@"$host" 'mkdir -p /tmp/otm-baseline/x/usr/bin /tmp/otm-baseline/x/usr/lib'
-	scp -O -q "${K[@]}" "$CACHE/$ver/x/usr/sbin/tcpdump" root@"$host":/tmp/otm-baseline/x/usr/bin/tcpdump 2>/dev/null ||
-		scp -O -q "${K[@]}" "$CACHE/$ver/x/usr/bin/tcpdump" root@"$host":/tmp/otm-baseline/x/usr/bin/tcpdump
-	scp -O -q "${K[@]}" "$CACHE/$ver"/x/usr/lib/libpcap* root@"$host":/tmp/otm-baseline/x/usr/lib/
+	if vorhanden=$(ssh "${K[@]}" root@"$host" 'command -v tcpdump'); then
+		# im Image vorhanden (z. B. Muensters Build): nehmen statt holen
+		ssh "${K[@]}" root@"$host" "ln -sf $vorhanden /tmp/otm-baseline/x/usr/bin/tcpdump"
+	else
+		case "$ver" in 2[5-9].*) echo "OpenWrt $ver: tcpdump fehlt und apk-Feeds werden noch nicht unterstuetzt" >&2; exit 1 ;; esac
+		hole "$ver" "$arch" base tcpdump-mini
+		hole "$ver" "$arch" base libpcap1
+		scp -O -q "${K[@]}" "$CACHE/$ver/x/usr/sbin/tcpdump" root@"$host":/tmp/otm-baseline/x/usr/bin/tcpdump 2>/dev/null ||
+			scp -O -q "${K[@]}" "$CACHE/$ver/x/usr/bin/tcpdump" root@"$host":/tmp/otm-baseline/x/usr/bin/tcpdump
+		scp -O -q "${K[@]}" "$CACHE/$ver"/x/usr/lib/libpcap* root@"$host":/tmp/otm-baseline/x/usr/lib/
+	fi
 	scp -O -q "${K[@]}" "$HERE/baseline-24h.sh" root@"$host":/tmp/otm-baseline/
 	ssh "${K[@]}" root@"$host" "chmod +x /tmp/otm-baseline/baseline-24h.sh /tmp/otm-baseline/x/usr/bin/tcpdump &&
 		PHY=$phy start-stop-daemon -S -b -x /tmp/otm-baseline/baseline-24h.sh; sleep 4;
