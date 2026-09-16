@@ -64,7 +64,8 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 |---|---|---|---|
 | R1 | 14.09. 20:23 bis 15.09. 20:23 | WDR3600 21-ours · 3390 25-MPW · node749 | fertig, siehe unten |
 | R2 | 15.09. 21:01 bis 16.09. 21:01 | WDR3600 22-ours · 3390 22-ours · node749 (+stats) | läuft: gleiche Software, reiner Hardwarevergleich |
-| R3 … | offen | Rotation, dazu WDR4300 und Antennen | geplant |
+| R3 | ab 16.09. ~23:30 | WDR3600 22-ours · 3390 **25-MPW** · node749 | geplant: Software am 3390 zurück, WDR3600 unverändert |
+| R4 … | offen | Rotation, dazu WDR4300 und Antennen | geplant |
 
 ### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
 
@@ -82,8 +83,27 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
   meisten. Der WDR3600 daneben hat praktisch keine. In R2 unter 22-ours genauso
   (59 % busy), das liegt also an Hardware oder Umgebung, nicht an der Software. Ob das
   Frames kostet, ist offen.
-- node749 hatte eine Lücke von 16:21 bis 17:32 (Grund offen, ab R2 wird `stats`
-  mitgeschnitten).
+- node749 hatte eine Lücke von 16:21 bis 17:32. In R2 zeigt der `stats`-Strom: kein
+  Neustart, keine Lücke im Datenstrom, 35–37 °C. Die Lücke war also echter Empfangsausfall
+  und kein Geräteproblem.
+
+### Ergebnis R2 (beide Geräte 22-ours, 335 verschiedene Frames, schwächerer Verkehrstag)
+
+| Empfänger | Frames | Anteil | RSSI Median | Fehlauslösungen | Kanal belegt |
+|---|---|---|---|---|---|
+| node749 (ESP32) | 271 | **81 %** | – | – | – |
+| WDR3600, 22-ours | 136 | 41 % | −84 dBm | 770 | 0,04 % |
+| FB3390, 22-ours | 101 | 30 % | −81 dBm | **6 203 524** | **93 %** |
+
+**Das Bild aus R1 dreht sich.** Bei gleicher Software liegt die 3390 hinter dem WDR3600,
+obwohl sie gemeinsame Frames weiterhin 3 dB lauter hört. Gemeinsam hatten beide nur 40
+Frames, der WDR3600 hatte 96 exklusiv, die 3390 61.
+
+Die naheliegende Erklärung sind die Fehlauslösungen: Der Empfänger der 3390 ist zu 93 % mit
+Rauschen beschäftigt und verpasst dabei echte Präambeln. In R1 lag ihre Belegung bei 45 %,
+und dort war sie noch besser als der WDR3600. Bewiesen ist der Zusammenhang nicht, R1 und
+R2 unterscheiden sich auch in der Software und im Verkehrsaufkommen. Deshalb bekommt die
+3390 in R3 wieder 25-MPW, bei sonst gleichem Aufbau.
 
 Jede Software kommt auf mindestens zwei Geräte und jedes Gerät bekommt mindestens zwei
 Softwarestände. Nur so lassen sich die Einflüsse von Hardware und Software trennen.
