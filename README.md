@@ -31,6 +31,9 @@ ssh root@<gerät> 'sysupgrade -T /tmp/openwrt-*-sysupgrade.bin && sysupgrade -n 
 
 Die Host-Keys werden dabei neu erzeugt. Den alten `known_hosts`-Eintrag vorher entfernen.
 
+Für die TP-Link CPE510 (Pharos-Bootloader, TFTP bzw. Weboberfläche) gibt es eine eigene
+Feldanleitung: [docs/cpe510-aufbau.md](docs/cpe510-aufbau.md).
+
 ## SSH-Keys
 
 Eigene Keys gehören nach `files/local/etc/dropbear/authorized_keys`. Der Ordner ist
