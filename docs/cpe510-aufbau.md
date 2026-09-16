@@ -12,7 +12,19 @@ ITS-Patches, `otm-bridge` und ohne LuCI. Die Images liegen unter
 
 **Die Hardware-Version steht auf dem Aufkleber** (v1, v2 oder v3). Im Zweifel erst
 auslesen: Die Pharos-Oberfläche zeigt sie unter Status, ein laufendes OpenWrt unter
-`cat /tmp/sysinfo/board_name`.
+`cat /tmp/sysinfo/board_name`. **v1.1 nimmt das v1-Image**, OpenWrt führt sie nicht als
+eigenes Gerät. v2 und v3 haben eigene Board-IDs (`CPE510V2`, `CPE510V3`) und brauchen
+zwingend ihr eigenes Image.
+
+**Erst ein Gerät, dann der Rest.** Für die CPE510 v1.1 gab es 2021 einen Bootloop
+(openwrt/openwrt#7028, Absturz in `of_get_mac_address` beim Ethernet-Treiber). Das betraf
+Kernel 5.4; unser Build nutzt 5.10, in dem dieser Code umgebaut wurde. Nachgewiesen ist
+das für unser Image aber nicht. Deshalb: erst ein Gerät flashen, booten sehen und den
+Empfang prüfen, danach die übrigen.
+
+Erfahrungswert aus der Neanderfunk-Flotte: 25 Pharos-Geräte (CPE210 v1, v1.1, v3 und eine
+CPE510 v1) laufen dort mit eigener Firmware. Der Weg funktioniert also in der Praxis, eine
+schriftliche Prozedur gab es dort bisher nicht.
 
 ## Vorher: Kennung des Geräts prüfen (Region!)
 
@@ -76,6 +88,9 @@ Läuft auf dem Gerät schon OpenWrt, ist beides unnötig: Dann reicht
 ## Zurück zur TP-Link-Firmware
 
 Original-Firmware von TP-Link laden, nach `recovery.bin` umbenennen und Weg 1 gehen.
+**Diese Datei gehört zum Gerät dazu, wenn es an einen entfernten Ort geht.** Sie ist der
+einzige Rückweg, wenn dort etwas schiefgeht, und vor Ort hat niemand Erfahrung. Sie muss
+zur Hardware-Version **und zur Region** passen.
 
 ## Nach dem Flashen
 
