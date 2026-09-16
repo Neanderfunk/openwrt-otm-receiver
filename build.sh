@@ -165,6 +165,8 @@ for prof in $PROFILES; do
 		die "ImageBuilder $prof fehlgeschlagen, siehe $BUILD/ib-$prof.log"
 	mkdir -p "$OUT/$prof"
 	cp bin/targets/$TARGET/$SUBTARGET/*"$prof"*sysupgrade.bin "$OUT/$prof/"
+	# factory-Image, wo es eins gibt: Umstieg von der Herstellerfirmware
+	cp bin/targets/$TARGET/$SUBTARGET/*"$prof"*factory.bin "$OUT/$prof/" 2>/dev/null || true
 	cp bin/targets/$TARGET/$SUBTARGET/*"$prof"*.manifest "$OUT/$prof/" 2>/dev/null || true
 	cp "$FILES/etc/otm-build-info" "$OUT/$prof/build-info"
 	(cd "$OUT/$prof" && sha256sum *.bin > sha256sums)
