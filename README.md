@@ -41,8 +41,10 @@ und alle Ports hängen im Uplink. Deshalb geht SSH nur mit Key auf.
 ## Was das Gerät nach dem ersten Boot tut
 
 - **Netz**: Alle Ports hängen in einer Bridge (STP an) und beziehen per DHCP IPv4 und IPv6.
-  Auf dem Gerät läuft kein DHCP- oder RA-Server. SSH ist nur erlaubt, wenn ein Key
-  eingebacken ist, und dann nur per Key.
+  Dazu kommt **169.254.1.1/16** als Rückfalladresse, falls am Aufstellort kein DHCP-Server
+  läuft; IPv4-Link-Local kollidiert mit keinem fremden Netz. Auf dem Gerät läuft kein
+  DHCP- oder RA-Server (dnsmasq ist nur DNS-Forwarder, den ntpd ab 22.03 braucht).
+  SSH ist nur erlaubt, wenn ein Key eingebacken ist, und dann nur per Key.
 - **Funk**: Die Radios sind in `/etc/config/wireless` deaktiviert, damit netifd das
   Monitor-Interface nicht löscht. `/usr/libexec/otm-bridge-run` setzt die Regdomain (`DE`),
   sucht das phy mit 5900 MHz, legt `mon0` an (10 MHz, Half-Rate), wartet auf NTP und startet

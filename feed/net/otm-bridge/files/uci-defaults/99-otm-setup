@@ -3,7 +3,8 @@
 #
 # Runs once on first boot (OpenWrt deletes the script after success).
 # Provisions a fresh image as an opentrafficmap.org 802.11p receiver:
-#   - every Ethernet port is a DHCP client (IPv4 + IPv6), plug in anywhere:
+#   - every Ethernet port is a DHCP client (IPv4 + IPv6), plug in anywhere;
+#     plus 169.254.1.1/16 as a fallback where no DHCP server is present:
 #     all LAN ports and the WAN port go into one bridge, interface "wan",
 #     so the stock wan firewall zone applies; no DHCP/RA server on the box
 #   - if an SSH key is baked in: SSH allowed from that zone, key only;
@@ -53,6 +54,7 @@ fi
 uci -q delete network.lan
 uci -q delete network.wan
 uci -q delete network.wan6
+uci -q delete network.fallback
 uci set network.wan=interface
 uci set network.wan.device="$dev"
 uci set network.wan.proto='dhcp'
@@ -61,6 +63,14 @@ uci set network.wan6=interface
 uci set network.wan6.device="$dev"
 uci set network.wan6.proto='dhcpv6'
 uci set network.wan6.reqprefix='no'
+# Rueckfalladresse, falls am Aufstellort (noch) kein DHCP-Server laeuft:
+# IPv4-Link-Local kollidiert mit keinem fremden Netz, und ein Rechner mit
+# Link-Local-Adresse erreicht das Geraet ohne Vorwissen.
+uci set network.fallback=interface
+uci set network.fallback.device="$dev"
+uci set network.fallback.proto='static'
+uci set network.fallback.ipaddr='169.254.1.1'
+uci set network.fallback.netmask='255.255.0.0'
 uci commit network
 
 # no servers on the uplink, even if dnsmasq/odhcpd are in the image
@@ -85,6 +95,12 @@ if [ $has_key = 1 ]; then
 fi
 
 # --- Firewall: SSH from the (only) zone, if a key is present --------------
+
+# beide Interfaces in die wan-Zone, sonst greift fuer fallback die Default-Policy
+zone=$(uci -q show firewall | sed -n "s/^firewall\.\(@zone\[[0-9]*\]\)\.name='wan'$/\1/p" | head -n 1)
+if [ -n "$zone" ] && ! uci -q get firewall.$zone.network | grep -q fallback; then
+	uci add_list firewall.$zone.network='fallback'
+fi
 
 if [ $has_key = 1 ] && ! uci -q show firewall | grep -q "name='Allow-SSH-WAN'"; then
 	sec=$(uci add firewall rule)
