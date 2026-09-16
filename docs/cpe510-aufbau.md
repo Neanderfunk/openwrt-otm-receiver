@@ -14,11 +14,38 @@ ITS-Patches, `otm-bridge` und ohne LuCI. Die Images liegen unter
 auslesen: Die Pharos-Oberfläche zeigt sie unter Status, ein laufendes OpenWrt unter
 `cat /tmp/sysinfo/board_name`.
 
+## Vorher: Kennung des Geräts prüfen (Region!)
+
+Die safeloader-Images tragen eine **support-list**. Bootloader und Weboberfläche vergleichen
+damit die Kennung des Geräts, und darin steckt die **Region**. Passt sie nicht, wird das
+Image abgewiesen („Incorrect File“), ganz gleich über welchen Weg.
+
+Unsere Images akzeptieren:
+
+| Image | Kennungen |
+|---|---|
+| v1 | `CPE510(TP-LINK\|UN\|N300-5):1.0`, `…UN…:1.1`, `…US…:1.1`, `…EU…:1.1`, dazu CPE520 |
+| v2 | `EU`, `UN`, `US` je mit Regionscode `00000000`, `45550000` (ASCII „EU“) und `55530000` („US“), Version 2.0 |
+| v3 | dieselben drei Regionen, Version 3.0 und 3.20 |
+
+**Achtung bei v1:** Für Hardware **1.0** ist nur `UN` gelistet, **nicht** `EU`. Eine
+europäische v1.0 nimmt unser Image also nicht an, eine v1.1 schon.
+
+Kennung ablesen:
+- Pharos-Oberfläche: Status, z. B. „CPE510(EU) 2.0“.
+- Laufendes OpenWrt: `strings /dev/mtd$(sed -n 's/^mtd\([0-9]*\).*"product-info".*/\1/p' /proc/mtd) | grep -i cpe5`
+  (sonst Partition `support-list` oder `product-info` in `/proc/mtd` suchen).
+
+Fehlt die Kennung in der Liste, ließe sie sich ins Image aufnehmen. Dafür muss
+`tplink-safeloader` aus den OpenWrt-Quellen angepasst und das Image damit neu gebaut
+werden, der ImageBuilder allein reicht nicht.
+
 ## Weg 1: TFTP (erst probieren)
 
 Die TFTP-Recovery des Pharos-Bootloaders ist eigentlich für die Rückkehr zur
 Original-Firmware gedacht. Ob sie unser OpenWrt-Image annimmt, ist offen: Es gibt
-Berichte für beides. Lehnt sie ab („Incorrect File. Writting error.“), passiert nichts
+Berichte für beides, und die widersprüchlichen Berichte erklären sich vermutlich über die
+Region (siehe oben). Lehnt sie ab („Incorrect File. Writting error.“), passiert nichts
 Schlimmes, dann geht es mit Weg 2 weiter.
 
 1. Unser factory-Image nach **`recovery.bin`** umbenennen.
