@@ -81,7 +81,8 @@ IB="$BUILD/${IB_TAR%.tar.*}"
 
 cd "$SDK"
 if [ ! -f feeds.conf ]; then
-	grep -E '^src-git(-full)? (base|packages) ' feeds.conf.default > feeds.conf
+	# ab 25.12 steht der base-Feed als "src-git --root=package base ..." drin
+	grep -E '^src-git(-full)? (--root=\S+ )?(base|packages) ' feeds.conf.default > feeds.conf
 	echo "src-link otm $HERE/feed" >> feeds.conf
 fi
 log "feeds update/install"
@@ -91,8 +92,15 @@ log "feeds update/install"
 
 # Gepatchte Paketverzeichnisse immer vom sauberen Stand aus: kein Rest aus
 # frueheren Laeufen (auch keine unversionierten Dateien) im Image.
-MAC=package/kernel/mac80211
-REGDB=package/firmware/wireless-regdb
+# bis 24.10 ist der base-Feed der ganze OpenWrt-Baum, ab 25.12 ist er auf
+# package/ gewurzelt (--root=package), die Pfade darin sind entsprechend kuerzer
+if [ -d feeds/base/package/kernel/mac80211 ]; then
+	MAC=package/kernel/mac80211
+	REGDB=package/firmware/wireless-regdb
+else
+	MAC=kernel/mac80211
+	REGDB=firmware/wireless-regdb
+fi
 git -C feeds/base checkout -q -- "$MAC" "$REGDB"
 git -C feeds/base clean -q -fdx -- "$MAC" "$REGDB"
 [ -d "$PATCHES" ] || die "keine Patches fuer ${OWRT_VER%.*}: $PATCHES fehlt"
