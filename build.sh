@@ -87,7 +87,9 @@ if [ ! -f feeds.conf ]; then
 fi
 log "feeds update/install"
 ./scripts/feeds update -a >/dev/null
-./scripts/feeds install -p base mac80211 wireless-regdb >/dev/null
+# libpcap explizit: ab 25.12 zieht feeds install es nicht mehr als Abhaengigkeit
+# von otm-bridge nach, der Bau bricht dann an fehlendem pcap.h ab
+./scripts/feeds install -p base mac80211 wireless-regdb libpcap >/dev/null
 ./scripts/feeds install -p otm otm-bridge >/dev/null
 
 # Gepatchte Paketverzeichnisse immer vom sauberen Stand aus: kein Rest aus
