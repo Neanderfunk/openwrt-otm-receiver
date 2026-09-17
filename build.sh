@@ -150,6 +150,20 @@ find "$SDK/bin" \( -name '*.ipk' -o -name '*.apk' \) \
 	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" \) -exec cp {} "$PKGDIR/" \;
 ls "$PKGDIR" | grep -qE -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" || die "keine Pakete mit Revision $OTM_RELEASE"
 
+# Unsere Pakete auf ihre Version festnageln. Sonst gewinnt eine hoehere Version
+# aus dem Release-Repo: 25.12.4 liefert wireless-regdb 2026.05.30, unser SDK
+# baut die 2026.03.18 des base-Feeds - ohne Pin landet die ungepatchte im Image
+# (und damit kein DE-Eintrag fuer 5850-5925 MHz).
+# Bis 24.10 stimmten die Versionen zwischen SDK und Release-Repo ueberein, dort
+# reicht die hoehere Revision 91; gepinnt wird deshalb nur fuer apk.
+case "$OWRT_VER" in 2[5-9].*)
+	for p in wireless-regdb kmod-ath9k; do
+		f=$(ls "$PKGDIR/$p"-[0-9]*.apk 2>/dev/null | head -n 1) || die "$p nicht in $PKGDIR"
+		f=${f##*/}; f=${f%.apk}
+		IMAGE_PACKAGES="$IMAGE_PACKAGES $p=${f#$p-}"
+	done ;;
+esac
+
 # Herkunft ins Image (was laeuft da drei Wochen spaeter?)
 OTM_COMMIT=$(git -C "$HERE" rev-parse --short HEAD)
 git -C "$HERE" diff --quiet HEAD -- feed patches files build.sh || OTM_COMMIT="$OTM_COMMIT-dirty"
@@ -183,6 +197,15 @@ for prof in $PROFILES; do
 	# factory-Image, wo es eins gibt: Umstieg von der Herstellerfirmware
 	cp bin/targets/$TARGET/$SUBTARGET/*"$prof"*factory.bin "$OUT/$prof/" 2>/dev/null || true
 	cp bin/targets/$TARGET/$SUBTARGET/*"$prof"*.manifest "$OUT/$prof/" 2>/dev/null || true
+	# Kontrolle: im Image muessen unsere gepatchten Pakete stecken, nicht die
+	# gleichnamigen aus dem Release-Repo
+	for m in "$OUT/$prof"/*.manifest; do
+		[ -f "$m" ] || continue
+		for p in wireless-regdb kmod-ath9k; do
+			grep -qE "^$p - .*-r?$OTM_RELEASE\$" "$m" ||
+				die "$prof: $p im Image ist nicht unseres (siehe $m)"
+		done
+	done
 	cp "$FILES/etc/otm-build-info" "$OUT/$prof/build-info"
 	(cd "$OUT/$prof" && sha256sum *.bin > sha256sums)
 done
