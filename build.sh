@@ -139,6 +139,12 @@ make -j"$JOBS" package/mac80211/compile package/wireless-regdb/compile \
 # --- 2. ImageBuilder ---------------------------------------------------------
 
 cd "$IB"
+# Fehler im ImageBuilder 25.12: FormatPackages setzt pkg_ver zwischen zwei
+# Paketen nicht zurueck, dadurch erbt jedes Paket nach einem gepinnten dessen
+# Version ("breaks: world[libgcc1=<ath9k-Version>]"). Vor dem Bau reparieren.
+grep -q 'eval pkg_ver:=)' Makefile ||
+	sed -i 's/^\(  \$(eval pkg_name:=.*\)$/\1\n  $(eval pkg_ver:=)/' Makefile
+
 # bis 24.10 (opkg) liest der Index rekursiv, ab 25.12 (apk) nur "packages/*.apk"
 # - deshalb dort flach ablegen. Revision: ...-91_<arch>.ipk bzw. ...-r91.apk
 case "$OWRT_VER" in
