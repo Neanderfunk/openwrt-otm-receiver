@@ -139,11 +139,16 @@ make -j"$JOBS" package/mac80211/compile package/wireless-regdb/compile \
 # --- 2. ImageBuilder ---------------------------------------------------------
 
 cd "$IB"
-rm -rf packages/otm && mkdir -p packages/otm
-# opkg (bis 24.10): *.ipk, Revision ...-91_<arch>.ipk; apk (ab 25.12): *.apk, Revision ...-r91.apk
+# bis 24.10 (opkg) liest der Index rekursiv, ab 25.12 (apk) nur "packages/*.apk"
+# - deshalb dort flach ablegen. Revision: ...-91_<arch>.ipk bzw. ...-r91.apk
+case "$OWRT_VER" in
+2[5-9].*) PKGDIR=packages ;;
+*) PKGDIR=packages/otm; rm -rf "$PKGDIR" ;;
+esac
+mkdir -p "$PKGDIR"
 find "$SDK/bin" \( -name '*.ipk' -o -name '*.apk' \) \
-	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" \) -exec cp {} packages/otm/ \;
-ls packages/otm/ | grep -qE -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" || die "keine Pakete mit Revision $OTM_RELEASE"
+	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" \) -exec cp {} "$PKGDIR/" \;
+ls "$PKGDIR" | grep -qE -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" || die "keine Pakete mit Revision $OTM_RELEASE"
 
 # Herkunft ins Image (was laeuft da drei Wochen spaeter?)
 OTM_COMMIT=$(git -C "$HERE" rev-parse --short HEAD)
