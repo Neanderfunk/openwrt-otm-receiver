@@ -53,9 +53,9 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 
 | Gerät | 21-ours | 22-ours | 25-ours | 25-MPW |
 |---|---|---|---|---|
-| TL-WDR3600 v1 (AR9582, 2x2) | R1 | R2 | | |
+| TL-WDR3600 v1 (AR9582, 2x2) | R1 | R2, R3 | | |
 | TL-WDR4300 v1 (AR9580, 3x3) | | | | Referenz 14./15.09. (anderer Standort) |
-| FRITZ!Box 3390 (AR9580) | – (nicht in 21.02) | R2 | | R1 |
+| FRITZ!Box 3390 (AR9580) | – (nicht in 21.02) | R2 | | R1, R3 |
 | ESP32 node749 | Referenz in jeder Runde | | | |
 
 ## Runden
@@ -64,8 +64,8 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 |---|---|---|---|
 | R1 | 14.09. 20:23 bis 15.09. 20:23 | WDR3600 21-ours · 3390 25-MPW · node749 | fertig, siehe unten |
 | R2 | 15.09. 21:01 bis 16.09. 21:01 | WDR3600 22-ours · 3390 22-ours · node749 (+stats) | läuft: gleiche Software, reiner Hardwarevergleich |
-| R3 | ab 16.09. ~23:30 | WDR3600 22-ours · 3390 **25-MPW** · node749 | geplant: Software am 3390 zurück, WDR3600 unverändert |
-| R4 … | offen | Rotation, dazu WDR4300 und Antennen | geplant |
+| R3 | 16.09. 21:37 bis 17.09. 21:37 | WDR3600 22-ours · 3390 **25-MPW** · node749 (+stats) | fertig, siehe unten |
+| R4 … | offen | WDR3600 auf 25-MPW (Gegenprobe), dazu WDR4300 und Antennen | geplant |
 
 ### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
 
@@ -108,3 +108,64 @@ R2 unterscheiden sich auch in der Software und im Verkehrsaufkommen. Deshalb bek
 Jede Software kommt auf mindestens zwei Geräte und jedes Gerät bekommt mindestens zwei
 Softwarestände. Nur so lassen sich die Einflüsse von Hardware und Software trennen.
 Ein zweiter WDR3600 erlaubt zusätzlich Parallelvergleiche auf identischer Hardware.
+
+### Ergebnis R3 (3390 zurück auf 25-MPW, 244 verschiedene Frames, schwacher Verkehrstag)
+
+| Empfänger | Frames | Anteil | RSSI Median | Fehlauslösungen | Kanal belegt |
+|---|---|---|---|---|---|
+| FB3390, **25-MPW** | 181 | **74 %** | −81 dBm | 4 633 578 | 58 % |
+| node749 (ESP32) | 68 | 28 % | – | – | – |
+| WDR3600, 22-ours | 65 | 27 % | −86 dBm | 1 257 | 0,04 % |
+
+**Die Kernfrage von R3 ist beantwortet: Es liegt an der Software.** Dieselbe 3390, dasselbe
+Fenster, nur ein anderes Image — und sie geht von 101 auf 181 Frames, während die beiden
+unveränderten Empfänger daneben einbrechen (WDR3600 136 → 65, node749 271 → 68). Der Tag war
+also insgesamt schwächer, und trotzdem ist die 3390 gestiegen. Normiert:
+
+| Verhältnis | R2 (3390 = 22-ours) | R3 (3390 = 25-MPW) | Faktor |
+|---|---|---|---|
+| 3390 / WDR3600 | 0,74 | 2,78 | ×3,8 |
+| 3390 / node749 | 0,37 | 2,66 | ×7,2 |
+
+Beide Normierungen zeigen in dieselbe Richtung, im Betrag unterscheiden sie sich um fast das
+Doppelte. Belastbar ist damit die Richtung, nicht die Zahl: **auf der 3390 ist unser
+22.03-Image deutlich schlechter als Münsters 25.12.4.** In R1 war der Vorsprung derselben
+Software gegenüber dem WDR3600 mit 1,34 allerdings viel kleiner als hier mit 2,78 — die
+Streuung zwischen Tagen ist erheblich.
+
+Die Fehlauslösungen sind auch unter 25-MPW da, aber schwächer: 4,6 Mio. statt 6,2 Mio., und
+die Kanalbelegung sinkt von 93 % auf 58 %. Sie verschwinden also nicht mit der Software, aber
+sie skalieren mit ihr, und der Empfang folgt derselben Richtung. Der vermutete Zusammenhang
+„Belegung hoch → echte Präambeln verpasst“ hält damit weiterhin.
+
+Was sich zwischen den Images unterscheidet und als Ursache in Frage kommt: Kernel 6.12 gegen
+5.10 samt neuerem ath9k (Rauschflur-Kalibrierung, ANI), unser Patchsatz 995–997 gegen
+Münsters, und die Regdomain (unser NO-IR für DE gegen Münsters Weltregeln). Getrennt ist das
+noch nicht. Beide Geräte standen zum Messende auf `chanbw 0x0` und `ANI: ENABLED, OFDM LEVEL 3`,
+daran liegt es also nicht.
+
+node749 lief durchgehend: 1450 stats-Meldungen im Minutentakt, Laufzeitzähler lückenlos
++86 940 s, kein Neustart, 35 °C. Sein Einbruch auf 68 Frames ist echter Empfang.
+
+Nächster Schritt (R4): **WDR3600 auf 25-MPW.** Wenn er dort ebenso springt, liegt es an der
+Software allein; springt er nicht, ist es ein Zusammenspiel aus Chip und Software. Dafür muss
+Münsters `build.sh` mit dem Profil des WDR3600 gebaut werden.
+
+### Vorab-Antennenmessung (16.09., vor einem möglichen Tausch)
+
+Beacons fremder Access Points, je 120 s, WDR3600 gegen 3390 (`werkzeug/antennen-messen.sh`,
+Rohdaten in `geraete/antennen/vorher-*`):
+
+| Frequenz | WDR3600 gegen 3390 |
+|---|---|
+| 5500 MHz | −1,5 dB |
+| 5540 MHz | 0,0 dB |
+| 5660 MHz | −1,0 dB |
+| 5900 MHz (ITS-Frames, R1/R2/R3) | −5, −3, −5 dB |
+
+Unter 5,7 GHz sind die beiden praktisch gleich, bei 5900 MHz fällt der WDR3600 ab. Das passt
+zu Antennen, die zu hohen Frequenzen hin abfallen — genau der Verdacht bei unbekannten
+TP-Link-Dipolen. Unabhängig davon hat die 3390 **drei Empfangsketten** (`rx_chainmask 7`,
+AR9580 3x3), der WDR3600 nur **zwei** (`rx_chainmask 3`, AR9582 2x2); das sind rechnerisch
+etwa 1,8 dB, die kein Antennentausch ändert. Der geplante Tausch gegen die Antennen des
+WDR4300 trennt beide Anteile, weil die Kettenzahl dabei gleich bleibt.
