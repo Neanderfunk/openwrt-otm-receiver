@@ -8,6 +8,10 @@
 #   runde-starten.sh referenz <host> <topic-praefix> <credfile> <ende-UTC>
 #       z. B. referenz 192.168.97.183 its/node749 ~/.config/otm/node749-mqtt "2026-09-16 21:05"
 #       schneidet <praefix>/packet und <praefix>/stats in getrennten Prozessen mit.
+#   runde-starten.sh referenz-lokal <ziel-verzeichnis> <topic-praefix> <credfile> <ende-UTC>
+#       dasselbe, aber auf diesem Rechner - noetig ab OpenWrt 25.12: der
+#       mosquitto_sub der alten Feeds braucht libssl.so.1.1, auf dem Geraet
+#       liegt OpenSSL 3. Binary aus $MOSQ (Standard: mosquitto_sub aus dem PATH).
 #
 # SSH-Key: $OTM_KEY (Standard ~/.ssh/id_ed25519_otm).
 
@@ -41,7 +45,10 @@ messung)
 		# im Image vorhanden (z. B. Muensters Build): nehmen statt holen
 		ssh "${K[@]}" root@"$host" "ln -sf $vorhanden /tmp/otm-baseline/x/usr/bin/tcpdump"
 	else
-		case "$ver" in 2[5-9].*) echo "OpenWrt $ver: tcpdump fehlt und apk-Feeds werden noch nicht unterstuetzt" >&2; exit 1 ;; esac
+		# Ab 25.12 liefern die Feeds .apk statt .ipk; statt die zu entpacken
+		# nehmen wir das tcpdump des 22.03-Feeds mit. Es laeuft dort
+		# unveraendert (musl 1.2, eigene libpcap per LD_LIBRARY_PATH).
+		case "$ver" in 2[5-9].*) ver=${TOOLS_VER:-22.03.7} ;; esac
 		hole "$ver" "$arch" base tcpdump-mini
 		hole "$ver" "$arch" base libpcap1
 		scp -O -q "${K[@]}" "$CACHE/$ver/x/usr/sbin/tcpdump" root@"$host":/tmp/otm-baseline/x/usr/bin/tcpdump 2>/dev/null ||
@@ -75,6 +82,25 @@ referenz)
 	sleep 5
 	ssh "${K[@]}" root@"$host" 'ps w | grep -c "[o]tm-ref/bin/mosquitto_sub"; cat /tmp/otm-ref/*.err'
 	;;
+referenz-lokal)
+	ziel=$2 praefix=$3 cred=$4 ende=$5
+	mkdir -p "$ziel"
+	# shellcheck disable=SC1090
+	. <(sed 's/^/local_/' "$cred")
+	W=$(( $(date -u -d "$ende" +%s) - $(date -u +%s) ))
+	# Optionsdatei (600): Passwort steht damit nicht in der Prozessliste
+	umask 077
+	printf -- '-h cits1.opentrafficmap.org\n-p 8883\n--capath /etc/ssl/certs\n-u %s\n-P %s\n' \
+		"$local_user" "$local_pass" > "$ziel/mosquitto_sub"
+	for t in packet stats; do
+		XDG_CONFIG_HOME="$ziel" nohup "${MOSQ:-mosquitto_sub}" \
+			-i "otm-ref-$t-$(date +%s)" -t "$praefix/$t" -F '%U %x' -W "$W" \
+			> "$ziel/$t.log" 2> "$ziel/$t.err" &
+	done
+	sleep 5
+	pgrep -fc "otm-ref-.*-" || true
+	cat "$ziel"/*.err
+	;;
 *)
-	sed -n '2,13p' "$0"; exit 1 ;;
+	sed -n '2,17p' "$0"; exit 1 ;;
 esac
