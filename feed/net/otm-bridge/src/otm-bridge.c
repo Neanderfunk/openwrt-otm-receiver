@@ -25,11 +25,13 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.11.1"
+#define OTM_BRIDGE_VERSION "0.11.2"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
 static volatile sig_atomic_t running = 1;
+/* 0, solange keine Broker-Verbindung steht; siehe stats_thread */
+static volatile sig_atomic_t mqtt_up;
 
 static char topic_packet[160];
 static char topic_status[160];
@@ -166,8 +168,19 @@ static void *stats_thread(void *arg)
 	while (running) {
 		for (int i = 0; i < STATS_INTERVAL && running; i++)
 			sleep(1);
-		if (running)
+		if (running && mqtt_up)
 			publish_stats(mosq);
+		/* Scheitert der erste Verbindungsversuch nach dem Boot (der
+		 * Broker ist per DNS/Route noch nicht erreichbar, die Uhr
+		 * springt gerade), versucht es die libmosquitto-Schleife von
+		 * sich aus nicht wieder: der Knoten bliebe fuer immer stumm,
+		 * obwohl er empfaengt. Deshalb hier selbst nachfassen. */
+		if (running && !mqtt_up) {
+			int rc = mosquitto_reconnect_async(mosq);
+			if (rc != MOSQ_ERR_SUCCESS)
+				syslog(LOG_WARNING, "mqtt reconnect: %s",
+				       mosquitto_strerror(rc));
+		}
 	}
 	return NULL;
 }
@@ -179,6 +192,7 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 		syslog(LOG_ERR, "mqtt connect rc=%d (%s)", rc, mosquitto_connack_string(rc));
 		return;
 	}
+	mqtt_up = 1;
 	syslog(LOG_INFO, "mqtt connected, topic=its/<node>/packet");
 
 	mosquitto_publish(m, NULL, topic_status,
@@ -198,6 +212,7 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 static void on_disconnect(struct mosquitto *m, void *ud, int rc)
 {
 	(void)m; (void)ud;
+	mqtt_up = 0;
 	syslog(LOG_WARNING, "mqtt disconnected rc=%d", rc);
 }
 
