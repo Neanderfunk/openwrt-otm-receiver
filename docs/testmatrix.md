@@ -53,7 +53,7 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 
 | Gerät | 21-ours | 22-ours | 25-ours | 25-MPW |
 |---|---|---|---|---|
-| TL-WDR3600 v1 (AR9582, 2x2) | R1 | R2, R3 | | |
+| TL-WDR3600 v1 (AR9582, 2x2) | R1 | R2, R3 | R4 | |
 | TL-WDR4300 v1 (AR9580, 3x3) | | | | Referenz 14./15.09. (anderer Standort) |
 | FRITZ!Box 3390 (AR9580) | – (nicht in 21.02) | R2 | | R1, R3 |
 | ESP32 node749 | Referenz in jeder Runde | | | |
@@ -63,9 +63,10 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 | Runde | Zeitraum (UTC) | Belegung | Status |
 |---|---|---|---|
 | R1 | 14.09. 20:23 bis 15.09. 20:23 | WDR3600 21-ours · 3390 25-MPW · node749 | fertig, siehe unten |
-| R2 | 15.09. 21:01 bis 16.09. 21:01 | WDR3600 22-ours · 3390 22-ours · node749 (+stats) | läuft: gleiche Software, reiner Hardwarevergleich |
+| R2 | 15.09. 21:01 bis 16.09. 21:01 | WDR3600 22-ours · 3390 22-ours · node749 (+stats) | fertig, siehe unten |
 | R3 | 16.09. 21:37 bis 17.09. 21:37 | WDR3600 22-ours · 3390 **25-MPW** · node749 (+stats) | fertig, siehe unten |
-| R4 … | offen | WDR3600 auf 25-MPW (Gegenprobe), dazu WDR4300 und Antennen | geplant |
+| R4 | 18.09. 00:15 bis 19.09. 00:15 | WDR3600 **25-ours** · 3390 25-MPW (unverändert) · node749 | fertig, siehe unten |
+| R5 | geplant | WDR3600 25-ours · 3390 **25-ours** · node749 | trennt unsere Patches von der OpenWrt-Version |
 
 ### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
 
@@ -150,6 +151,64 @@ node749 lief durchgehend: 1450 stats-Meldungen im Minutentakt, Laufzeitzähler l
 Nächster Schritt (R4): **WDR3600 auf 25-MPW.** Wenn er dort ebenso springt, liegt es an der
 Software allein; springt er nicht, ist es ein Zusammenspiel aus Chip und Software. Dafür muss
 Münsters `build.sh` mit dem Profil des WDR3600 gebaut werden.
+
+### Ergebnis R4 (WDR3600 auf 25-ours, 3390 unverändert, 283 verschiedene Frames)
+
+| Empfänger | Frames | Anteil | RSSI Median | Fehlauslösungen | Kanal belegt |
+|---|---|---|---|---|---|
+| FB3390, 25-MPW (unverändert) | 192 | 68 % | −81 dBm | 4 956 532 | 59,7 % |
+| node749 (ESP32) | 137 | 48 % | – | – | – |
+| WDR3600, **25-ours** | 95 | 34 % | −85 dBm | 1 620 | 0,22 % |
+
+**Der WDR3600 springt nicht.** Die 3390 hatte beim Wechsel auf 25.12 um den Faktor 3,8
+zugelegt; hier ist nichts Vergleichbares zu sehen, und die beiden Normierungen
+widersprechen sich sogar:
+
+| Verhältnis | R3 (WDR3600 = 22-ours) | R4 (WDR3600 = 25-ours) | Faktor |
+|---|---|---|---|
+| WDR3600 / FB3390 | 0,36 | 0,49 | ×1,38 |
+| WDR3600 / node749 | 0,96 | 0,69 | ×0,72 |
+
+Bei 95 gezählten Frames beträgt allein die Zählunsicherheit rund ±10 %; der Unterschied
+zwischen 0,36 und 0,49 liegt bei etwa 1,5 Standardabweichungen. **Das ist kein Befund,
+das ist Rauschen.** Für den WDR3600 gilt zwischen 21.02, 22.03 und 25.12 bisher: Jacke
+wie Hose.
+
+Damit ist die naheliegende Erklärung für R3 vom Tisch: Es ist nicht einfach „25.12 ist
+besser als 22.03". Der Effekt sitzt in der Kombination aus der 3390 und unserem
+22.03-Bau. Dazu passt auch, dass der WDR3600 unter 25.12 weiterhin praktisch keine
+Fehlauslösungen hat (1620 in 24 h, 0,22 % Belegung) — der neuere ath9k erzeugt sie also
+nicht, und der alte verhindert sie nicht. Die Fehlauslösungen gehören zur 3390.
+
+node749 lief wieder lückenlos (1439 Meldungen, kein Neustart, 33,6–37,8 °C), schwankt
+aber zwischen den Runden am stärksten von allen dreien (474 → 271 → 68 → 137 Frames) und
+taugt deshalb nur bedingt als Normierung.
+
+Nächster Schritt (R5): **die 3390 auf 25-ours.** Das ist der einzige verbliebene
+Einzelschritt, der unsere Patches und die NO-IR-Regdomain von der OpenWrt-Version trennt,
+und zwar genau auf dem Gerät, auf dem der Effekt groß genug ist, um aus dem Rauschen zu
+ragen.
+
+### Antennenmessung (16.09. und 19.09.) — Methodikfehler
+
+Die Wiederholung am 19.09. zeigt den WDR3600 bei denselben Access Points durchgängig
+schlechter als am 16.09.:
+
+| Frequenz | Access Point | 16.09. | 19.09. |
+|---|---|---|---|
+| 5500 MHz | 64:dd:68:ae:a3:7a | −1,0 dB | −4,0 dB |
+| 5500 MHz | 66:7a:68:ae:a3:7b/7c | −2,0 dB | −5,0 dB |
+| 5540 MHz | 8x:8a:20:b5:4f:a0 (fünf BSSIDs) | 0,0 dB | −1,0 dB |
+| 5660 MHz | 60:63:4c:31:3f:38/39/3a | −1,0 dB | −2,0 … −3,0 dB |
+
+**Daraus lässt sich nichts über die Antennen schließen**, denn zwischen beiden Terminen
+hat sich auf *beiden* Seiten die Software geändert: der WDR3600 von 22-ours auf 25-ours,
+die 3390 von 22-ours auf 25-MPW. Die Referenz war also nicht fest. Ob jemand zwischendurch
+die Antennen umgesteckt hat, ist damit nicht von der Software zu trennen.
+
+Lehre für die Methode: **Der Antennenvergleich muss unmittelbar vor und nach dem Umstecken
+laufen, ohne jede Softwareänderung dazwischen** — am besten beide Messungen innerhalb einer
+Stunde. Die Werte vom 19.09. dienen ab jetzt als neue Ausgangsbasis (`geraete/antennen/nachher-r4-*`).
 
 ### Vorab-Antennenmessung (16.09., vor einem möglichen Tausch)
 
