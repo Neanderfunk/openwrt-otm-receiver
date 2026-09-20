@@ -55,7 +55,9 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 |---|---|---|---|---|
 | TL-WDR3600 v1 (AR9582, 2x2) | R1 | R2, R3 | R4 | |
 | TL-WDR4300 v1 (AR9580, 3x3) | | | | Referenz 14./15.09. (anderer Standort) |
-| FRITZ!Box 3390 (AR9580) | – (nicht in 21.02) | R2 | | R1, R3 |
+| FRITZ!Box 3390 (AR9580) | – (nicht in 21.02) | R2 | R5 | R1, R3, R4 |
+| NanoStation M5 (Klon, AR9280) | gebaut, steht noch im Keller | – (nur bis 22.03) | – | – |
+| LiteBeam M5 XW (AR9342) | – (erst ab 25.12) | – | gebaut, noch nicht geflasht | – |
 | ESP32 node749 | Referenz in jeder Runde | | | |
 
 ## Runden
@@ -66,7 +68,8 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 | R2 | 15.09. 21:01 bis 16.09. 21:01 | WDR3600 22-ours · 3390 22-ours · node749 (+stats) | fertig, siehe unten |
 | R3 | 16.09. 21:37 bis 17.09. 21:37 | WDR3600 22-ours · 3390 **25-MPW** · node749 (+stats) | fertig, siehe unten |
 | R4 | 18.09. 00:15 bis 19.09. 00:15 | WDR3600 **25-ours** · 3390 25-MPW (unverändert) · node749 | fertig, siehe unten |
-| R5 | geplant | WDR3600 25-ours · 3390 **25-ours** · node749 | trennt unsere Patches von der OpenWrt-Version |
+| R5 | 19.09. 00:58 bis 20.09. 00:58 | WDR3600 25-ours · 3390 **25-ours** · node749 | fertig, siehe unten |
+| R6 | geplant | 3390 mit 25-ours **ohne Patch 997** · WDR3600 unverändert | prüft den Verdächtigen aus R5 |
 
 ### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
 
@@ -151,6 +154,60 @@ node749 lief durchgehend: 1450 stats-Meldungen im Minutentakt, Laufzeitzähler l
 Nächster Schritt (R4): **WDR3600 auf 25-MPW.** Wenn er dort ebenso springt, liegt es an der
 Software allein; springt er nicht, ist es ein Zusammenspiel aus Chip und Software. Dafür muss
 Münsters `build.sh` mit dem Profil des WDR3600 gebaut werden.
+
+### Ergebnis R5 (beide Geräte 25-ours) — es liegt an unserem Bau
+
+24 h auf den Geräten, dazu der Abgleich im Zeitfenster der Referenz (00:59 bis 21:43 UTC,
+danach ist der lokale `mosquitto_sub` weggebrochen), 105 verschiedene Frames:
+
+| Empfänger | Frames (Fenster) | Anteil | Frames (24 h) | RSSI Median | Fehlauslösungen | Kanal belegt |
+|---|---|---|---|---|---|---|
+| node749 (ESP32) | 60 | 57 % | – | – | – | – |
+| WDR3600, 25-ours | 57 | 54 % | 59 | -86 dBm | 1 464 | 0,21 % |
+| FB3390, **25-ours** | 30 | **29 %** | 31 | -80 dBm | **6 066 242** | **86 %** |
+
+**Die 3390 bricht mit unserem Bau ein, bei jeder OpenWrt-Version.** Über alle fünf Runden,
+normiert auf den danebenstehenden WDR3600:
+
+| Runde | Software 3390 | 3390 / WDR3600 | Kanal belegt |
+|---|---|---|---|
+| R1 | 25-MPW | 1,34 | 45 % |
+| R2 | **22-ours** | **0,74** | **93 %** |
+| R3 | 25-MPW | 2,78 | 58 % |
+| R4 | 25-MPW | 2,02 | 60 % |
+| R5 | **25-ours** | **0,53** | **86 %** |
+
+Die beiden Gruppen überschneiden sich nicht. Zwei OpenWrt-Versionen, fünf Runden, dieselbe
+Hardware am selben Fenster: Mit Münsters Bau liegt die 3390 vorn, mit unserem hinten, und
+die Kanalbelegung springt dabei von rund 60 auf über 85 Prozent. Das ist kein Rauschen mehr.
+
+**Was sich zwischen den beiden Bauten überhaupt unterscheidet** (bei gleicher OpenWrt-Version
+25.12.4, Patches Zeile für Zeile verglichen):
+
+| | unser Bau | Münsters Bau |
+|---|---|---|
+| ath9k-Kanalliste (995 / 600) | identisch | identisch |
+| ath-regd bis 5925 (996 / 450) | identisch | identisch |
+| **Half-Rate erzwingen (997 / 610)** | **angewendet** | **nicht angewendet** |
+| regdb-Regel | `(5850 - 5925 @ 20), (33), NO-IR` | `(5850 - 5925 @ 20), (33)` |
+
+Der Code von 997 und 610 ist zeichengleich, Münsters `build.sh` kopiert den Patch nur nicht
+mit. Damit bleibt genau ein Verdächtiger, der die Hardware anfasst: **wir erzwingen
+`CHANNEL_HALF` in `ath9k_cmn_update_ichannel`, Münster nicht.** Und wir wissen aus dem
+fcsfail-Mitschnitt vom 14.09., dass die 3390 auch ohne diesen Patch im Half-Rate läuft
+(Radiotap-Kanalflags 0x4140, 3 Mbit/s) — auf 25.12 ist er schlicht überflüssig. Die
+naheliegende Erklärung: Das erzwungene Umschreiben der Kanalflags bringt die
+Rauschflur-Kalibrierung und ANI der AR9580 durcheinander, der Empfänger triggert sich
+tot. Der zweite Unterschied, NO-IR, betrifft nur die Sendeerlaubnis und sollte die
+PHY nicht berühren.
+
+Bemerkenswert: **Der WDR3600 zeigt davon nichts** (0,21 % Belegung mit demselben Bau, 
+demselben Patch). Der Effekt hängt am AR9580 der 3390. Der WDR4300 hat denselben Chip und
+läuft an seinem Standort seit Monaten mit Münsters Bau unauffällig — er wäre die
+Gegenprobe.
+
+Nächster Schritt (R6): dieselbe 3390, derselbe Bau, **nur ohne Patch 997**. Ein einziger
+Unterschied, und die Frage ist damit entschieden.
 
 ### Ergebnis R4 (WDR3600 auf 25-ours, 3390 unverändert, 283 verschiedene Frames)
 
