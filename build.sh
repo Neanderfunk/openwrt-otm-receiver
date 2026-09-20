@@ -34,6 +34,11 @@ PROFILES="${PROFILES:-tplink_tl-wdr4300-v1 tplink_tl-wdr3600-v1}"
 # Eigene Paket-Revision, damit opkg im ImageBuilder unsere Pakete den
 # gleichnamigen aus dem Release-Repo vorzieht.
 OTM_RELEASE="${OTM_RELEASE:-91}"
+# Fuer A/B-Tests: Patches weglassen (Dateinamen-Muster, durch Leerzeichen
+# getrennt, z. B. SKIP_PATCHES="997-*") und die Variante benennen, damit
+# Image-Name, Ausgabeverzeichnis und build-info sie auseinanderhalten.
+SKIP_PATCHES="${SKIP_PATCHES:-}"
+OTM_VARIANT="${OTM_VARIANT:-}"
 JOBS="${JOBS:-$(nproc)}"
 
 HERE="${OTM_HERE:?}"
@@ -57,6 +62,13 @@ lantiq) IMAGE_PACKAGES="$IMAGE_PACKAGES -ppp-mod-pppoa -ltq-vdsl-app -ltq-vdsl-v
 esac
 
 log()  { printf '\033[1;34m[otm]\033[0m %s\n' "$*"; }
+uebersprungen() { # Patchpfad -> 0, wenn er laut SKIP_PATCHES entfallen soll
+	local m n=${1##*/}
+	for m in $SKIP_PATCHES; do
+		case "$n" in $m) return 0 ;; esac
+	done
+	return 1
+}
 die()  { printf '\033[1;31m[otm]\033[0m %s\n' "$*" >&2; exit 1; }
 
 mkdir -p "$BUILD"
@@ -108,12 +120,23 @@ git -C feeds/base clean -q -fdx -- "$MAC" "$REGDB"
 [ -d "$PATCHES" ] || die "keine Patches fuer ${OWRT_VER%.*}: $PATCHES fehlt"
 # je Unterordner (ath, ath9k, ...) in den gleichnamigen des Pakets: die
 # Ordner-Reihenfolge von mac80211 bestimmt, auf welchem Stand ein Patch aufsetzt
-for d in "$PATCHES"/mac80211/*/; do
+GENOMMEN=""
+for d in "$PATCHES"/mac80211/*/ "$PATCHES"/wireless-regdb/; do
 	d=${d%/}
-	mkdir -p "feeds/base/$MAC/patches/${d##*/}"
-	cp "$d"/*.patch "feeds/base/$MAC/patches/${d##*/}/"
+	case "$d" in
+	*/wireless-regdb) ziel="feeds/base/$REGDB/patches" ;;
+	*) ziel="feeds/base/$MAC/patches/${d##*/}"; mkdir -p "$ziel" ;;
+	esac
+	for f in "$d"/*.patch; do
+		if uebersprungen "$f"; then
+			log "Patch ausgelassen: ${f##*/}"
+			continue
+		fi
+		cp "$f" "$ziel/"
+		GENOMMEN="$GENOMMEN ${f##*/}"
+	done
 done
-cp "$PATCHES"/wireless-regdb/*.patch "feeds/base/$REGDB/patches/"
+[ -n "$GENOMMEN" ] || die "kein einziger Patch uebrig (SKIP_PATCHES=$SKIP_PATCHES)"
 sed -i "s/^PKG_RELEASE:=.*/PKG_RELEASE:=$OTM_RELEASE/" "feeds/base/$MAC/Makefile" "feeds/base/$REGDB/Makefile"
 
 # Nur bauen, was wir brauchen (SDK-Vorgabe waere "alles").
@@ -171,7 +194,7 @@ case "$OWRT_VER" in 2[5-9].*)
 esac
 
 # Herkunft ins Image (was laeuft da drei Wochen spaeter?)
-OTM_COMMIT=$(git -C "$HERE" rev-parse --short HEAD)
+OTM_COMMIT=$(git -C "$HERE" rev-parse --short HEAD)${OTM_VARIANT:+-$OTM_VARIANT}
 git -C "$HERE" diff --quiet HEAD -- feed patches files build.sh || OTM_COMMIT="$OTM_COMMIT-dirty"
 # files/common (im Repo) und files/local (gitignored, eigene SSH-Keys u. a.)
 FILES="$BUILD/files"
@@ -186,10 +209,11 @@ otm_commit=$OTM_COMMIT
 built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 openwrt=$OWRT_VER $TARGET/$SUBTARGET (SDK + ImageBuilder)
 otm_pkg_release=$OTM_RELEASE
-patches=$(cd "$PATCHES" && find . -name '*.patch' | sort | tr '\n' ' ')
+patches=$(echo $GENOMMEN | tr ' ' '\n' | sort | tr '\n' ' ')
+patches_ausgelassen=${SKIP_PATCHES:-keine}
 EOF
 
-OUT="$BUILD/out/$OWRT_VER"
+OUT="$BUILD/out/$OWRT_VER${OTM_VARIANT:+-$OTM_VARIANT}"
 for prof in $PROFILES; do
 	log "Image $prof"
 	# alte Images dieses Profils weg, sonst landen sie mit in out/
