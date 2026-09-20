@@ -11,7 +11,9 @@
 #   runde-starten.sh referenz-lokal <ziel-verzeichnis> <topic-praefix> <credfile> <ende-UTC>
 #       dasselbe, aber auf diesem Rechner - noetig ab OpenWrt 25.12: der
 #       mosquitto_sub der alten Feeds braucht libssl.so.1.1, auf dem Geraet
-#       liegt OpenSSL 3. Binary aus $MOSQ (Standard: mosquitto_sub aus dem PATH).
+#       liegt OpenSSL 3. Binary aus $MOSQ (Standard: mosquitto_sub aus dem PATH;
+#       ohne Paket: apt-get download mosquitto-clients libmosquitto1 + dpkg -x
+#       nach build/messwerkzeug/host/root, LD_LIBRARY_PATH mitgeben).
 #
 # SSH-Key: $OTM_KEY (Standard ~/.ssh/id_ed25519_otm).
 
@@ -105,7 +107,7 @@ referenz-lokal)
 					>> "$ziel/$t.log" 2>> "$ziel/$t.err"
 				sleep 5
 			done
-		) &
+		) >/dev/null 2>&1 &
 	done
 	sleep 5
 	pgrep -fc "otm-ref-.*-" || true
