@@ -87,15 +87,25 @@ referenz-lokal)
 	mkdir -p "$ziel"
 	# shellcheck disable=SC1090
 	. <(sed 's/^/local_/' "$cred")
-	W=$(( $(date -u -d "$ende" +%s) - $(date -u +%s) ))
 	# Optionsdatei (600): Passwort steht damit nicht in der Prozessliste
 	umask 077
 	printf -- '-h cits1.opentrafficmap.org\n-p 8883\n--capath /etc/ssl/certs\n-u %s\n-P %s\n' \
 		"$local_user" "$local_pass" > "$ziel/mosquitto_sub"
+	# mosquitto_sub verbindet sich nach einem Abbruch nicht von selbst neu (in R5
+	# riss die Referenz 3 h vor Schluss ab). Deshalb in einer Schleife bis zum
+	# Endzeitpunkt, Ausgabe angehaengt.
+	ende_ts=$(date -u -d "$ende" +%s)
 	for t in packet stats; do
-		XDG_CONFIG_HOME="$ziel" nohup "${MOSQ:-mosquitto_sub}" \
-			-i "otm-ref-$t-$(date +%s)" -t "$praefix/$t" -F '%U %x' -W "$W" \
-			> "$ziel/$t.log" 2> "$ziel/$t.err" &
+		(
+			export XDG_CONFIG_HOME="$ziel"
+			while [ "$(date -u +%s)" -lt "$ende_ts" ]; do
+				"${MOSQ:-mosquitto_sub}" -i "otm-ref-$t-$(date +%s)" \
+					-t "$praefix/$t" -F '%U %x' \
+					-W $(( ende_ts - $(date -u +%s) )) \
+					>> "$ziel/$t.log" 2>> "$ziel/$t.err"
+				sleep 5
+			done
+		) &
 	done
 	sleep 5
 	pgrep -fc "otm-ref-.*-" || true
