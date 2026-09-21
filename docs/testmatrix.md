@@ -69,7 +69,8 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 | R3 | 16.09. 21:37 bis 17.09. 21:37 | WDR3600 22-ours · 3390 **25-MPW** · node749 (+stats) | fertig, siehe unten |
 | R4 | 18.09. 00:15 bis 19.09. 00:15 | WDR3600 **25-ours** · 3390 25-MPW (unverändert) · node749 | fertig, siehe unten |
 | R5 | 19.09. 00:58 bis 20.09. 00:58 | WDR3600 25-ours · 3390 **25-ours** · node749 | fertig, siehe unten |
-| R6 | geplant | 3390 mit 25-ours **ohne Patch 997** · WDR3600 unverändert | prüft den Verdächtigen aus R5 |
+| R6 | 20.09. 01:41 bis 21.09. 01:40 | 3390 mit 25-ours **ohne Patch 997** · WDR3600 unverändert | fertig, siehe unten |
+| R7 | geplant | 3390 zurück auf 25-MPW, dazu ANI-Aufzeichnung auf beiden Geräten | sucht den Mechanismus |
 
 ### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
 
@@ -154,6 +155,49 @@ node749 lief durchgehend: 1450 stats-Meldungen im Minutentakt, Laufzeitzähler l
 Nächster Schritt (R4): **WDR3600 auf 25-MPW.** Wenn er dort ebenso springt, liegt es an der
 Software allein; springt er nicht, ist es ein Zusammenspiel aus Chip und Software. Dafür muss
 Münsters `build.sh` mit dem Profil des WDR3600 gebaut werden.
+
+### Ergebnis R6 (3390 ohne Patch 997) — Hypothese widerlegt, dafür eine bessere Spur
+
+| Empfänger | Frames | Anteil (von 80) | Fehlauslösungen | Kanal belegt |
+|---|---|---|---|---|
+| node749 (ESP32) | 49 | 61 % | – | – |
+| FB3390, 25-ours **ohne 997** | 41 | 51 % | **6 462 567** | **82 %** |
+| WDR3600, 25-ours | 34 | 43 % | 1 516 | 0,21 % |
+
+**Patch 997 ist nicht die Ursache.** Ohne ihn liegen Fehlauslösungen und Kanalbelegung
+praktisch unverändert bei 6,46 Mio. und 82 % (mit ihm: 6,07 Mio. und 86 %) und damit weiter
+deutlich über Münsters Bau (4,6 bis 5,0 Mio., 58 bis 60 %).
+
+Meine Stichprobe von 60 Sekunden direkt nach dem Flash hatte das Gegenteil nahegelegt
+(3420/min, 53 %). Sie war schlicht zu kurz und lag nachts. **Lehre: Diese Rate schwankt
+über den Tag um mehr als das Zehnfache, Stichproben unter einer Stunde sagen nichts.**
+
+Das Frame-Verhältnis 3390/WDR3600 stieg von 0,53 auf 1,21. Bei 41 und 34 gezählten Frames
+ist das etwa zwei Standardabweichungen und für sich genommen kein Beleg.
+
+**Die eigentliche Erkenntnis steckt im Tagesgang.** Fehlauslösungen pro Sekunde, Mittel je
+Stunde Ortszeit:
+
+| Stunde | 00 | 03 | 06 | 09 | 12 | 15 | 18 | 21 |
+|---|---|---|---|---|---|---|---|---|
+| R4, **25-MPW** | 88 | 80 | 90 | **6** | 38 | 23 | 35 | 80 |
+| R5, 25-ours mit 997 | 61 | 58 | 59 | 59 | 80 | 79 | 78 | 73 |
+| R6, 25-ours ohne 997 | 69 | 77 | 76 | 73 | 81 | 76 | 77 | 73 |
+
+Mit Münsters Bau **beruhigt sich der Empfänger tagsüber** und fällt von rund 85 auf 6 bis
+45 Fehlauslösungen pro Sekunde. Mit unserem bleibt er rund um die Uhr bei etwa 78 pro
+Sekunde, also am Anschlag. Das ist kein Unterschied im Pegel, sondern einer im **Verhalten**:
+Etwas regelt dort nach und bei uns nicht.
+
+Der naheliegende Kandidat ist **ANI**, die Störfestigkeits-Regelung von ath9k. Sie hebt die
+Erkennungsschwellen, wenn zu viele Fehlauslösungen auftreten. Auf unserem Bau steht sie auf
+`ENABLED`, `OFDM LEVEL 3`, mit 68 Resets in 24 h. Ob sie unter Münsters Bau tatsächlich
+höher regelt, ist die Frage von R7: dieselbe 3390 zurück auf 25-MPW, dazu auf beiden
+Geräten ein Minutenprotokoll der ANI-Stufen (`werkzeug/ani-log.sh`).
+
+Was als Unterschied zwischen den Bauten übrig bleibt, nachdem 997 ausgeschlossen ist:
+unsere regdb-Regel trägt **NO-IR**, Münsters nicht. Ein Kanal, auf dem nicht gesendet werden
+darf, könnte im Treiber anders behandelt werden — belegt ist das nicht.
 
 ### Ergebnis R5 (beide Geräte 25-ours) — es liegt an unserem Bau
 
