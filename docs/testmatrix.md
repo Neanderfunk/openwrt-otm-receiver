@@ -70,7 +70,8 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 | R4 | 18.09. 00:15 bis 19.09. 00:15 | WDR3600 **25-ours** · 3390 25-MPW (unverändert) · node749 | fertig, siehe unten |
 | R5 | 19.09. 00:58 bis 20.09. 00:58 | WDR3600 25-ours · 3390 **25-ours** · node749 | fertig, siehe unten |
 | R6 | 20.09. 01:41 bis 21.09. 01:40 | 3390 mit 25-ours **ohne Patch 997** · WDR3600 unverändert | fertig, siehe unten |
-| R7 | geplant | 3390 zurück auf 25-MPW, dazu ANI-Aufzeichnung auf beiden Geräten | sucht den Mechanismus |
+| R7 | 21.09. 02:05 bis 22.09. 02:04 | 3390 zurück auf 25-MPW, ANI-Aufzeichnung auf beiden Geräten | fertig, siehe unten |
+| R8 | 22.09. läuft | unverändert wie R7 | sammelt weitere Tage für die Streuung |
 
 ### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
 
@@ -155,6 +156,57 @@ node749 lief durchgehend: 1450 stats-Meldungen im Minutentakt, Laufzeitzähler l
 Nächster Schritt (R4): **WDR3600 auf 25-MPW.** Wenn er dort ebenso springt, liegt es an der
 Software allein; springt er nicht, ist es ein Zusammenspiel aus Chip und Software. Dafür muss
 Münsters `build.sh` mit dem Profil des WDR3600 gebaut werden.
+
+### Ergebnis R7 (3390 zurück auf 25-MPW, Verkehrstag mit 640 Frames) — zwei Korrekturen
+
+Endlich ein Tag mit brauchbaren Zahlen:
+
+| Empfänger | Frames | Anteil | Fehlauslösungen | Kanal belegt |
+|---|---|---|---|---|
+| node749 (ESP32) | 434 | 68 % | – | – |
+| WDR3600, 25-ours | 397 | 62 % | 1 739 | 0,21 % |
+| FB3390, **25-MPW** | 295 | 46 % | 6 188 310 | 58 % |
+
+**Korrektur 1: Die Trennung „unser Bau schlecht, Münsters gut" hält nicht.** Mit Münsters
+Bau und ordentlicher Statistik liegt die 3390 bei 0,74 gegenüber dem WDR3600 — demselben
+Wert wie in R2 mit unserem Bau. Alle Runden im Überblick:
+
+| Runde | Software 3390 | Frames 3390 / WDR3600 | Verhältnis |
+|---|---|---|---|
+| R1 | 25-MPW | 417 / 312 | 1,34 |
+| R2 | 22-ours | 101 / 136 | 0,74 |
+| R3 | 25-MPW | 181 / 65 | 2,78 |
+| R4 | 25-MPW | 192 / 95 | 2,02 |
+| R5 | 25-ours | 31 / 59 | 0,53 |
+| R6 | 25-ours ohne 997 | 41 / 34 | 1,21 |
+| R7 | **25-MPW** | **295 / 397** | **0,74** |
+
+Die Streuung **innerhalb** der Münster-Gruppe (0,74 bis 2,78) ist größer als der Abstand
+zwischen den Gruppenmitteln. Damit ist die Aussage aus R5 nicht haltbar: Was ich für einen
+Software-Effekt gehalten habe, war überwiegend Tagesschwankung, verstärkt durch Runden mit
+nur 30 bis 190 Frames. Die Runden mit den größten Zahlen — R1 (1,34) und R7 (0,74) — laufen
+beide unter Münsters Bau und unterscheiden sich um Faktor 1,8.
+
+**Korrektur 2: ANI ist nicht der Mechanismus, und der Tagesgang war ein Zufallsbefund.**
+Das Minutenprotokoll zeigt auf **beiden** Geräten unter **beiden** Bauten 24 Stunden lang
+unverändert `OFDM LEVEL 3`. Die Regelung rührt sich also gar nicht. Und die
+Fehlauslösungsrate unter Münsters Bau bleibt in R7 den ganzen Tag bei 41 bis 87 pro
+Sekunde — flach, genau wie bei uns. Die Tagesdelle aus R4 (Abfall auf 6/s) gehörte zu
+jenem Tag, nicht zu jener Software.
+
+**Was als robuster Unterschied übrig bleibt, ist einzig die Kanalbelegung:** unser Bau 82
+bis 93 %, Münsters 45 bis 60 %, über sieben Runden und abwechselnde Tage. Dabei ist die
+Zahl der Fehlauslösungen inzwischen gleich (R6 unser Bau 6,46 Mio. bei 82 %, R7 Münster
+6,19 Mio. bei 58 %) — unter unserem Bau hält jede Fehlauslösung den Empfänger also länger
+fest. Ob das überhaupt Frames kostet, ist nach R7 offen: Münster hatte hier die niedrigere
+Belegung und trotzdem weniger Frames als der WDR3600.
+
+**Konsequenz für die Matrix.** Der Softwarestand der 3390 ändert am Empfang nichts, was
+über die Tagesschwankung hinausragt — „Jacke wie Hose", genau das Ergebnis, das als
+Möglichkeit von Anfang an im Raum stand. Weitere Runden gegen dieselbe Frage lohnen nicht.
+Was dagegen sauber messbar ist, sind **gleichzeitige Gerätevergleiche**: Alle Empfänger am
+selben Fenster zur selben Zeit, damit der Tag als Störgröße herausfällt. Genau dafür kommen
+die NanoStation M5 und der WDR4300 ans Fenster.
 
 ### Ergebnis R6 (3390 ohne Patch 997) — Hypothese widerlegt, dafür eine bessere Spur
 
