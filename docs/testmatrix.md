@@ -71,7 +71,7 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 | R5 | 19.09. 00:58 bis 20.09. 00:58 | WDR3600 25-ours · 3390 **25-ours** · node749 | fertig, siehe unten |
 | R6 | 20.09. 01:41 bis 21.09. 01:40 | 3390 mit 25-ours **ohne Patch 997** · WDR3600 unverändert | fertig, siehe unten |
 | R7 | 21.09. 02:05 bis 22.09. 02:04 | 3390 zurück auf 25-MPW, ANI-Aufzeichnung auf beiden Geräten | fertig, siehe unten |
-| R8 | 22.09. läuft | unverändert wie R7 | sammelt weitere Tage für die Streuung |
+| R8 | 22.09. 02:16 bis 23.09. 02:15 | unverändert wie R7 | fertig, siehe unten |
 
 ### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
 
@@ -156,6 +156,27 @@ node749 lief durchgehend: 1450 stats-Meldungen im Minutentakt, Laufzeitzähler l
 Nächster Schritt (R4): **WDR3600 auf 25-MPW.** Wenn er dort ebenso springt, liegt es an der
 Software allein; springt er nicht, ist es ein Zusammenspiel aus Chip und Software. Dafür muss
 Münsters `build.sh` mit dem Profil des WDR3600 gebaut werden.
+
+### Ergebnis R8 (Wiederholung von R7, nichts verändert)
+
+| Empfänger | Frames | Anteil (von 362) | Fehlauslösungen | Kanal belegt |
+|---|---|---|---|---|
+| FB3390, 25-MPW | 254 | 70 % | 5 872 847 | 58 % |
+| WDR3600, 25-ours | 160 | 44 % | 1 589 | 0,21 % |
+| node749 (ESP32) | 102 | 28 % | – | – |
+
+Verhältnis 3390/WDR3600: **1,59** — am Vortag mit identischem Aufbau 0,74. Zwei
+aufeinanderfolgende Tage, dieselbe Hardware, dieselbe Software, Faktor 2,1 Unterschied.
+Damit ist die Tagesschwankung noch einmal belegt.
+
+Über alle acht Runden: unter Münsters Bau 0,74 / 1,34 / 1,59 / 2,02 / 2,78 (geometrisches
+Mittel 1,55), unter unserem 0,53 / 0,74 / 1,21 (Mittel 0,78). Der Rangsummentest kommt auf
+p ≈ 0,07 — ein Faktor 2 wäre also nicht auszuschließen, belegt ist er nicht, und er läge
+in derselben Größenordnung wie der Unterschied zwischen zwei aufeinanderfolgenden Tagen.
+
+node749 hatte mit 28 % seine schwächste Runde überhaupt; die 3390 hatte 180 Frames, die
+sonst niemand sah. Auch das spricht dafür, dass an solchen Tagen die Richtung zählt, aus
+der gesendet wird, und nicht die Software.
 
 ### Ergebnis R7 (3390 zurück auf 25-MPW, Verkehrstag mit 640 Frames) — zwei Korrekturen
 
