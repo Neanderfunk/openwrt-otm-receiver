@@ -25,13 +25,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.11.2"
+#define OTM_BRIDGE_VERSION "0.11.3"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
 static volatile sig_atomic_t running = 1;
 /* 0, solange keine Broker-Verbindung steht; siehe stats_thread */
 static volatile sig_atomic_t mqtt_up;
+static volatile sig_atomic_t mqtt_stop;
 
 static char topic_packet[160];
 static char topic_status[160];
@@ -170,17 +171,41 @@ static void *stats_thread(void *arg)
 			sleep(1);
 		if (running && mqtt_up)
 			publish_stats(mosq);
-		/* Scheitert der erste Verbindungsversuch nach dem Boot (der
-		 * Broker ist per DNS/Route noch nicht erreichbar, die Uhr
-		 * springt gerade), versucht es die libmosquitto-Schleife von
-		 * sich aus nicht wieder: der Knoten bliebe fuer immer stumm,
-		 * obwohl er empfaengt. Deshalb hier selbst nachfassen. */
-		if (running && !mqtt_up) {
-			int rc = mosquitto_reconnect_async(mosq);
-			if (rc != MOSQ_ERR_SUCCESS)
-				syslog(LOG_WARNING, "mqtt reconnect: %s",
-				       mosquitto_strerror(rc));
+	}
+	return NULL;
+}
+
+/* Eigene Netzwerkschleife statt mosquitto_loop_start(): deren Thread
+ * (mosquitto_loop_forever) beendet sich still bei TLS-, DNS- und
+ * Protokollfehlern. Scheitert so der erste Handshake nach dem Boot,
+ * oeffnet ein Reconnect zwar noch Sockets, aber niemand fuehrt den
+ * TLS-Handshake mehr weiter (LiteBeam 01.10.: CLOSE_WAIT, Knoten stumm).
+ * Hier wird nach jedem Fehler mit wachsender Pause (bis 60 s) neu
+ * verbunden, egal welcher. */
+static void *mqtt_thread(void *arg)
+{
+	(void)arg;
+	unsigned int delay = 1, fails = 0;
+	while (!mqtt_stop) {
+		int rc = mosquitto_loop(mosq, 1000, 1);
+		if (rc == MOSQ_ERR_SUCCESS) {
+			if (mqtt_up) {
+				delay = 1;
+				fails = 0;
+			}
+			continue;
 		}
+		for (unsigned int i = 0; i < delay && !mqtt_stop; i++)
+			sleep(1);
+		if (mqtt_stop)
+			break;
+		if (delay < 60)
+			delay = delay * 2 > 60 ? 60 : delay * 2;
+		rc = mosquitto_reconnect(mosq);
+		/* bei langem Ausfall nicht jede Minute eine Zeile ins Log */
+		if (rc != MOSQ_ERR_SUCCESS && (fails++ < 5 || fails % 60 == 0))
+			syslog(LOG_WARNING, "mqtt reconnect: %s",
+			       mosquitto_strerror(rc));
 	}
 	return NULL;
 }
@@ -253,7 +278,7 @@ static void pkt_handler(u_char *ud, const struct pcap_pkthdr *h, const u_char *b
 		if (verbose && (pkt_published % 100 == 0))
 			syslog(LOG_INFO, "published %lu packets", pkt_published);
 	} else if (r == MOSQ_ERR_NO_CONN) {
-		/* dropped while disconnected; mosquitto_loop will reconnect */
+		/* dropped while disconnected; mqtt_thread reconnects */
 	} else {
 		pkt_pcap_err++;
 		if (pkt_pcap_err < 5 || pkt_pcap_err % 1000 == 0)
@@ -361,13 +386,21 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	/* Publish aus pcap- und stats-Thread, Netzwerk im mqtt_thread */
+	mosquitto_threaded_set(mosq, true);
+	/* Scheitert schon das (z. B. DNS direkt nach dem Boot), merkt sich
+	 * libmosquitto Host und Port trotzdem; mqtt_thread versucht es weiter.
+	 * Frueher endete der Prozess hier, und procd gibt nach wenigen
+	 * schnellen Abstuerzen auf. */
 	int r = mosquitto_connect_async(mosq, host, port, 60);
-	if (r != MOSQ_ERR_SUCCESS) {
-		syslog(LOG_ERR, "mosquitto_connect_async: %s",
-		       mosquitto_strerror(r));
+	if (r != MOSQ_ERR_SUCCESS)
+		syslog(LOG_WARNING, "mqtt connect: %s", mosquitto_strerror(r));
+
+	pthread_t mqtt_tid;
+	if (pthread_create(&mqtt_tid, NULL, mqtt_thread, NULL) != 0) {
+		syslog(LOG_ERR, "mqtt thread not started");
 		return 1;
 	}
-	mosquitto_loop_start(mosq);
 
 	pthread_t stats_tid;
 	int have_stats = pthread_create(&stats_tid, NULL, stats_thread, NULL) == 0;
@@ -386,7 +419,8 @@ int main(int argc, char **argv)
 	struct timespec ts = { 1, 0 };
 	nanosleep(&ts, NULL);
 	mosquitto_disconnect(mosq);
-	mosquitto_loop_stop(mosq, true);
+	mqtt_stop = 1;
+	pthread_join(mqtt_tid, NULL);
 	mosquitto_destroy(mosq);
 	mosquitto_lib_cleanup();
 	pcap_close(pc);
