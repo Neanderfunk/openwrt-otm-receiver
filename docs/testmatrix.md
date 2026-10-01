@@ -53,11 +53,12 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 
 | Gerät | 21-ours | 22-ours | 25-ours | 25-MPW |
 |---|---|---|---|---|
-| TL-WDR3600 v1 (AR9582, 2x2) | R1 | R2, R3 | R4 | |
+| TL-WDR3600 v1 (AR9582, 2x2) | R1 | R2, R3 | R4-R9, R10 | |
 | TL-WDR4300 v1 (AR9580, 3x3) | | | | Referenz 14./15.09. (anderer Standort) |
-| FRITZ!Box 3390 (AR9580) | – (nicht in 21.02) | R2 | R5 | R1, R3, R4 |
-| NanoStation M5 (Klon, AR9280) | gebaut, steht noch im Keller | – (nur bis 22.03) | – | – |
-| LiteBeam M5 XW (AR9342) | – (erst ab 25.12) | – | gebaut, noch nicht geflasht | – |
+| FRITZ!Box 3390 (AR9580) | – (nicht in 21.02) | R2 | R5, R6 (ohne 997), R10 | R1, R3, R4, R7-R9 |
+| NanoStation M5 (Klon, AR9280) | geflasht, wartet aufs Fenster | – (nur bis 22.03) | – | – |
+| LiteBeam M5 XW (AR9342) | – (erst ab 25.12) | – | geflasht (Testplatz, kein Verkehr); sysupgrade schreibt dort die Firmware nicht | – |
+| CPE510 v1.0 (AR9344) | | | geflasht 01.10. (Testplatz, kein Verkehr) | – |
 | ESP32 node749 | Referenz in jeder Runde | | | |
 
 ## Runden
@@ -73,6 +74,7 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 | R7 | 21.09. 02:05 bis 22.09. 02:04 | 3390 zurück auf 25-MPW, ANI-Aufzeichnung auf beiden Geräten | fertig, siehe unten |
 | R8 | 22.09. 02:16 bis 23.09. 02:15 | unverändert wie R7 | fertig, siehe unten |
 | R9 | 23.09. 11:52 bis 24.09. 11:52 | unverändert wie R7 (NanoStation abgebaut, ging nicht mit) | erst am 01.10. abgeholt, siehe unten |
+| R10 | 01.10. 12:42 bis 02.10. 12:42 | WDR3600 und 3390 **beide 25-ours mit otm-bridge 0.11.3** (7974193): erstmals gleiche Software, nur Hardware/Antenne/Platz verschieden · node749 | läuft |
 
 ### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
 
