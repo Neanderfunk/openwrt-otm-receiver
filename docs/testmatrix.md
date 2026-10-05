@@ -74,7 +74,7 @@ Deshalb kommen die Antennen zuerst an die Reihe (weitere Dimension der Matrix):
 | R7 | 21.09. 02:05 bis 22.09. 02:04 | 3390 zurück auf 25-MPW, ANI-Aufzeichnung auf beiden Geräten | fertig, siehe unten |
 | R8 | 22.09. 02:16 bis 23.09. 02:15 | unverändert wie R7 | fertig, siehe unten |
 | R9 | 23.09. 11:52 bis 24.09. 11:52 | unverändert wie R7 (NanoStation abgebaut, ging nicht mit) | erst am 01.10. abgeholt, siehe unten |
-| R10 | 01.10. 12:42 bis 02.10. 12:42 | WDR3600 und 3390 **beide 25-ours mit otm-bridge 0.11.3** (7974193): erstmals gleiche Software, nur Hardware/Antenne/Platz verschieden · node749 | läuft |
+| R10 | 01.10. 12:42 bis 02.10. 12:42 | WDR3600 und 3390 **beide 25-ours mit otm-bridge 0.11.3** (7974193): erstmals gleiche Software, nur Hardware/Antenne/Platz verschieden · node749 | fertig, siehe unten |
 
 ### Ergebnis R1 (Randlage, 07:29–19:18 Verkehr, 703 verschiedene ITS-Frames)
 
@@ -159,6 +159,31 @@ node749 lief durchgehend: 1450 stats-Meldungen im Minutentakt, Laufzeitzähler l
 Nächster Schritt (R4): **WDR3600 auf 25-MPW.** Wenn er dort ebenso springt, liegt es an der
 Software allein; springt er nicht, ist es ein Zusammenspiel aus Chip und Software. Dafür muss
 Münsters `build.sh` mit dem Profil des WDR3600 gebaut werden.
+
+## Abschluss der Messreihe (05.10.2026)
+
+**Befund: Der Software-Stand macht beim Empfang keinen nachweisbaren Unterschied.**
+Weder die OpenWrt-Version (21.02, 22.03, 25.12) noch unser Bau gegenüber Münsters noch
+der Patch 997 verändern die Ausbeute an ITS-Frames über die Tagesschwankung hinaus.
+Zwei aufeinanderfolgende Tage mit identischem Aufbau unterscheiden sich um bis zu
+Faktor 2 (R7/R8). Die Messreihe ist damit geschlossen (Entscheidung adorfer).
+
+### Ergebnis R10 (erstmals gleiche Software auf beiden: 25-ours, otm-bridge 0.11.3)
+
+| Empfänger | Frames | Anteil (von 440) | Fehlauslösungen | Kanal belegt |
+|---|---|---|---|---|
+| node749 (ESP32) | 288 | 65 % | – | – |
+| FB3390, 25-ours | 273 | 62 % | 6 220 552 | 60 % |
+| WDR3600, 25-ours | 251 | 57 % | 337 | 0,20 % |
+
+Verhältnis 3390/WDR3600: **1,09**. Auch die letzte verbliebene Spur fällt damit weg: Die
+hohe Kanalbelegung der 3390 mit unserem Bau (R5/R6: 82-93 %) taucht nicht wieder auf;
+mit demselben Bau liegt sie jetzt bei 60 %, so hoch wie unter Münsters Bau (45-60 %). Die
+Fehlauslösungen gehören zur 3390 und ihrer Umgebung, nicht zu einem Software-Stand.
+
+Was sich lohnen würde, falls es wieder aufgenommen wird: Hardware, Antenne und Platz
+gleichzeitig vergleichen (NanoStation, CPE510, LiteBeam am selben Fenster), nicht
+mehr die Software.
 
 ### Ergebnis R9 (dritte Wiederholung, erst am 01.10. abgeholt)
 
