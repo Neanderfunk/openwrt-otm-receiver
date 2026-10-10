@@ -33,10 +33,9 @@ config_get phy      main phy      ''
 config_get freq     main freq     5900
 config_get bw       main bw       10MHz
 config_get country  main country  DE
-config_get broker   main broker   'mqtts://cits1.opentrafficmap.org'
+config_get broker   main broker   'mqtt://10.66.0.1'
 config_get node     main node     ''
 config_get verbose  main verbose  1
-config_get timefile main timefile /var/state/otm-bridge-time
 
 # 5850-5925 MHz only exist in the patched regdb entry for $country; after
 # boot the global domain is 00. The change is applied asynchronously, so
@@ -71,21 +70,6 @@ done
 # Node id, unless set in uci: <board short name>-<last 4 hex digits of the
 # monitor interface MAC>, e.g. WR4300-902f. Same as the hostname.
 [ -n "$node" ] || node=$(otm_node_name "$(cat "/sys/class/net/$iface/address")")
-
-# TLS needs a valid clock. The ntp hotplug script creates $timefile once
-# ntpd is synchronised. Wait at most 120 s, then start anyway; libmosquitto
-# reconnects by itself. Right after the sync the clock step may still be in
-# flight, hence the slack (5 s was not enough on the 3390, 15 s was).
-i=0
-while [ ! -e "$timefile" ] && [ $i -lt 120 ]; do
-	sleep 2
-	i=$((i + 2))
-done
-if [ ! -e "$timefile" ]; then
-	log "no NTP sync after 120 s, starting anyway"
-elif [ $(( $(date +%s) - $(date -r "$timefile" +%s) )) -lt 30 ]; then
-	sleep 15
-fi
 
 set -- -f -i "$iface" -b "$broker"
 [ -n "$node" ] && set -- "$@" -n "$node"

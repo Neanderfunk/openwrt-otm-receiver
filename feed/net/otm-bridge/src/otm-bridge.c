@@ -3,7 +3,8 @@
  * and publish them via MQTT to opentrafficmap.org's C-ITS ingest, mimicking
  * the wire format of opentrafficmap/its-g5-receiver-firmware (ESP32-C5).
  *
- * Topic layout (default broker mqtts://cits1.opentrafficmap.org):
+ * Topic layout (default broker mqtt://10.66.0.1, the MQTT proxy behind the
+ * management VPN that forwards to mqtts://cits1.opentrafficmap.org):
  *   its/<node>/status   "online"/"offline" (LWT, retained)
  *   its/<node>/info     {"emac":"aa:bb:..","ver":"...","hwv":"..."}  (on connect)
  *   its/<node>/packet   raw 802.11 frame (radiotap stripped), QoS 0
@@ -25,7 +26,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.11.3"
+#define OTM_BRIDGE_VERSION "0.12.0"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
@@ -292,7 +293,7 @@ static void usage(void)
 	fprintf(stderr,
 	    "usage: otm-bridge [options]\n"
 	    "  -i IFACE   capture interface (default mon0)\n"
-	    "  -b URI     broker URI (default mqtts://cits1.opentrafficmap.org)\n"
+	    "  -b URI     broker URI (default mqtt://10.66.0.1)\n"
 	    "  -n NODE    node id (default: MAC of the capture interface, 12 hex chars)\n"
 	    "  -c CAFILE  TLS CA file (default /etc/ssl/certs/ca-certificates.crt)\n"
 	    "  -s SNAP    pcap snap length (default 2300)\n"
@@ -302,7 +303,7 @@ static void usage(void)
 
 int main(int argc, char **argv)
 {
-	const char *broker_uri  = "mqtts://cits1.opentrafficmap.org";
+	const char *broker_uri  = "mqtt://10.66.0.1";
 	const char *cafile      = "/etc/ssl/certs/ca-certificates.crt";
 	char node_id[64]        = { 0 };
 	int snaplen             = 2300;
