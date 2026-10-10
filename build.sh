@@ -52,9 +52,17 @@ PATCHES="$HERE/patches/openwrt-${OWRT_VER%.*}"
 # dnsmasq bleibt als reiner DNS-Forwarder: ab 22.03 laeuft ntpd in einer ujail
 # ohne resolv.conf und fragt 127.0.0.1 - ohne dnsmasq keine Zeit, kein TLS.
 # DHCP verteilt er nicht (99-otm-setup loescht dhcp.lan), die wan-Zone blockt 53.
-IMAGE_PACKAGES="otm-bridge otm-mgmt-vpn -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
+IMAGE_PACKAGES="otm-bridge otm-mgmt-vpn fastd kmod-tun -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
 # ab 25.12 heisst das Standard-wpad anders
 case "$OWRT_VER" in 2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -wpad-basic-mbedtls" ;; esac
+# Kein TLS auf den Geraeten: otm-bridge publiziert unverschluesselt durch den
+# fastd-Tunnel an den MQTT-Proxy (otm-mgmt-vpn). CA-Bundle und TLS-Bibliothek
+# fuer uclient-fetch fliegen raus (das Bundle veraltete ohnehin im Flash);
+# apk/opkg holen die signierten Pakete dann per http (99-otm-setup).
+case "$OWRT_VER" in
+2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -ca-bundle -libustream-mbedtls" ;;
+*) IMAGE_PACKAGES="$IMAGE_PACKAGES -ca-bundle -libustream-wolfssl" ;;
+esac
 # lantiq (FRITZ!Box 3390 u. a.): DSL-Stack wird fuer den Empfaenger nicht gebraucht
 case "$TARGET" in
 lantiq) IMAGE_PACKAGES="$IMAGE_PACKAGES -ppp-mod-pppoa -ltq-vdsl-app -ltq-vdsl-vr9-vectoring-fw-installer \

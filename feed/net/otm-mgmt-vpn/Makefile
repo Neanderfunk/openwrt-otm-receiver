@@ -10,7 +10,10 @@ define Package/otm-mgmt-vpn
   SECTION:=net
   CATEGORY:=Network
   TITLE:=OTM management VPN (fastd to wgiot6.ffdus.de)
-  DEPENDS:=+fastd +kmod-tun
+  # nur Laufzeit-Abhaengigkeit: fastd/kmod-tun kommen fertig aus dem
+  # Release-Repo; als DEPENDS wuerde das SDK fastd selbst bauen (21.02:
+  # scheitert am Host-ninja)
+  EXTRA_DEPENDS:=fastd, kmod-tun
   PKGARCH:=all
 endef
 

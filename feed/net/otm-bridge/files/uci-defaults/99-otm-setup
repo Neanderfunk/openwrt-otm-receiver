@@ -119,6 +119,13 @@ for r in $(uci -q show wireless | sed -n "s/^wireless\.\([^.=]*\)=wifi-device$/\
 done
 uci -q commit wireless
 
+# --- Paketquellen per http ------------------------------------------------
+# Das Image hat kein CA-Bundle (kein TLS auf dem Geraet). Die Pakete sind
+# signiert, apk/opkg pruefen die Signatur unabhaengig vom Transport.
+for f in /etc/apk/repositories.d/distfeeds.list /etc/opkg/distfeeds.conf; do
+	[ -f "$f" ] && sed -i 's#https://#http://#' "$f"
+done
+
 # --- Hostname = MQTT node id, e.g. WR4300-902f ------------------------------
 # Tells receivers apart in the DHCP server's lease list at a glance.
 
