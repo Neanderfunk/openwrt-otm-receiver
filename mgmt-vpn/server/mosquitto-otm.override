@@ -1,0 +1,4 @@
+# mosquitto bindet an 10.66.0.1, die Adresse gibt es erst mit br-otm
+[Unit]
+Requires=otm-mgmt-net.service
+After=otm-mgmt-net.service
