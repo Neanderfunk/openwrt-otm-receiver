@@ -1,0 +1,11 @@
+[Unit]
+Description=dnsmasq fuer das OTM-Management-Netz
+Requires=otm-mgmt-net.service
+After=otm-mgmt-net.service
+
+[Service]
+ExecStart=/usr/sbin/dnsmasq -k -C /etc/otm-mgmt/dnsmasq.conf
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

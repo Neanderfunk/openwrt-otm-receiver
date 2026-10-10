@@ -1,0 +1,20 @@
+[Unit]
+Description=OTM-Management-Netz (Bridge br-otm, Firewall, DNS-Routing)
+Before=fastd@otm.service dnsmasq-otm.service
+After=network-online.target systemd-resolved.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'ip link show br-otm >/dev/null 2>&1 || ip link add br-otm type bridge'
+ExecStart=/sbin/ip link set br-otm mtu 1312 up
+ExecStart=/sbin/ip addr replace 10.66.0.1/22 dev br-otm
+ExecStart=/usr/sbin/nft -f /etc/otm-mgmt/nft.conf
+ExecStartPost=-/usr/bin/resolvectl dns br-otm 10.66.0.1
+ExecStartPost=-/usr/bin/resolvectl domain br-otm ~otm
+ExecStop=-/usr/sbin/nft delete table inet otm_mgmt
+ExecStop=-/sbin/ip link del br-otm
+
+[Install]
+WantedBy=multi-user.target
