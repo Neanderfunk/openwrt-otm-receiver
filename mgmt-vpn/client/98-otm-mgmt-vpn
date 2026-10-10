@@ -1,0 +1,74 @@
+#!/bin/sh
+# /etc/uci-defaults/98-otm-mgmt-vpn
+#
+# Management-VPN zur Gegenstelle wgiot6.ffdus.de (fastd, Layer 2):
+#   - eigener Schluessel je Geraet (secret 'generate'), keine Freischaltung
+#   - Interface mgmt per DHCP aus 10.66.0.0/22; der Hostname (= Knotenname)
+#     landet dort im DNS unter <knoten>.otm
+#   - KEINE Standardroute und kein DNS ueber das VPN: Broker-Verkehr bleibt am
+#     lokalen Uplink. Alles durchs VPN: uci set network.mgmt.defaultroute=1
+#   - SSH (nur per Key, siehe 99-otm-setup) auch aus der Zone mgmt
+# Ohne fastd im Image tut das Skript nichts. Idempotent.
+
+[ -x /usr/bin/fastd ] || exit 0
+
+uci -q delete fastd.sample_config
+uci -q delete fastd.mgmt
+uci -q delete fastd.mgmt_wgiot
+uci set fastd.mgmt=fastd
+uci set fastd.mgmt.enabled='1'
+uci set fastd.mgmt.syslog_level='info'
+uci add_list fastd.mgmt.method='salsa2012+umac'
+uci set fastd.mgmt.mode='tap'
+uci set fastd.mgmt.interface='otm-mgmt'
+uci set fastd.mgmt.mtu='1312'
+uci set fastd.mgmt.secure_handshakes='1'
+uci set fastd.mgmt.secret='generate'
+uci set fastd.mgmt_wgiot=peer
+uci set fastd.mgmt_wgiot.enabled='1'
+uci set fastd.mgmt_wgiot.net='mgmt'
+uci set fastd.mgmt_wgiot.key='755a428353a79f13d9409dd0c4ccb8f346c870e3557fac68d9e9d48c34c24e66'
+uci add_list fastd.mgmt_wgiot.remote='ipv6 "wgiot6.ffdus.de" port 10001'
+uci add_list fastd.mgmt_wgiot.remote='ipv4 "wgiot.ffdus.de" port 10001'
+uci commit fastd
+
+uci -q delete network.mgmt
+uci set network.mgmt=interface
+uci set network.mgmt.device='otm-mgmt'
+uci set network.mgmt.proto='dhcp'
+uci set network.mgmt.defaultroute='0'
+uci set network.mgmt.peerdns='0'
+uci commit network
+
+# Eigene Zone: nur SSH, DHCP-Antworten und Ping herein, nichts weiterleiten
+uci -q delete firewall.mgmt
+uci -q delete firewall.mgmt_ssh
+uci -q delete firewall.mgmt_dhcp
+uci -q delete firewall.mgmt_ping
+uci set firewall.mgmt=zone
+uci set firewall.mgmt.name='mgmt'
+uci add_list firewall.mgmt.network='mgmt'
+uci set firewall.mgmt.input='REJECT'
+uci set firewall.mgmt.output='ACCEPT'
+uci set firewall.mgmt.forward='REJECT'
+uci set firewall.mgmt_ssh=rule
+uci set firewall.mgmt_ssh.name='Allow-SSH-mgmt'
+uci set firewall.mgmt_ssh.src='mgmt'
+uci set firewall.mgmt_ssh.proto='tcp'
+uci set firewall.mgmt_ssh.dest_port='22'
+uci set firewall.mgmt_ssh.target='ACCEPT'
+uci set firewall.mgmt_dhcp=rule
+uci set firewall.mgmt_dhcp.name='Allow-DHCP-mgmt'
+uci set firewall.mgmt_dhcp.src='mgmt'
+uci set firewall.mgmt_dhcp.proto='udp'
+uci set firewall.mgmt_dhcp.dest_port='68'
+uci set firewall.mgmt_dhcp.target='ACCEPT'
+uci set firewall.mgmt_ping=rule
+uci set firewall.mgmt_ping.name='Allow-Ping-mgmt'
+uci set firewall.mgmt_ping.src='mgmt'
+uci set firewall.mgmt_ping.proto='icmp'
+uci set firewall.mgmt_ping.icmp_type='echo-request'
+uci set firewall.mgmt_ping.target='ACCEPT'
+uci commit firewall
+
+exit 0
