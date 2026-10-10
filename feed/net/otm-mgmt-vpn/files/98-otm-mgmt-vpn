@@ -38,9 +38,10 @@ uci set network.mgmt.device='otm-mgmt'
 uci set network.mgmt.proto='dhcp'
 uci set network.mgmt.defaultroute='0'
 uci set network.mgmt.peerdns='0'
-# Feste MAC fuer das Tunnel-Interface (lokal verwaltet, aus der Geraete-MAC):
-# sonst bringt jeder fastd-Start eine neue MAC und damit einen neuen Lease
-mac=$(cat /sys/class/net/eth0/address 2>/dev/null || cat /sys/class/ieee80211/phy0/macaddress 2>/dev/null)
+# Feste MAC fuer das Tunnel-Interface (lokal verwaltet, aus der phy0-MAC):
+# sonst bringt jeder fastd-Start eine neue MAC und damit einen neuen Lease.
+# Nicht eth0: auf der FB3390 ist dessen MAC bei jedem Boot zufaellig.
+mac=$(cat /sys/class/ieee80211/phy0/macaddress 2>/dev/null || cat /sys/class/net/eth0/address 2>/dev/null)
 [ -n "$mac" ] && uci set network.mgmt.macaddr="02:${mac#*:}"
 uci commit network
 
