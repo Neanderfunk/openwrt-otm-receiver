@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: otm
+    folder: OTM
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards/otm
