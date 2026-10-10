@@ -4,7 +4,8 @@
 # plain, ohne LuCI.
 #
 #   1. SDK baut die gepatchten Pakete: mac80211 (ath9k ITS-Kanaele, regd,
-#      Half-Rate), wireless-regdb (DE ITS, NO-IR) und otm-bridge.
+#      Half-Rate), wireless-regdb (DE ITS, NO-IR), otm-bridge und
+#      otm-mgmt-vpn (fastd zur Management-Gegenstelle).
 #   2. ImageBuilder baut daraus je Profil ein sysupgrade-Image, mit
 #      files/common, files/local (eigene authorized_keys, nicht im Repo)
 #      und /etc/otm-build-info.
@@ -51,7 +52,7 @@ PATCHES="$HERE/patches/openwrt-${OWRT_VER%.*}"
 # dnsmasq bleibt als reiner DNS-Forwarder: ab 22.03 laeuft ntpd in einer ujail
 # ohne resolv.conf und fragt 127.0.0.1 - ohne dnsmasq keine Zeit, kein TLS.
 # DHCP verteilt er nicht (99-otm-setup loescht dhcp.lan), die wan-Zone blockt 53.
-IMAGE_PACKAGES="otm-bridge -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
+IMAGE_PACKAGES="otm-bridge otm-mgmt-vpn -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
 # ab 25.12 heisst das Standard-wpad anders
 case "$OWRT_VER" in 2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -wpad-basic-mbedtls" ;; esac
 # lantiq (FRITZ!Box 3390 u. a.): DSL-Stack wird fuer den Empfaenger nicht gebraucht
@@ -102,7 +103,7 @@ log "feeds update/install"
 # libpcap explizit: ab 25.12 zieht feeds install es nicht mehr als Abhaengigkeit
 # von otm-bridge nach, der Bau bricht dann an fehlendem pcap.h ab
 ./scripts/feeds install -p base mac80211 wireless-regdb libpcap >/dev/null
-./scripts/feeds install -p otm otm-bridge >/dev/null
+./scripts/feeds install -p otm otm-bridge otm-mgmt-vpn >/dev/null
 
 # Gepatchte Paketverzeichnisse immer vom sauberen Stand aus: kein Rest aus
 # frueheren Laeufen (auch keine unversionierten Dateien) im Image.
@@ -148,15 +149,16 @@ cat > .config <<EOF
 CONFIG_PACKAGE_kmod-ath9k=m
 CONFIG_PACKAGE_wireless-regdb=m
 CONFIG_PACKAGE_otm-bridge=m
+CONFIG_PACKAGE_otm-mgmt-vpn=m
 EOF
 make defconfig >/dev/null
 
-log "baue mac80211, wireless-regdb, otm-bridge (-j$JOBS)"
-for p in mac80211 wireless-regdb otm-bridge; do
+log "baue mac80211, wireless-regdb, otm-bridge, otm-mgmt-vpn (-j$JOBS)"
+for p in mac80211 wireless-regdb otm-bridge otm-mgmt-vpn; do
 	make "package/$p/clean" >/dev/null 2>&1 || true
 done
 make -j"$JOBS" package/mac80211/compile package/wireless-regdb/compile \
-	package/otm-bridge/compile > "$BUILD/sdk-build.log" 2>&1 ||
+	package/otm-bridge/compile package/otm-mgmt-vpn/compile > "$BUILD/sdk-build.log" 2>&1 ||
 	die "SDK-Build fehlgeschlagen, siehe $BUILD/sdk-build.log"
 
 # --- 2. ImageBuilder ---------------------------------------------------------
@@ -176,7 +178,7 @@ case "$OWRT_VER" in
 esac
 mkdir -p "$PKGDIR"
 find "$SDK/bin" \( -name '*.ipk' -o -name '*.apk' \) \
-	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" \) -exec cp {} "$PKGDIR/" \;
+	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" -o -name "otm-mgmt-vpn*" \) -exec cp {} "$PKGDIR/" \;
 ls "$PKGDIR" | grep -qE -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" || die "keine Pakete mit Revision $OTM_RELEASE"
 
 # Unsere Pakete auf ihre Version festnageln. Sonst gewinnt eine hoehere Version
