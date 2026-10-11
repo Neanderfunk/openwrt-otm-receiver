@@ -60,12 +60,16 @@ uci add_list firewall.mgmt.network='mgmt'
 uci set firewall.mgmt.input='REJECT'
 uci set firewall.mgmt.output='ACCEPT'
 uci set firewall.mgmt.forward='REJECT'
-uci set firewall.mgmt_ssh=rule
-uci set firewall.mgmt_ssh.name='Allow-SSH-mgmt'
-uci set firewall.mgmt_ssh.src='mgmt'
-uci set firewall.mgmt_ssh.proto='tcp'
-uci set firewall.mgmt_ssh.dest_port='22'
-uci set firewall.mgmt_ssh.target='ACCEPT'
+# SSH aus dem Tunnel nur mit eingebackenem bzw. erhaltenem Key (Images ohne
+# Key: kein Zugang; Passwort-Logins schaltet 99-otm-setup ohnehin ab)
+if grep -q '^ssh-\|^ecdsa-' /etc/dropbear/authorized_keys 2>/dev/null; then
+	uci set firewall.mgmt_ssh=rule
+	uci set firewall.mgmt_ssh.name='Allow-SSH-mgmt'
+	uci set firewall.mgmt_ssh.src='mgmt'
+	uci set firewall.mgmt_ssh.proto='tcp'
+	uci set firewall.mgmt_ssh.dest_port='22'
+	uci set firewall.mgmt_ssh.target='ACCEPT'
+fi
 uci set firewall.mgmt_dhcp=rule
 uci set firewall.mgmt_dhcp.name='Allow-DHCP-mgmt'
 uci set firewall.mgmt_dhcp.src='mgmt'

@@ -26,7 +26,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.13.0"
+#define OTM_BRIDGE_VERSION "0.13.1"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
