@@ -88,13 +88,15 @@ if [ "$OTM_MQTT" = proxy ]; then
 	# Kein TLS auf dem Geraet: CA-Bundle und TLS-Bibliothek fuer uclient-fetch
 	# fliegen raus (das Bundle veraltete ohnehin im Flash); apk/opkg holen die
 	# signierten Pakete dann per http (99-otm-setup).
-	IMAGE_PACKAGES="$IMAGE_PACKAGES libmosquitto-nossl -ca-bundle"
+	# vor otm-bridge: opkg (bis 22.03) nimmt sonst fuer die virtuelle
+	# Abhaengigkeit "libmosquitto" die TLS-Variante, die dann kollidiert
+	IMAGE_PACKAGES="libmosquitto-nossl $IMAGE_PACKAGES -ca-bundle"
 	case "$OWRT_VER" in
 	2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -libustream-mbedtls" ;;
 	*) IMAGE_PACKAGES="$IMAGE_PACKAGES -libustream-wolfssl" ;;
 	esac
 else
-	IMAGE_PACKAGES="$IMAGE_PACKAGES libmosquitto-ssl ca-bundle"
+	IMAGE_PACKAGES="libmosquitto-ssl ca-bundle $IMAGE_PACKAGES"
 fi
 # lantiq (FRITZ!Box 3390 u. a.): DSL-Stack wird fuer den Empfaenger nicht gebraucht
 case "$TARGET" in
