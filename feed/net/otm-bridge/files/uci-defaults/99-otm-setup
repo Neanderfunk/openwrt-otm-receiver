@@ -88,11 +88,18 @@ uci -q get dhcp.lan >/dev/null && {
 has_key=0
 grep -q '^ssh-\|^ecdsa-' /etc/dropbear/authorized_keys 2>/dev/null && has_key=1
 
-# Passwort-Logins immer aus, auch ohne Key: root hat kein Passwort, und das
-# Management-VPN oeffnet SSH aus dem Tunnel. Ohne Key kommt so niemand herein.
+# Passwort-Logins immer aus: root hat kein Passwort. Ohne Key laeuft dropbear
+# gar nicht erst (lokaler Zugang dann nur noch ueber den Failsafe-Modus);
+# kommt spaeter ein Key dazu (z. B. erhalten beim Update), laeuft er wieder.
 uci set dropbear.@dropbear[0].PasswordAuth='off'
 uci set dropbear.@dropbear[0].RootPasswordAuth='off'
 uci commit dropbear
+if [ $has_key = 1 ]; then
+	/etc/init.d/dropbear enable
+else
+	/etc/init.d/dropbear disable
+	/etc/init.d/dropbear stop 2>/dev/null
+fi
 
 # --- Firewall: SSH from the (only) zone, if a key is present --------------
 

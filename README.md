@@ -103,10 +103,12 @@ Feldanleitung: [docs/cpe510-aufbau.md](docs/cpe510-aufbau.md).
 
 ## SSH-Keys
 
-Eigene Keys gehören nach `files/local/etc/dropbear/authorized_keys`. Der Ordner ist
-gitignored, `build.sh` legt ihn über `files/common`. Ohne Key baut das Image trotzdem,
-es bleibt dann aber ohne Fernzugang: Frisches OpenWrt lässt root ohne Passwort herein,
-und alle Ports hängen im Uplink. Deshalb geht SSH nur mit Key auf.
+Eigene Keys gehören nach `files/local/etc/dropbear/authorized_keys` (oder per
+`OTM_SSH_KEYS=<datei>`). Der Ordner ist gitignored, `build.sh` legt ihn über `files/common`.
+Ohne Key (`OTM_SSH_KEYS=none`) baut das Image trotzdem, SSH ist dann aber ganz aus:
+dropbear startet nicht, lokal bleibt nur der Failsafe-Modus. Passwort-Logins sind immer
+abgeschaltet, denn frisches OpenWrt lässt root ohne Passwort herein. Beim Update mit
+erhaltener Konfiguration bleiben vorhandene Keys erhalten.
 
 ## Was das Gerät nach dem ersten Boot tut
 
