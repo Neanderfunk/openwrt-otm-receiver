@@ -20,6 +20,36 @@ Paketrevision `91`), der ImageBuilder baut daraus mit dem Release-Kernel das Ima
 Ergebnis unter `build/out/<release>/<profil>/`. Dort liegen Image, Manifest, sha256sums und `build-info`;
 dieselbe Datei steht im Gerät unter `/etc/otm-build-info`.
 
+### Optionen
+
+| Variable | Werte | Bedeutung |
+|---|---|---|
+| `OTM_MQTT` | `proxy` (Vorgabe), `direct`, `auto` | Weg zum Broker, siehe unten |
+| `OTM_VPN` | `1` (Vorgabe), `0` | Management-VPN (fastd) ins Image; `proxy` und `auto` brauchen es |
+| `OTM_SSH_KEYS` | Pfad, `none` | `authorized_keys` fürs Image; Vorgabe `files/local/etc/dropbear/authorized_keys`, `none` = ohne Fernzugang |
+| `OTM_VARIANT` | Text | Anhang für Image-Name und Ausgabeverzeichnis, damit Varianten sich nicht überschreiben |
+
+Weg zum Broker:
+
+- **`proxy`**: MQTT ohne TLS durch das Management-VPN an den Proxy auf der Gegenstelle,
+  der per TLS an `cits1.opentrafficmap.org` weiterreicht. Im Image gibt es kein TLS und kein
+  CA-Bundle, und es hängt nicht an einer gestellten Uhr. Paketquellen laufen per http
+  (die Pakete sind signiert).
+- **`direct`**: `mqtts` direkt an `cits1.opentrafficmap.org`, mit TLS und CA-Bundle im Image.
+  Geht auch ohne VPN (`OTM_VPN=0`).
+- **`auto`**: beides im Image. Steht der Tunnel binnen 2 Minuten, geht es über den Proxy,
+  sonst direkt. Nach 10 Minuten ohne Verbindung beendet sich otm-bridge, und die Wahl
+  beginnt von vorn.
+
+Auf dem Gerät lässt sich der Weg später ändern: `uci set otm-bridge.main.transport=direct`
+(bzw. `proxy`, `auto`), dann `/etc/init.d/otm-bridge restart`. `direct` und `auto` setzen
+TLS im Image voraus.
+
+```sh
+OTM_MQTT=direct OTM_VPN=0 OTM_VARIANT=direkt ./build.sh
+OTM_SSH_KEYS=none OTM_VARIANT=ohne-ssh ./build.sh
+```
+
 ## Flashen
 
 Immer ohne alte Konfiguration, denn ein Image von 25.12 oder aus Münster passt nicht dazu:
@@ -50,12 +80,16 @@ und alle Ports hängen im Uplink. Deshalb geht SSH nur mit Key auf.
   SSH ist nur erlaubt, wenn ein Key eingebacken ist, und dann nur per Key.
 - **Funk**: Die Radios sind in `/etc/config/wireless` deaktiviert, damit netifd das
   Monitor-Interface nicht löscht. `/usr/libexec/otm-bridge-run` setzt die Regdomain (`DE`),
-  sucht das phy mit 5900 MHz, legt `mon0` an (10 MHz, Half-Rate), wartet auf NTP und startet
-  `otm-bridge`. procd startet den Wrapper bei Bedarf neu, dabei wird auch `mon0` neu angelegt.
+  sucht das phy mit 5900 MHz, legt `mon0` an (10 MHz, Half-Rate), wartet auf den Tunnel
+  bzw. bei TLS auf NTP und startet `otm-bridge`. procd startet den Wrapper bei Bedarf neu, dabei wird auch `mon0` neu angelegt.
 - **Knotenname**: `<Board-Kurzname>-<letzte 4 Hex der mon0-MAC>`, z. B. `WR4300-902f`.
   Mit `uci set otm-bridge.main.node=…` lässt er sich überschreiben.
-- **MQTT**: `its/<node>/{status,info,packet,stats}` an `mqtts://cits1.opentrafficmap.org`,
-  im selben Format wie die ESP32-C5-Referenzfirmware.
+- **MQTT**: `its/<node>/{status,info,packet,stats}` im selben Format wie die
+  ESP32-C5-Referenzfirmware, je nach `OTM_MQTT` über den Proxy im Tunnel oder direkt an
+  `mqtts://cits1.opentrafficmap.org`.
+- **Management-VPN** (`OTM_VPN=1`): fastd zur Gegenstelle mit eigenem Schlüssel je Gerät,
+  ohne Freischaltung; Adresse per DHCP, SSH dort unter `<knoten>.otm`. Die Standardroute
+  bleibt am lokalen Uplink. Gegenstelle: [mgmt-vpn/server](mgmt-vpn/server).
 - **Nur Empfang**: Die ITS-Regel in der regdb trägt `NO-IR`. Tunen im Monitor-Modus geht,
   OCB-Join und Injection sind gesperrt.
 

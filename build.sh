@@ -41,6 +41,27 @@ OTM_RELEASE="${OTM_RELEASE:-91}"
 SKIP_PATCHES="${SKIP_PATCHES:-}"
 OTM_VARIANT="${OTM_VARIANT:-}"
 JOBS="${JOBS:-$(nproc)}"
+# Weg zum MQTT-Broker:
+#   proxy  (Vorgabe) MQTT ohne TLS durch das Management-VPN an den Proxy auf
+#          wgiot6.ffdus.de, der per TLS an cits1.opentrafficmap.org weiterreicht.
+#          Kein TLS und kein CA-Bundle im Image, keine Abhaengigkeit von der Uhr.
+#   direct mqtts direkt an cits1.opentrafficmap.org (TLS + CA-Bundle im Image)
+#   auto   beides im Image: Tunnel, wenn er binnen 2 min steht, sonst direkt
+OTM_MQTT="${OTM_MQTT:-proxy}"
+# Management-VPN (fastd zu wgiot6.ffdus.de, SSH als <knoten>.otm): 1 oder 0.
+# proxy und auto brauchen es.
+OTM_VPN="${OTM_VPN:-1}"
+# SSH-Keys fuers Image: Pfad zu einer authorized_keys-Datei, oder "none" fuer
+# ein Image ohne Fernzugang. Vorgabe: files/local/etc/dropbear/authorized_keys,
+# sonst ohne.
+OTM_SSH_KEYS="${OTM_SSH_KEYS:-}"
+case "$OTM_MQTT" in proxy|direct|auto) ;; *)
+	echo "OTM_MQTT=$OTM_MQTT: erlaubt sind proxy, direct, auto" >&2; exit 1 ;;
+esac
+case "$OTM_VPN" in 0|1) ;; *) echo "OTM_VPN=$OTM_VPN: erlaubt sind 0 und 1" >&2; exit 1 ;; esac
+if [ "$OTM_VPN" = 0 ] && [ "$OTM_MQTT" != direct ]; then
+	echo "OTM_MQTT=$OTM_MQTT braucht das Management-VPN (OTM_VPN=1)" >&2; exit 1
+fi
 
 HERE="${OTM_HERE:?}"
 BUILD="$HERE/build"
@@ -52,17 +73,22 @@ PATCHES="$HERE/patches/openwrt-${OWRT_VER%.*}"
 # dnsmasq bleibt als reiner DNS-Forwarder: ab 22.03 laeuft ntpd in einer ujail
 # ohne resolv.conf und fragt 127.0.0.1 - ohne dnsmasq keine Zeit, kein TLS.
 # DHCP verteilt er nicht (99-otm-setup loescht dhcp.lan), die wan-Zone blockt 53.
-IMAGE_PACKAGES="otm-bridge otm-mgmt-vpn fastd kmod-tun -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
+IMAGE_PACKAGES="otm-bridge -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolfssl"
 # ab 25.12 heisst das Standard-wpad anders
 case "$OWRT_VER" in 2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -wpad-basic-mbedtls" ;; esac
-# Kein TLS auf den Geraeten: otm-bridge publiziert unverschluesselt durch den
-# fastd-Tunnel an den MQTT-Proxy (otm-mgmt-vpn). CA-Bundle und TLS-Bibliothek
-# fuer uclient-fetch fliegen raus (das Bundle veraltete ohnehin im Flash);
-# apk/opkg holen die signierten Pakete dann per http (99-otm-setup).
-case "$OWRT_VER" in
-2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -ca-bundle -libustream-mbedtls" ;;
-*) IMAGE_PACKAGES="$IMAGE_PACKAGES -ca-bundle -libustream-wolfssl" ;;
-esac
+[ "$OTM_VPN" = 1 ] && IMAGE_PACKAGES="$IMAGE_PACKAGES otm-mgmt-vpn fastd kmod-tun"
+if [ "$OTM_MQTT" = proxy ]; then
+	# Kein TLS auf dem Geraet: CA-Bundle und TLS-Bibliothek fuer uclient-fetch
+	# fliegen raus (das Bundle veraltete ohnehin im Flash); apk/opkg holen die
+	# signierten Pakete dann per http (99-otm-setup).
+	IMAGE_PACKAGES="$IMAGE_PACKAGES libmosquitto-nossl -ca-bundle"
+	case "$OWRT_VER" in
+	2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -libustream-mbedtls" ;;
+	*) IMAGE_PACKAGES="$IMAGE_PACKAGES -libustream-wolfssl" ;;
+	esac
+else
+	IMAGE_PACKAGES="$IMAGE_PACKAGES libmosquitto-ssl ca-bundle"
+fi
 # lantiq (FRITZ!Box 3390 u. a.): DSL-Stack wird fuer den Empfaenger nicht gebraucht
 case "$TARGET" in
 lantiq) IMAGE_PACKAGES="$IMAGE_PACKAGES -ppp-mod-pppoa -ltq-vdsl-app -ltq-vdsl-vr9-vectoring-fw-installer \
@@ -212,13 +238,30 @@ rm -rf "$FILES" && mkdir -p "$FILES/etc"
 for d in "$HERE/files/common" "$HERE/files/local"; do
 	[ -d "$d" ] && cp -a "$d/." "$FILES/"
 done
-grep -qE '^(ssh-|ecdsa-)' "$FILES/etc/dropbear/authorized_keys" 2>/dev/null ||
-	printf '\033[1;33m[otm]\033[0m %s\n' "kein SSH-Key in files/local/etc/dropbear/authorized_keys: Image ohne Fernzugang (SSH bleibt zu)" >&2
+case "$OTM_SSH_KEYS" in
+"") ;;
+none) rm -f "$FILES/etc/dropbear/authorized_keys" ;;
+*)	[ -f "$OTM_SSH_KEYS" ] || die "OTM_SSH_KEYS: $OTM_SSH_KEYS gibt es nicht"
+	mkdir -p "$FILES/etc/dropbear"
+	install -m 600 "$OTM_SSH_KEYS" "$FILES/etc/dropbear/authorized_keys" ;;
+esac
+SSH_KEYS=$(grep -cE '^(ssh-|ecdsa-)' "$FILES/etc/dropbear/authorized_keys" 2>/dev/null || true)
+[ "${SSH_KEYS:-0}" -gt 0 ] ||
+	printf '\033[1;33m[otm]\033[0m %s\n' "kein SSH-Key im Image: ohne Fernzugang (SSH bleibt zu)" >&2
+# Vorgabe fuer den Weg zum Broker; eine spaeter von Hand gesetzte bleibt
+mkdir -p "$FILES/etc/uci-defaults"
+cat > "$FILES/etc/uci-defaults/97-otm-transport" <<UCIEOF
+#!/bin/sh
+[ -n "\$(uci -q get otm-bridge.main.transport)" ] && exit 0
+uci set otm-bridge.main.transport='$OTM_MQTT'
+uci commit otm-bridge
+UCIEOF
 cat > "$FILES/etc/otm-build-info" <<EOF
 otm_commit=$OTM_COMMIT
 built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 openwrt=$OWRT_VER $TARGET/$SUBTARGET (SDK + ImageBuilder)
 otm_pkg_release=$OTM_RELEASE
+mqtt=$OTM_MQTT vpn=$OTM_VPN ssh_keys=${SSH_KEYS:-0}
 patches=$(echo $GENOMMEN | tr ' ' '\n' | sort | tr '\n' ' ')
 patches_ausgelassen=${SKIP_PATCHES:-keine}
 EOF

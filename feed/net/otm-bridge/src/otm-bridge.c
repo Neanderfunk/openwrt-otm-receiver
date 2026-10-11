@@ -26,7 +26,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.12.0"
+#define OTM_BRIDGE_VERSION "0.13.0"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
@@ -34,6 +34,9 @@ static volatile sig_atomic_t running = 1;
 /* 0, solange keine Broker-Verbindung steht; siehe stats_thread */
 static volatile sig_atomic_t mqtt_up;
 static volatile sig_atomic_t mqtt_stop;
+/* -x: Sekunden ohne Broker-Verbindung, nach denen der Prozess endet (0 = nie);
+ * procd startet den Wrapper neu, der den Weg zum Broker neu waehlt */
+static int giveup;
 
 static char topic_packet[160];
 static char topic_status[160];
@@ -167,11 +170,20 @@ static void publish_stats(struct mosquitto *m)
 static void *stats_thread(void *arg)
 {
 	(void)arg;
+	struct timespec ok, now;
+	clock_gettime(CLOCK_MONOTONIC, &ok);
 	while (running) {
 		for (int i = 0; i < STATS_INTERVAL && running; i++)
 			sleep(1);
 		if (running && mqtt_up)
 			publish_stats(mosq);
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		if (mqtt_up)
+			ok = now;
+		else if (giveup > 0 && now.tv_sec - ok.tv_sec > giveup) {
+			syslog(LOG_WARNING, "no broker connection for %d s, exiting", giveup);
+			_exit(3);
+		}
 	}
 	return NULL;
 }
@@ -298,6 +310,7 @@ static void usage(void)
 	    "  -c CAFILE  TLS CA file (default /etc/ssl/certs/ca-certificates.crt)\n"
 	    "  -s SNAP    pcap snap length (default 2300)\n"
 	    "  -v         verbose (repeat for more)\n"
+	    "  -x SECS    exit after SECS without broker connection (default: never)\n"
 	    "  -f         stay in foreground\n");
 }
 
@@ -310,7 +323,7 @@ int main(int argc, char **argv)
 	int foreground          = 0;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "i:b:n:c:s:vfh")) != -1) {
+	while ((opt = getopt(argc, argv, "i:b:n:c:s:x:vfh")) != -1) {
 		switch (opt) {
 		case 'i': cap_iface   = optarg; break;
 		case 'b': broker_uri  = optarg; break;
@@ -318,6 +331,7 @@ int main(int argc, char **argv)
 		case 'c': cafile      = optarg; break;
 		case 's': snaplen     = atoi(optarg); break;
 		case 'v': verbose++;            break;
+		case 'x': giveup      = atoi(optarg); break;
 		case 'f': foreground  = 1;      break;
 		case 'h':
 		default:  usage(); return opt == 'h' ? 0 : 1;

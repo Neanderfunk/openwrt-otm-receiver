@@ -1,0 +1,8 @@
+# /etc/hotplug.d/ntp/25-otm-bridge - marks the clock as valid for otm-bridge.
+# Own marker instead of dnsmasq's /var/state/dnsmasqsec: the receiver image
+# ships without dnsmasq.
+
+[ "$ACTION" = stratum ] || exit 0
+[ -e /var/state/otm-bridge-time ] && exit 0
+mkdir -p /var/state
+echo "ntpd says time is valid" > /var/state/otm-bridge-time
