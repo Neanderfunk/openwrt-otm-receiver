@@ -281,8 +281,16 @@ patches_ausgelassen=${SKIP_PATCHES:-keine}
 EOF
 
 OUT="$BUILD/out/$OWRT_VER${OTM_VARIANT:+-$OTM_VARIANT}"
+# Geraete, bei denen TLS (direct/auto) das Overlay fast aufbraucht: 8 MB Flash
+# und ein grosses Kernel-/Loader-Layout. Mit TLS bleiben dort grob 300 KB,
+# der erste Boot schreibt fast so viel.
+KNAPP="ubnt_litebeam-m5-xw tplink_cpe510-v1 tplink_cpe510-v2 tplink_cpe510-v3"
 for prof in $PROFILES; do
 	log "Image $prof"
+	case " $KNAPP " in *" $prof "*)
+		[ "$OTM_MQTT" = proxy ] ||
+			printf '\033[1;33m[otm]\033[0m %s\n' "$prof: OTM_MQTT=$OTM_MQTT braucht TLS im Image, dafuer ist der Flash knapp (Overlay ~300 KB); proxy empfohlen" >&2 ;;
+	esac
 	# alte Images dieses Profils weg, sonst landen sie mit in out/
 	rm -f bin/targets/$TARGET/$SUBTARGET/*"$prof"*
 	rm -rf "${OUT:?}/$prof"

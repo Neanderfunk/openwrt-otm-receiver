@@ -44,6 +44,11 @@ Weg zum Broker:
   sonst direkt. Nach 10 Minuten ohne Verbindung beendet sich otm-bridge, und die Wahl
   beginnt von vorn.
 
+`direct` und `auto` sind für Geräte mit Platz gedacht (FRITZ!Box 3390, WDR3600/4300,
+NanoStation). LiteBeam M5 XW und CPE510 sind alte Geräte mit wenig Flash: Mit TLS bleiben
+dort grob 300 KB Overlay, der erste Boot schreibt fast so viel. `build.sh` warnt dann.
+Die veröffentlichten Images nutzen deshalb alle `proxy`.
+
 Auf dem Gerät lässt sich der Weg später ändern: `uci set otm-bridge.main.transport=direct`
 (bzw. `proxy`, `auto`), dann `/etc/init.d/otm-bridge restart`. `direct` und `auto` setzen
 TLS im Image voraus.
