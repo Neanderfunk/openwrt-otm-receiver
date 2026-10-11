@@ -55,6 +55,12 @@ OTM_VPN="${OTM_VPN:-1}"
 # ein Image ohne Fernzugang. Vorgabe: files/local/etc/dropbear/authorized_keys,
 # sonst ohne.
 OTM_SSH_KEYS="${OTM_SSH_KEYS:-}"
+# Autoupdater (Manifest und Signaturen wie bei Gluon): 1 (Vorgabe) oder 0.
+# OTM_VERSION ist die Versionsnummer im Image und im Manifest; gleich lange
+# Ziffernfolge, damit der Autoupdater per Textvergleich "neuer" erkennt.
+OTM_AUTOUPDATER="${OTM_AUTOUPDATER:-1}"
+OTM_BRANCH="${OTM_BRANCH:-stable}"
+OTM_VERSION="${OTM_VERSION:-$(date -u +%Y%m%d%H%M)}"
 case "$OTM_MQTT" in proxy|direct|auto) ;; *)
 	echo "OTM_MQTT=$OTM_MQTT: erlaubt sind proxy, direct, auto" >&2; exit 1 ;;
 esac
@@ -77,6 +83,7 @@ IMAGE_PACKAGES="otm-bridge -odhcpd-ipv6only -ppp -ppp-mod-pppoe -wpad-basic-wolf
 # ab 25.12 heisst das Standard-wpad anders
 case "$OWRT_VER" in 2[3-9].*) IMAGE_PACKAGES="$IMAGE_PACKAGES -wpad-basic-mbedtls" ;; esac
 [ "$OTM_VPN" = 1 ] && IMAGE_PACKAGES="$IMAGE_PACKAGES otm-mgmt-vpn fastd kmod-tun"
+[ "$OTM_AUTOUPDATER" = 1 ] && IMAGE_PACKAGES="$IMAGE_PACKAGES otm-autoupdater ecdsautils"
 if [ "$OTM_MQTT" = proxy ]; then
 	# Kein TLS auf dem Geraet: CA-Bundle und TLS-Bibliothek fuer uclient-fetch
 	# fliegen raus (das Bundle veraltete ohnehin im Flash); apk/opkg holen die
@@ -137,7 +144,7 @@ log "feeds update/install"
 # libpcap explizit: ab 25.12 zieht feeds install es nicht mehr als Abhaengigkeit
 # von otm-bridge nach, der Bau bricht dann an fehlendem pcap.h ab
 ./scripts/feeds install -p base mac80211 wireless-regdb libpcap >/dev/null
-./scripts/feeds install -p otm otm-bridge otm-mgmt-vpn >/dev/null
+./scripts/feeds install -p otm otm-bridge otm-mgmt-vpn otm-autoupdater >/dev/null
 
 # Gepatchte Paketverzeichnisse immer vom sauberen Stand aus: kein Rest aus
 # frueheren Laeufen (auch keine unversionierten Dateien) im Image.
@@ -184,15 +191,17 @@ CONFIG_PACKAGE_kmod-ath9k=m
 CONFIG_PACKAGE_wireless-regdb=m
 CONFIG_PACKAGE_otm-bridge=m
 CONFIG_PACKAGE_otm-mgmt-vpn=m
+CONFIG_PACKAGE_otm-autoupdater=m
 EOF
 make defconfig >/dev/null
 
 log "baue mac80211, wireless-regdb, otm-bridge, otm-mgmt-vpn (-j$JOBS)"
-for p in mac80211 wireless-regdb otm-bridge otm-mgmt-vpn; do
+for p in mac80211 wireless-regdb otm-bridge otm-mgmt-vpn otm-autoupdater; do
 	make "package/$p/clean" >/dev/null 2>&1 || true
 done
 make -j"$JOBS" package/mac80211/compile package/wireless-regdb/compile \
-	package/otm-bridge/compile package/otm-mgmt-vpn/compile > "$BUILD/sdk-build.log" 2>&1 ||
+	package/otm-bridge/compile package/otm-mgmt-vpn/compile \
+	package/otm-autoupdater/compile > "$BUILD/sdk-build.log" 2>&1 ||
 	die "SDK-Build fehlgeschlagen, siehe $BUILD/sdk-build.log"
 
 # --- 2. ImageBuilder ---------------------------------------------------------
@@ -212,7 +221,7 @@ case "$OWRT_VER" in
 esac
 mkdir -p "$PKGDIR"
 find "$SDK/bin" \( -name '*.ipk' -o -name '*.apk' \) \
-	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" -o -name "otm-mgmt-vpn*" \) -exec cp {} "$PKGDIR/" \;
+	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" -o -name "otm-mgmt-vpn*" -o -name "otm-autoupdater*" \) -exec cp {} "$PKGDIR/" \;
 ls "$PKGDIR" | grep -qE -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" || die "keine Pakete mit Revision $OTM_RELEASE"
 
 # Unsere Pakete auf ihre Version festnageln. Sonst gewinnt eine hoehere Version
@@ -248,6 +257,8 @@ esac
 SSH_KEYS=$(grep -cE '^(ssh-|ecdsa-)' "$FILES/etc/dropbear/authorized_keys" 2>/dev/null || true)
 [ "${SSH_KEYS:-0}" -gt 0 ] ||
 	printf '\033[1;33m[otm]\033[0m %s\n' "kein SSH-Key im Image: ohne Fernzugang (SSH bleibt zu)" >&2
+mkdir -p "$FILES/lib/otm"
+echo "$OTM_VERSION" > "$FILES/lib/otm/version"
 # Vorgabe fuer den Weg zum Broker; eine spaeter von Hand gesetzte bleibt
 mkdir -p "$FILES/etc/uci-defaults"
 cat > "$FILES/etc/uci-defaults/97-otm-transport" <<UCIEOF
@@ -261,7 +272,8 @@ otm_commit=$OTM_COMMIT
 built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 openwrt=$OWRT_VER $TARGET/$SUBTARGET (SDK + ImageBuilder)
 otm_pkg_release=$OTM_RELEASE
-mqtt=$OTM_MQTT vpn=$OTM_VPN ssh_keys=${SSH_KEYS:-0}
+mqtt=$OTM_MQTT vpn=$OTM_VPN ssh_keys=${SSH_KEYS:-0} autoupdater=$OTM_AUTOUPDATER
+version=$OTM_VERSION
 patches=$(echo $GENOMMEN | tr ' ' '\n' | sort | tr '\n' ' ')
 patches_ausgelassen=${SKIP_PATCHES:-keine}
 EOF
@@ -292,6 +304,51 @@ for prof in $PROFILES; do
 	cp "$FILES/etc/otm-build-info" "$OUT/$prof/build-info"
 	(cd "$OUT/$prof" && sha256sum *.bin > sha256sums)
 done
+
+# --- Autoupdater: Verzeichnis zum Hochladen ---------------------------------
+# build/out/otm/<branch>/ entspricht firmware.ffnef.de/otm/<branch>/:
+# sysupgrade/ mit Images und <branch>.manifest (unsigniert, zum Signieren mit
+# sign.sh bzw. ecdsasign), factory/ mit den Images fuer den Erstumstieg. Jeder
+# Lauf ersetzt nur die Eintraege seiner Profile, Laeufe fuer andere Targets
+# bleiben stehen.
+if [ "$OTM_AUTOUPDATER" = 1 ]; then
+	PUB="$BUILD/out/otm${OTM_VARIANT:+-$OTM_VARIANT}/$OTM_BRANCH"
+	mkdir -p "$PUB/sysupgrade/.manifest.d" "$PUB/factory"
+	PJ=$(ls bin/targets/$TARGET/$SUBTARGET/profiles.json)
+	for prof in $PROFILES; do
+		frag="$PUB/sysupgrade/.manifest.d/$OWRT_VER-$TARGET-$SUBTARGET-$prof"
+		if [ -f "$frag.files" ]; then
+			while read -r f; do rm -f "$PUB/$f"; done < "$frag.files"
+		fi
+		: > "$frag.files"
+		img=$(ls "$OUT/$prof/"*sysupgrade.bin)
+		cp "$img" "$PUB/sysupgrade/"
+		echo "sysupgrade/${img##*/}" >> "$frag.files"
+		for f in "$OUT/$prof/"*factory.bin; do
+			[ -f "$f" ] || continue
+			cp "$f" "$PUB/factory/"
+			echo "factory/${f##*/}" >> "$frag.files"
+		done
+		sha=$(sha256sum "$img" | cut -d' ' -f1)
+		size=$(stat -c %s "$img")
+		# Board-Namen (DT-compatible, wie /tmp/sysinfo/board_name); Altnamen
+		# ohne Komma gehoeren zu ar71xx und waeren nicht eindeutig
+		python3 -c 'import json,sys; [print(d) for d in json.load(open(sys.argv[1]))["profiles"][sys.argv[2]]["supported_devices"] if "," in d]' \
+			"$PJ" "$prof" | while read -r board; do
+			echo "$board $OTM_VERSION $sha $size ${img##*/}"
+		done > "$frag.lines"
+		[ -s "$frag.lines" ] || die "$prof: kein Board-Name in $PJ"
+	done
+	{
+		echo "BRANCH=$OTM_BRANCH"
+		echo "DATE=$(date -u +%Y-%m-%dT%H:%M:%S+00:00)"
+		echo "PRIORITY=0"
+		echo
+		cat "$PUB/sysupgrade/.manifest.d/"*.lines | sort
+		echo "---"
+	} > "$PUB/sysupgrade/$OTM_BRANCH.manifest"
+	log "Autoupdater: $PUB (Manifest unsigniert)"
+fi
 
 log "fertig:"
 find "$OUT" -name '*sysupgrade.bin' -newer "$FILES/etc/otm-build-info" -exec ls -la {} \;

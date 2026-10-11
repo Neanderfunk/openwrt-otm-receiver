@@ -27,6 +27,9 @@ dieselbe Datei steht im Gerät unter `/etc/otm-build-info`.
 | `OTM_MQTT` | `proxy` (Vorgabe), `direct`, `auto` | Weg zum Broker, siehe unten |
 | `OTM_VPN` | `1` (Vorgabe), `0` | Management-VPN (fastd) ins Image; `proxy` und `auto` brauchen es |
 | `OTM_SSH_KEYS` | Pfad, `none` | `authorized_keys` fürs Image; Vorgabe `files/local/etc/dropbear/authorized_keys`, `none` = ohne Fernzugang |
+| `OTM_AUTOUPDATER` | `1` (Vorgabe), `0` | Autoupdater ins Image, siehe unten |
+| `OTM_BRANCH` | `stable` (Vorgabe) | Branch für Manifest und Upload-Verzeichnis |
+| `OTM_VERSION` | Ziffern | Versionsnummer in Image und Manifest; Vorgabe Bauzeit `JJJJMMTThhmm` (UTC) |
 | `OTM_VARIANT` | Text | Anhang für Image-Name und Ausgabeverzeichnis, damit Varianten sich nicht überschreiben |
 
 Weg zum Broker:
@@ -48,6 +51,35 @@ TLS im Image voraus.
 ```sh
 OTM_MQTT=direct OTM_VPN=0 OTM_VARIANT=direkt ./build.sh
 OTM_SSH_KEYS=none OTM_VARIANT=ohne-ssh ./build.sh
+```
+
+## Autoupdater
+
+Wie bei Gluon: einmal am Tag (Uhrzeit je Gerät verschieden, aus der MAC) holt
+`otm-autoupdater` das Manifest `<mirror>/<branch>.manifest`, prüft die Signaturen
+(mindestens `good_signatures` gültige aus der Schlüsselliste, `ecdsaverify`) und spielt
+ein neueres Image für das eigene Board per `sysupgrade` ein; die Konfiguration bleibt.
+Vorgabe in `/etc/config/autoupdater`: Branch `stable`, Mirror
+`http://firmware.ffnef.de/otm/stable/sysupgrade`, 3 von 5 Signaturen, Schlüssel wie in
+den Neanderfunk-Sites (`buildkeys/ffnef.signkeys` in FirmwareConfigs). http genügt, die
+Signatur schützt. Von Hand: `otm-autoupdater -n` (nur prüfen), `-f` (auch wenn abgeschaltet).
+
+Manifest-Zeilen: `<board_name> <version> <sha256> <größe> <datei>`, `board_name` wie in
+`/tmp/sysinfo/board_name` (z. B. `tplink,cpe510-v1`).
+
+### Veröffentlichen
+
+Jeder Lauf von `build.sh` legt unter `build/out/otm/<branch>/` an, was auf den Server gehört
+(`firmware.ffnef.de/otm/<branch>/`):
+
+- `sysupgrade/`: Images und `<branch>.manifest`, **unsigniert**
+- `factory/`: Images für den Erstumstieg von der Herstellerfirmware
+
+Läufe für weitere Targets (lantiq, 21.02) ergänzen das Verzeichnis; ein Profil, das neu gebaut
+wird, ersetzt seine alten Dateien und Manifest-Zeilen. Signiert wird wie bei Gluon:
+
+```sh
+gluon/contrib/sign.sh <secret> build/out/otm/stable/sysupgrade/stable.manifest
 ```
 
 ## Flashen

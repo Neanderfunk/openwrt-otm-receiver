@@ -12,6 +12,10 @@
 
 [ -x /usr/bin/fastd ] || exit 0
 
+# Ein schon erzeugter Schluessel bleibt (Update mit erhaltener Konfiguration,
+# z. B. durch den Autoupdater): sonst kaeme das Geraet mit neuem Schluessel zurueck
+secret=$(uci -q get fastd.mgmt.secret)
+[ "$secret" = generate ] && secret=
 uci -q delete fastd.sample_config
 uci -q delete fastd.mgmt
 uci -q delete fastd.mgmt_wgiot
@@ -23,7 +27,7 @@ uci set fastd.mgmt.mode='tap'
 uci set fastd.mgmt.interface='otm-mgmt'
 uci set fastd.mgmt.mtu='1312'
 uci set fastd.mgmt.secure_handshakes='1'
-uci set fastd.mgmt.secret='generate'
+uci set fastd.mgmt.secret="${secret:-generate}"
 uci set fastd.mgmt_wgiot=peer
 uci set fastd.mgmt_wgiot.enabled='1'
 uci set fastd.mgmt_wgiot.net='mgmt'

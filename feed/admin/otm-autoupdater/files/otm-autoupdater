@@ -1,0 +1,94 @@
+#!/bin/sh
+# otm-autoupdater - Firmware-Aktualisierung nach Gluon-Art.
+#
+# Holt <mirror>/<branch>.manifest, prueft die Signaturen (mindestens
+# good_signatures gueltige aus der pubkey-Liste, ecdsaverify), sucht die Zeile
+# fuer dieses Board (/tmp/sysinfo/board_name) und spielt das Image mit
+# sysupgrade ein (Konfiguration bleibt), wenn seine Version neuer ist als
+# /lib/otm/version.
+#
+# Manifest (wie Gluon):
+#   BRANCH=stable
+#   DATE=...
+#   PRIORITY=0
+#
+#   <board_name> <version> <sha256> <groesse> <dateiname>
+#   ---
+#   <signatur>
+#   ...
+#
+# Aufruf: otm-autoupdater [-f] [-n] [-b branch]
+#   -f  auch wenn abgeschaltet   -n  nur pruefen, nichts einspielen
+
+. /lib/functions.sh
+
+log() { logger -s -t otm-autoupdater "$*"; }
+
+force=0 dry=0 branch=
+while getopts fnb: o; do
+	case "$o" in
+	f) force=1 ;;
+	n) dry=1 ;;
+	b) branch=$OPTARG ;;
+	*) echo "usage: $0 [-f] [-n] [-b branch]" >&2; exit 2 ;;
+	esac
+done
+
+config_load autoupdater
+config_get_bool enabled settings enabled 0
+[ "$enabled" = 1 ] || [ "$force" = 1 ] || { log "disabled"; exit 0; }
+[ -n "$branch" ] || config_get branch settings branch stable
+config_get name "$branch" name "$branch"
+config_get good "$branch" good_signatures 1
+config_get mirrors "$branch" mirror
+config_get pubkeys "$branch" pubkey
+[ -n "$mirrors" ] || { log "branch $branch: no mirror"; exit 1; }
+[ -n "$pubkeys" ] || { log "branch $branch: no pubkey"; exit 1; }
+
+board=$(cat /tmp/sysinfo/board_name 2>/dev/null)
+current=$(cat /lib/otm/version 2>/dev/null)
+[ -n "$board" ] || { log "no board name"; exit 1; }
+
+W=/tmp/otm-autoupdater
+L=/var/lock/otm-autoupdater
+mkdir -p /var/lock
+mkdir "$L" 2>/dev/null || { log "already running"; exit 0; }
+rm -rf "$W"; mkdir -p "$W"
+trap 'rm -rf "$W" "$L"' EXIT
+
+for m in $mirrors; do
+	uclient-fetch -q -T 30 -O "$W/manifest" "$m/$name.manifest" 2>/dev/null && { mirror=$m; break; }
+done
+[ -n "$mirror" ] || { log "no manifest for branch $name from any mirror"; exit 1; }
+
+# genau der Teil, den sign.sh signiert: alles vor der Zeile "---"
+awk -v u="$W/upper" -v l="$W/lower" '/^---$/ { sep = 1; next } { print > (sep ? l : u) }' "$W/manifest"
+set --
+for k in $pubkeys; do set -- "$@" -p "$k"; done
+while read -r s; do [ -n "$s" ] && set -- "$@" -s "$s"; done < "$W/lower" 2>/dev/null
+ecdsaverify -n "$good" "$@" "$W/upper" ||
+	{ log "manifest from $mirror: fewer than $good good signatures"; exit 1; }
+
+grep -q "^BRANCH=$name\$" "$W/upper" || { log "manifest is not for branch $name"; exit 1; }
+set -- $(awk -v b="$board" '$1 == b && NF == 5 { print $2, $3, $4, $5; exit }' "$W/upper")
+[ $# = 4 ] || { log "no image for $board in branch $name"; exit 0; }
+version=$1 sha=$2 size=$3 file=$4
+
+# Versionen sind gleich lange Ziffernfolgen (Bauzeit), also genuegt der
+# Textvergleich; aelter oder gleich wird nie eingespielt
+newest=$(printf '%s\n%s\n' "$current" "$version" | sort | tail -n 1)
+if [ "$version" = "$current" ] || [ "$newest" != "$version" ]; then
+	log "up to date ($current, branch $name has $version)"
+	exit 0
+fi
+log "update $current -> $version ($file)"
+[ "$dry" = 1 ] && exit 0
+
+uclient-fetch -q -T 120 -O "$W/image" "$mirror/$file" || { log "download of $file failed"; exit 1; }
+[ "$(wc -c < "$W/image")" = "$size" ] || { log "$file: wrong size"; exit 1; }
+[ "$(sha256sum "$W/image" | cut -d' ' -f1)" = "$sha" ] || { log "$file: wrong sha256"; exit 1; }
+sysupgrade -T "$W/image" || { log "$file: rejected by sysupgrade -T"; exit 1; }
+log "running sysupgrade"
+trap - EXIT
+rmdir "$L"
+exec sysupgrade "$W/image"

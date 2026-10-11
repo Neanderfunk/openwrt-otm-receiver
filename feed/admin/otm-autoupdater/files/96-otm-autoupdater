@@ -1,0 +1,11 @@
+#!/bin/sh
+# Taeglicher Lauf zu einer festen, je Geraet anderen Zeit (aus der MAC), damit
+# nicht alle Empfaenger gleichzeitig laden. Idempotent.
+f=/etc/crontabs/root
+mac=$(cat /sys/class/ieee80211/phy0/macaddress 2>/dev/null || cat /sys/class/net/eth0/address 2>/dev/null)
+n=$(printf '%d' "0x$(echo "$mac" | tr -d ':' | tail -c 5)" 2>/dev/null) || n=0
+touch "$f"
+sed -i '/otm-autoupdater/d' "$f"
+echo "$((n % 60)) $((n / 60 % 24)) * * * /usr/sbin/otm-autoupdater" >> "$f"
+/etc/init.d/cron enable 2>/dev/null
+exit 0
