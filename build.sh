@@ -231,7 +231,9 @@ esac
 mkdir -p "$PKGDIR"
 find "$SDK/bin" \( -name '*.ipk' -o -name '*.apk' \) \
 	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" -o -name "otm-mgmt-vpn*" -o -name "otm-autoupdater*" \) -exec cp {} "$PKGDIR/" \;
-ls "$PKGDIR" | grep -qE -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" || die "keine Pakete mit Revision $OTM_RELEASE"
+# kein grep -q: endet es beim ersten Treffer, bekommt ls SIGPIPE, und mit
+# pipefail scheitert die Pruefung trotz Treffer (lantiq 14.10.)
+ls "$PKGDIR" | grep -E -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" >/dev/null || die "keine Pakete mit Revision $OTM_RELEASE"
 
 # Unsere Pakete auf ihre Version festnageln. Sonst gewinnt eine hoehere Version
 # aus dem Release-Repo: 25.12.4 liefert wireless-regdb 2026.05.30, unser SDK
