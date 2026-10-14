@@ -72,6 +72,17 @@ Signatur schützt. Von Hand: `otm-autoupdater -n` (nur prüfen), `-f` (auch wenn
 Manifest-Zeilen: `<board_name> <version> <sha256> <größe> <datei>`, `board_name` wie in
 `/tmp/sysinfo/board_name` (z. B. `tplink,cpe510-v1`).
 
+### LiteBeam M5 XW: Flash-Schreibschutz
+
+Der Ubiquiti-Bootloader lässt beim LiteBeam M5 XW den unteren Flash geschützt (Statusregister
+`0x9c`: SRWD und BP0-2). Ohne Gegenmaßnahme meldet `sysupgrade` Erfolg, schreibt aber nur die
+Konfigurationspartition; Kernel und System bleiben alt, die Konfiguration geht verloren.
+`kmod-otm-spinor-unlock` (nur im LiteBeam-Image, ab 25.12) setzt beim Booten den
+Schreibschutz-Pin des Flash (SoC-GPIO 0, unter 19.07 "SPI nWP", im ath79-Device-Tree als
+PHY-Reset geführt) und löscht das Statusregister, wie Linux 4.14 es bei Macronix tat. Danach
+funktionieren `sysupgrade` und Autoupdater. Ein LiteBeam mit älterem OTM-Image ohne dieses
+Modul braucht einmal TFTP-Rescue oder das Modul von Hand (`insmod … wp_gpio=512 wp_level=0`).
+
 ### Veröffentlichen
 
 Jeder Lauf von `build.sh` legt unter `build/out/otm/<branch>/` an, was auf den Server gehört

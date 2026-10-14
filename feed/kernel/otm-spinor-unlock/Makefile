@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=otm-spinor-unlock
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_LICENSE:=GPL-2.0
 
 include $(INCLUDE_DIR)/package.mk
@@ -11,14 +11,20 @@ define KernelPackage/otm-spinor-unlock
   SUBMENU:=Other modules
   TITLE:=Unlock the whole SPI NOR flash at boot (Ubiquiti XW)
   FILES:=$(PKG_BUILD_DIR)/otm-spinor-unlock.ko
-  AUTOLOAD:=$(call AutoLoad,30,otm-spinor-unlock)
 endef
 
 define KernelPackage/otm-spinor-unlock/description
- Clears the block protect bits of the whole SPI NOR chip. On Ubiquiti XW
- boards the bootloader protects the lower part of the flash and the kernel
- unlocks the wrong end, so sysupgrade silently writes nothing but the
- overlay. Needs mtd_get_master (kernel 5.9+).
+ Releases the SPI flash write-protect pin and clears the status register
+ (block protect + SRWD) the way Linux 4.14 did for Macronix chips. On the
+ Ubiquiti LiteBeam M5 XW the bootloader leaves the lower flash protected and
+ sysupgrade silently writes nothing but the overlay. Needs kernel 5.9+.
+endef
+
+# Laden beim Boot mit dem Schreibschutz-Pin des LiteBeam M5 XW (SoC-GPIO 0,
+# global 512 unter Kernel 6.12). Nur fuer dieses Board ins Image nehmen.
+define KernelPackage/otm-spinor-unlock/install
+	$(INSTALL_DIR) $(1)/etc/modules.d
+	echo "otm-spinor-unlock wp_gpio=512 wp_level=0" > $(1)/etc/modules.d/30-otm-spinor-unlock
 endef
 
 define Build/Prepare

@@ -147,6 +147,11 @@ log "feeds update/install"
 # von otm-bridge nach, der Bau bricht dann an fehlendem pcap.h ab
 ./scripts/feeds install -p base mac80211 wireless-regdb libpcap >/dev/null
 ./scripts/feeds install -p otm otm-bridge otm-mgmt-vpn otm-autoupdater >/dev/null
+# Flash-Entsperren fuer den LiteBeam M5 XW, braucht Kernel 5.9+ (nicht 21.02)
+KMODS_OTM=""
+case "$OWRT_VER" in 2[3-9].*) KMODS_OTM="otm-spinor-unlock"
+	./scripts/feeds install -p otm otm-spinor-unlock >/dev/null ;;
+esac
 
 # Gepatchte Paketverzeichnisse immer vom sauberen Stand aus: kein Rest aus
 # frueheren Laeufen (auch keine unversionierten Dateien) im Image.
@@ -195,15 +200,17 @@ CONFIG_PACKAGE_otm-bridge=m
 CONFIG_PACKAGE_otm-mgmt-vpn=m
 CONFIG_PACKAGE_otm-autoupdater=m
 EOF
+for k in $KMODS_OTM; do echo "CONFIG_PACKAGE_kmod-$k=m" >> .config; done
 make defconfig >/dev/null
 
 log "baue mac80211, wireless-regdb, otm-bridge, otm-mgmt-vpn (-j$JOBS)"
-for p in mac80211 wireless-regdb otm-bridge otm-mgmt-vpn otm-autoupdater; do
+for p in mac80211 wireless-regdb otm-bridge otm-mgmt-vpn otm-autoupdater $KMODS_OTM; do
 	make "package/$p/clean" >/dev/null 2>&1 || true
 done
 make -j"$JOBS" package/mac80211/compile package/wireless-regdb/compile \
 	package/otm-bridge/compile package/otm-mgmt-vpn/compile \
-	package/otm-autoupdater/compile > "$BUILD/sdk-build.log" 2>&1 ||
+	package/otm-autoupdater/compile $(for k in $KMODS_OTM; do echo package/$k/compile; done) \
+	> "$BUILD/sdk-build.log" 2>&1 ||
 	die "SDK-Build fehlgeschlagen, siehe $BUILD/sdk-build.log"
 
 # --- 2. ImageBuilder ---------------------------------------------------------
@@ -294,7 +301,13 @@ for prof in $PROFILES; do
 	# alte Images dieses Profils weg, sonst landen sie mit in out/
 	rm -f bin/targets/$TARGET/$SUBTARGET/*"$prof"*
 	rm -rf "${OUT:?}/$prof"
-	make image PROFILE="$prof" PACKAGES="$IMAGE_PACKAGES" FILES="$FILES" \
+	# Je Board: LiteBeam M5 XW braucht das Entsperren des Flash, sonst schreibt
+	# sysupgrade (und damit der Autoupdater) Kernel und System nicht
+	PKGS="$IMAGE_PACKAGES"
+	case "$prof:$KMODS_OTM" in ubnt_litebeam-m5-xw:*otm-spinor-unlock*)
+		PKGS="$PKGS kmod-otm-spinor-unlock" ;;
+	esac
+	make image PROFILE="$prof" PACKAGES="$PKGS" FILES="$FILES" \
 		EXTRA_IMAGE_NAME="otm-$OTM_COMMIT" > "$BUILD/ib-$prof.log" 2>&1 ||
 		die "ImageBuilder $prof fehlgeschlagen, siehe $BUILD/ib-$prof.log"
 	mkdir -p "$OUT/$prof"
