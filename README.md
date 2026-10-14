@@ -77,7 +77,7 @@ Manifest-Zeilen: `<board_name> <version> <sha256> <größe> <datei>`, `board_nam
 Der Ubiquiti-Bootloader lässt beim LiteBeam M5 XW den unteren Flash geschützt (Statusregister
 `0x9c`: SRWD und BP0-2). Ohne Gegenmaßnahme meldet `sysupgrade` Erfolg, schreibt aber nur die
 Konfigurationspartition; Kernel und System bleiben alt, die Konfiguration geht verloren.
-`kmod-otm-spinor-unlock` (nur im LiteBeam-Image, ab 25.12) setzt beim Booten den
+`kmod-otm-spinor-unlock` (in allen Ubiquiti-XW-Images, ab 25.12) setzt beim Booten den
 Schreibschutz-Pin des Flash (SoC-GPIO 0, unter 19.07 "SPI nWP", im ath79-Device-Tree als
 PHY-Reset geführt) und löscht das Statusregister, wie Linux 4.14 es bei Macronix tat. Es lädt
 aus `/etc/modules-boot.d`, also vor `mount_root`; sonst kann das Overlay nach dem Upgrade nicht
@@ -160,11 +160,13 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
 
 | Gerät | Stand |
 |---|---|
-| TP-Link TL-WDR4300 v1 | Image gebaut, Test am Gerät steht aus |
-| TP-Link TL-WDR3600 v1 | am Gerät getestet (14.09.2026), läuft out of the box |
-| Ubiquiti NanoStation/Bullet/Rocket M5 (XM, XW), TP-Link CPE510 | Kandidaten (ath9k, Images in 21.02.7) |
-| LiteBeam M5 (XW) | Kandidat, fehlt in 21.02, braucht einen Backport |
-| LiteBeam 5AC, UniFi AC Mesh | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
+| TP-Link TL-WDR3600 v1, TL-WDR4300 v1, CPE510, AVM FRITZ!Box 3390 | im Betrieb, empfangen ITS-G5 |
+| Ubiquiti LiteBeam M5 XW | im Betrieb (Empfang noch nicht belegt), sysupgrade mit `kmod-otm-spinor-unlock` |
+| Ubiquiti NanoStation M5 (XM) | 21.02.7; ein Nachbau (AR9280) war ab 5805 MHz taub |
+| TP-Link CPE610 v1/v2, WBS510 v1/v2, TL-WDR3500 v1, TL-WDR4310 v1 | Images gebaut, ungetestet (ath9k, 5 GHz) |
+| Ubiquiti NanoStation (Loco) M5 XW, PowerBeam M5 XW, Bullet M5 XW | Images gebaut, ungetestet; Flash-Entsperren wie beim LiteBeam |
+| LiteBeam 5AC, UniFi AC Mesh, CPE710 | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
+| CPE210/220, WBS210, PowerBeam M2 | ungeeignet: nur 2.4 GHz |
 
 Die vollständige Liste mit Verbreitung und Gebrauchtpreisen steht in
 [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md).

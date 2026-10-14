@@ -21,7 +21,7 @@ define KernelPackage/otm-spinor-unlock/description
 endef
 
 # Laden mit dem Schreibschutz-Pin des LiteBeam M5 XW (SoC-GPIO 0, global 512
-# unter Kernel 6.12). Nur fuer dieses Board ins Image nehmen.
+# unter Kernel 6.12). Nur fuer Ubiquiti-XW-Boards ins Image nehmen (build.sh: XW).
 # modules-boot.d, nicht modules.d: mount_root (preinit) muss das Overlay schon
 # loeschen koennen, sonst Rueckfall auf RAM-Overlay und die gesicherte
 # Konfiguration kommt nach sysupgrade nicht zurueck.

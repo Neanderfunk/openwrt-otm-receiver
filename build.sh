@@ -291,20 +291,28 @@ OUT="$BUILD/out/$OWRT_VER${OTM_VARIANT:+-$OTM_VARIANT}"
 # Geraete, bei denen TLS (direct/auto) das Overlay fast aufbraucht: 8 MB Flash
 # und ein grosses Kernel-/Loader-Layout. Mit TLS bleiben dort grob 300 KB,
 # der erste Boot schreibt fast so viel.
-KNAPP="ubnt_litebeam-m5-xw tplink_cpe510-v1 tplink_cpe510-v2 tplink_cpe510-v3"
+KNAPP="ubnt_litebeam-m5-xw ubnt_nanostation-m-xw ubnt_nanostation-loco-m-xw
+	ubnt_powerbeam-m5-xw ubnt_bullet-m-xw
+	tplink_cpe510-v1 tplink_cpe510-v2 tplink_cpe510-v3 tplink_cpe610-v1 tplink_cpe610-v2
+	tplink_wbs510-v1 tplink_wbs510-v2"
+# Ubiquiti XW: der Bootloader laesst den Flash schreibgeschuetzt, sysupgrade (und
+# damit der Autoupdater) schreibt sonst Kernel und System nicht. Am LiteBeam
+# belegt; die XW-Boards sind elektrisch gleich (Gluon-Images liefen
+# geraeteuebergreifend), Schreibschutz-Pin ueberall SoC-GPIO 0.
+XW="ubnt_litebeam-m5-xw ubnt_nanostation-m-xw ubnt_nanostation-loco-m-xw
+	ubnt_powerbeam-m5-xw ubnt_bullet-m-xw"
 for prof in $PROFILES; do
 	log "Image $prof"
-	case " $KNAPP " in *" $prof "*)
+	case " $(echo $KNAPP) " in *" $prof "*)
 		[ "$OTM_MQTT" = proxy ] ||
 			printf '\033[1;33m[otm]\033[0m %s\n' "$prof: OTM_MQTT=$OTM_MQTT braucht TLS im Image, dafuer ist der Flash knapp (Overlay ~300 KB); proxy empfohlen" >&2 ;;
 	esac
 	# alte Images dieses Profils weg, sonst landen sie mit in out/
 	rm -f bin/targets/$TARGET/$SUBTARGET/*"$prof"*
 	rm -rf "${OUT:?}/$prof"
-	# Je Board: LiteBeam M5 XW braucht das Entsperren des Flash, sonst schreibt
-	# sysupgrade (und damit der Autoupdater) Kernel und System nicht
+	# Je Board: Ubiquiti XW braucht das Entsperren des Flash (siehe XW oben)
 	PKGS="$IMAGE_PACKAGES"
-	case "$prof:$KMODS_OTM" in ubnt_litebeam-m5-xw:*otm-spinor-unlock*)
+	case " $(echo $XW) :$KMODS_OTM" in *" $prof "*:*otm-spinor-unlock*)
 		PKGS="$PKGS kmod-otm-spinor-unlock" ;;
 	esac
 	make image PROFILE="$prof" PACKAGES="$PKGS" FILES="$FILES" \
