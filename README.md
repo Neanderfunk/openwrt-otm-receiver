@@ -79,9 +79,12 @@ Der Ubiquiti-Bootloader lässt beim LiteBeam M5 XW den unteren Flash geschützt 
 Konfigurationspartition; Kernel und System bleiben alt, die Konfiguration geht verloren.
 `kmod-otm-spinor-unlock` (nur im LiteBeam-Image, ab 25.12) setzt beim Booten den
 Schreibschutz-Pin des Flash (SoC-GPIO 0, unter 19.07 "SPI nWP", im ath79-Device-Tree als
-PHY-Reset geführt) und löscht das Statusregister, wie Linux 4.14 es bei Macronix tat. Danach
-funktionieren `sysupgrade` und Autoupdater. Ein LiteBeam mit älterem OTM-Image ohne dieses
-Modul braucht einmal TFTP-Rescue oder das Modul von Hand (`insmod … wp_gpio=512 wp_level=0`).
+PHY-Reset geführt) und löscht das Statusregister, wie Linux 4.14 es bei Macronix tat. Es lädt
+aus `/etc/modules-boot.d`, also vor `mount_root`; sonst kann das Overlay nach dem Upgrade nicht
+gelöscht werden, das System läuft mit RAM-Overlay und die Konfiguration kommt nicht zurück.
+Damit lief `sysupgrade` am 14.10. vollständig durch. Ein LiteBeam mit älterem OTM-Image ohne
+dieses Modul braucht einmal TFTP-Rescue oder das Modul von Hand
+(`insmod … wp_gpio=512 wp_level=0`). Einzelheiten: `docs/litebeam-flash-schutz.md`.
 
 ### Veröffentlichen
 

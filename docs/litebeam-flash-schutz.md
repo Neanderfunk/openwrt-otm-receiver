@@ -21,10 +21,12 @@ Allgemeine Fassung für alle Geräte: Router-Werkstatt `docs/flash-schreibschutz
 - `kmod-otm-spinor-unlock` (OTM-Feed, nur im LiteBeam-Image ab 25.12) setzt
   beim Booten den Pin und löscht das Statusregister. Danach ist der Flash
   nachweislich beschreibbar (Schreibtests, Register bleibt `0x00`).
-- **Offen:** sysupgrade klappt trotzdem nur manchmal (1 von 5 Läufen
-  vollständig). Was in der Schreibphase von sysupgrade passiert, ist ohne
-  serielle Konsole nicht zu sehen. Bis das geklärt ist: LiteBeam per
-  TFTP-Rescue aktualisieren, Autoupdater dort aus.
+- Das Modul muss aus `/etc/modules-boot.d` laden (seit f1baf30), nicht aus
+  `/etc/modules.d`: `mount_root` braucht den entsperrten Flash schon in
+  preinit, sonst RAM-Overlay und die gesicherte Konfiguration kommt nicht
+  zurück. So lief sysupgrade am 14.10. vollständig durch (Lauf 6).
+- **Noch offen:** das Fehlerbild „schreibt gar nichts“ (Läufe 2 und 3, von
+  Hand entsperrt) ist nicht erklärt. Weitere Upgrades beobachten.
 
 ## Befunde der Reihe nach
 
@@ -63,7 +65,16 @@ Allgemeine Fassung für alle Geräte: Router-Werkstatt `docs/flash-schreibschutz
     setzt nichts zurück. Auffällig: `gpiod_get_raw_value` meldet vorher schon 0,
     erst das ausdrückliche Setzen gibt das Register frei.
 11. **Modul beim Booten** (Image `8ccf43b`, `/etc/modules.d`): meldet
-    `SR before: 0x9c`, `SR after WRSR 0: 0x00`.
+    `SR before: 0x9c`, `SR after WRSR 0: 0x00`, aber erst bei ~20 s.
+12. **Boot-Log nach Lauf 5:** `jffs2: Newly-erased block contained word
+    0xdeadc0de at offset 0x00010000`, `mount_root: switching to jffs2 failed -
+    fallback to ramoverlay`. `mount_root` lief bei ~14 s, also im noch
+    gesperrten Flash. `/overlay/sysupgrade.tgz` lag da, wurde aber nie
+    zurückgespielt; jffs2 zeigte 100 % belegt. Das ist das Fehlerbild
+    „Konfiguration verloren“.
+13. **Modul aus `/etc/modules-boot.d`** (f1baf30): `/sbin/init` lädt es bei
+    3.8 s, danach `jffs2_build_filesystem(): erasing all blocks after the end
+    marker...` und `mount_root: switching to jffs2 overlay` ohne Fehler.
 
 ## sysupgrade-Läufe nach dem Entsperren (14.10.)
 
@@ -73,16 +84,18 @@ Allgemeine Fassung für alle Geräte: Router-Werkstatt `docs/flash-schreibschutz
 | 2 | von Hand, ~20 min vorher | 8ccf43b mit Key | nichts geschrieben, Konfiguration unverändert |
 | 3 | von Hand, Schreibtests direkt vorher ok | 8ccf43b mit Key (`-v`) | nichts geschrieben, Konfiguration unverändert, jffs2 gültig |
 | 4 | von Hand | 8e6ab30 ohne Key | Konfiguration verloren, ohne Key kein SSH (dropbear aus), TFTP-Rescue nötig |
-| 5 | Modul beim Booten | 8ccf43b mit Key (gleiches Image) | Konfiguration verloren (beide Marker weg, neuer fastd-Schlüssel) |
+| 5 | Modul beim Booten (modules.d) | 8ccf43b mit Key (gleiches Image) | Konfiguration verloren (beide Marker weg, neuer fastd-Schlüssel); Ursache RAM-Overlay, siehe 12. |
+| 6 | Modul beim Booten (modules.d, Gerät lief auf RAM-Overlay), neues Image lädt es aus modules-boot.d | f1baf30 mit Key, Version 202610141907 | **voll erfolgreich**: `/rom` neu, `/root`-Marker weg, `/etc`-Marker da, fastd-Schlüssel gleich, Overlay auf jffs2 |
 
-Es gibt also zwei Fehlerbilder: „Upgrade-Phase schreibt gar nichts“ und
-„Upgrade-Phase läuft durch, die Konfiguration kommt nicht zurück“. Ob in Lauf 5
-die Firmware geschrieben wurde, ist nicht feststellbar (gleiches Image).
+Es gab zwei Fehlerbilder: „Upgrade-Phase schreibt gar nichts“ (2, 3) und
+„Upgrade-Phase läuft durch, die Konfiguration kommt nicht zurück“ (4, 5). Das
+zweite ist erklärt (12.) und behoben (13., Lauf 6). Ob in Lauf 5 die Firmware
+geschrieben wurde, ist nicht feststellbar (gleiches Image).
 
 ## Was das Modul tut
 
-`feed/kernel/otm-spinor-unlock`, Paket `kmod-otm-spinor-unlock`, geladen mit
-`wp_gpio=512 wp_level=0`:
+`feed/kernel/otm-spinor-unlock`, Paket `kmod-otm-spinor-unlock`, geladen aus
+`/etc/modules-boot.d` mit `wp_gpio=512 wp_level=0`:
 
 1. MTD-Partition `firmware` suchen, über `mtd_get_master` den Chip, über
    `container_of` die `struct spi_nor`.
@@ -106,9 +119,9 @@ die Firmware geschrieben wurde, ist nicht feststellbar (gleiches Image).
 
 ## Nächste Schritte, falls es weitergehen soll
 
-- Ausgabe der Upgrade-Phase (stage2) mitschneiden, ohne serielle Konsole:
-  Ausgabe der Upgrade-Skripte übers Netz an einen Empfänger umleiten.
-- Alternativ der dokumentierte Weg: Bootloader-Rückschritt auf s776 aus 19.07
-  heraus. Risiko: Bootloader überschreiben; vorher ganzen Flash sichern.
+- Weitere Upgrades (auch über den Autoupdater) mit Markertest prüfen. Tritt
+  „schreibt gar nichts“ wieder auf: Ausgabe der Upgrade-Phase (stage2) übers
+  Netz mitschneiden.
+- Der Bootloader-Rückschritt auf s776 ist mit dem Modul nicht mehr nötig.
 - **Testregel:** für Upgrade-Versuche nur Images mit Key nehmen. Geht die
   Konfiguration verloren, schaltet ein Image ohne Key SSH ab.
