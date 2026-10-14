@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=otm-spinor-unlock
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_LICENSE:=GPL-2.0
 
 include $(INCLUDE_DIR)/package.mk
@@ -20,11 +20,14 @@ define KernelPackage/otm-spinor-unlock/description
  sysupgrade silently writes nothing but the overlay. Needs kernel 5.9+.
 endef
 
-# Laden beim Boot mit dem Schreibschutz-Pin des LiteBeam M5 XW (SoC-GPIO 0,
-# global 512 unter Kernel 6.12). Nur fuer dieses Board ins Image nehmen.
+# Laden mit dem Schreibschutz-Pin des LiteBeam M5 XW (SoC-GPIO 0, global 512
+# unter Kernel 6.12). Nur fuer dieses Board ins Image nehmen.
+# modules-boot.d, nicht modules.d: mount_root (preinit) muss das Overlay schon
+# loeschen koennen, sonst Rueckfall auf RAM-Overlay und die gesicherte
+# Konfiguration kommt nach sysupgrade nicht zurueck.
 define KernelPackage/otm-spinor-unlock/install
-	$(INSTALL_DIR) $(1)/etc/modules.d
-	echo "otm-spinor-unlock wp_gpio=512 wp_level=0" > $(1)/etc/modules.d/30-otm-spinor-unlock
+	$(INSTALL_DIR) $(1)/etc/modules-boot.d
+	echo "otm-spinor-unlock wp_gpio=512 wp_level=0" > $(1)/etc/modules-boot.d/30-otm-spinor-unlock
 endef
 
 define Build/Prepare
