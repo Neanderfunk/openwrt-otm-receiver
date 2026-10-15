@@ -136,7 +136,14 @@ def on_message(c, u, m):
 			except Exception:
 				pass
 		elif art == 'status':
-			gauges[('node_online', node)] = 1 if m.payload == b'online' else 0
+			if m.payload:
+				gauges[('node_online', node)] = 1 if m.payload == b'online' else 0
+			else:
+				# leere retained Meldung: Station abgebaut, aus der Statistik nehmen
+				gauges.pop(('node_online', node), None)
+				gauges.pop(('node_uptime', node), None)
+				firmware.pop(node, None)
+				standorte.pop(node, None)
 
 def esc(v):
 	"""Tag-Wert fuer das Influx-Line-Protokoll."""
