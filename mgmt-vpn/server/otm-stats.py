@@ -21,6 +21,8 @@
 #                           bridge/model aus its/<node>/info beim Verbinden)
 #   otm_node_location{node,lat,lon}  1 (Empfaengerposition, nur wenn der Knoten
 #                           sie teilt: otm/<node>/location retained, ab 0.15.0)
+#   otm_rx_{cap,pkts,crc,phy,active,busy,rxt}{node}  Zaehler aus
+#                           otm/<node>/health (ab 0.16.0), otm_rx_noise{node} dBm
 #
 # Absenderposition: Long Position Vector aus dem GeoNetworking-Header (bei
 # signierten Paketen im unsecuredData-Teil von IEEE 1609.2), gerundet auf
@@ -37,6 +39,8 @@ zaehler = collections.Counter()  # (metrik, label) -> Wert, kumulativ
 gauges = {}                      # (metrik, label) -> Wert
 firmware = {}                    # node -> {version, commit, bridge, model}
 standorte = {}                   # node -> (lat, lon)
+gesundheit = {}                  # node -> (zeit, {feld: wert}) aus otm/<node>/health
+GESUND_MAX = 300                 # aeltere Health-Werte nicht weiterschreiben (offline != taub)
 
 def key(f):
 	if len(f) < 40 or ((f[0] >> 2) & 3) != 2:
@@ -96,6 +100,18 @@ def on_message(c, u, m):
 			except Exception:
 				standorte.pop(t[1], None)   # leer = nicht (mehr) geteilt
 		return
+	if len(t) == 3 and t[0] == 'otm' and t[2] == 'health':
+		try:
+			h = json.loads(m.payload)
+			werte = {k: int(h[k]) for k in ('cap', 'pkts', 'crc', 'phy', 'active', 'busy', 'rxt')
+			         if k in h and int(h[k]) >= 0}
+			if int(h.get('noise', 0)) < 0:
+				werte['noise'] = int(h['noise'])
+		except Exception:
+			return
+		with lock:
+			gesundheit[t[1]] = (time.time(), werte)
+		return
 	if len(t) == 3 and t[0] == 'otm' and t[2] == 'build':
 		try:
 			b = json.loads(m.payload)
@@ -144,6 +160,7 @@ def on_message(c, u, m):
 				gauges.pop(('node_uptime', node), None)
 				firmware.pop(node, None)
 				standorte.pop(node, None)
+				gesundheit.pop(node, None)
 
 def esc(v):
 	"""Tag-Wert fuer das Influx-Line-Protokoll."""
@@ -171,6 +188,7 @@ def auswerten():
 		werte = list(zaehler.items()) + list(gauges.items())
 		fw = {n: dict(f) for n, f in firmware.items()}
 		orte = dict(standorte)
+		gesund = {n: dict(w) for n, (z, w) in gesundheit.items() if now - z < GESUND_MAX}
 	ts = int(now) * 10**9
 	zeilen = []
 	for (metrik, label), wert in werte:
@@ -187,6 +205,10 @@ def auswerten():
 	for n, f in fw.items():
 		tags = ''.join(',%s=%s' % (k, esc(f.get(k) or '-')) for k in ('version', 'commit', 'bridge', 'model'))
 		zeilen.append('otm,node=%s%s node_build=1 %d' % (esc(n), tags, ts))
+	for n, w in gesund.items():
+		if w:
+			felder = ','.join('rx_%s=%d' % (k, v) for k, v in sorted(w.items()))
+			zeilen.append('otm,node=%s %s %d' % (esc(n), felder, ts))
 	for n, (lat, lon) in orte.items():
 		zeilen.append('otm,node=%s,lat=%s,lon=%s node_location=1 %d' % (esc(n), lat, lon, ts))
 	if zeilen:
@@ -198,7 +220,7 @@ def auswerten():
 def main():
 	c = mqtt.Client(client_id='otm-stats')
 	c.on_message = on_message
-	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0), ('otm/+/location', 0)])
+	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0), ('otm/+/location', 0), ('otm/+/health', 0)])
 	c.connect_async('127.0.0.1', 1883, 60)
 	c.loop_start()
 	while True:
