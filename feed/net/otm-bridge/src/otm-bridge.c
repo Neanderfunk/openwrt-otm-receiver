@@ -14,6 +14,16 @@
  *                       outside its/# so it is not forwarded to opentrafficmap)
  *   otm/<node>/location {"lat":..,"lon":..[,"alt":..]}  (on connect, retained;
  *                       only with -L; -L "" clears a previously shared one)
+ *   otm/<node>/health   receiver health every 60 s, only with -H:
+ *                       {"cap":..,"pkts":..,"crc":..,"phy":..,"noise":..,
+ *                        "active":..,"busy":..,"rxt":..}
+ *                       cap = frames seen by pcap since start; pkts/crc/phy =
+ *                       ath9k debugfs recv counters (all frames, CRC errors =
+ *                       preamble seen but payload broken, PHY errors = energy
+ *                       seen, nothing decodable); noise and channel times (ms)
+ *                       from the nl80211 survey of the channel in use; -1
+ *                       (noise: 0) if a source is missing. Cumulative; a deaf radio keeps
+ *                       all of them at 0 for hours.
  *
  * <node> defaults to the capture interface MAC as 12 lowercase hex chars.
  */
@@ -31,7 +41,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.15.0"
+#define OTM_BRIDGE_VERSION "0.16.0"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
@@ -49,6 +59,9 @@ static char topic_info[160];
 static char topic_stats[160];
 static char topic_build[160];
 static char topic_location[160];
+static char topic_health[160];
+static int health;                    /* -H */
+static unsigned long pkt_captured;
 
 /* -V/-G: Build-Nummer und Commit des Images (aus /etc/otm-build-info) */
 static const char *build_version;
@@ -178,6 +191,92 @@ static void publish_stats(struct mosquitto *m)
 	mosquitto_publish(m, NULL, topic_stats, n, stats, 0, false);
 }
 
+/* ath9k debugfs: "  CRC ERR :   3" - Name exakt vergleichen, sonst trifft
+ * "CRC ERR" auch "PRE-DELIM CRC ERR" */
+static void read_recv(const char *phy, long *pkts, long *crc, long *phyerr)
+{
+	char path[160], line[128];
+	*pkts = *crc = *phyerr = -1;
+	snprintf(path, sizeof(path), "/sys/kernel/debug/ieee80211/%s/ath9k/recv", phy);
+	FILE *f = fopen(path, "r");
+	if (!f)
+		return;
+	while (fgets(line, sizeof(line), f)) {
+		char *c = strchr(line, ':');
+		if (!c)
+			continue;
+		*c = 0;
+		char *name = line;
+		while (*name == ' ')
+			name++;
+		char *e = c;
+		while (e > name && e[-1] == ' ')
+			*--e = 0;
+		long v = strtol(c + 1, NULL, 10);
+		if (!strcmp(name, "PKTS-ALL"))
+			*pkts = v;
+		else if (!strcmp(name, "CRC ERR"))
+			*crc = v;
+		else if (!strcmp(name, "PHY ERR"))
+			*phyerr = v;
+	}
+	fclose(f);
+}
+
+/* Survey des benutzten Kanals ("[in use]") aus iw */
+static void read_survey(int *noise, long long *active, long long *busy, long long *rxt)
+{
+	char cmd[96], line[160];
+	int inuse = 0;
+	*noise = 0;
+	*active = *busy = *rxt = -1;
+	snprintf(cmd, sizeof(cmd), "iw dev %s survey dump 2>/dev/null", cap_iface);
+	FILE *f = popen(cmd, "r");
+	if (!f)
+		return;
+	while (fgets(line, sizeof(line), f)) {
+		if (strstr(line, "frequency:"))
+			inuse = strstr(line, "[in use]") != NULL;
+		else if (inuse) {
+			char *c = strchr(line, ':');
+			if (!c)
+				continue;
+			if (strstr(line, "noise:"))
+				*noise = atoi(c + 1);
+			else if (strstr(line, "channel active time:"))
+				*active = atoll(c + 1);
+			else if (strstr(line, "channel busy time:"))
+				*busy = atoll(c + 1);
+			else if (strstr(line, "channel receive time:"))
+				*rxt = atoll(c + 1);
+		}
+	}
+	pclose(f);
+}
+
+static void publish_health(struct mosquitto *m)
+{
+	char path[128], phy[32] = "", buf[256];
+	long pkts, crc, phyerr;
+	int noise;
+	long long active, busy, rxt;
+	snprintf(path, sizeof(path), "/sys/class/net/%s/phy80211/name", cap_iface);
+	FILE *f = fopen(path, "r");
+	if (f) {
+		if (fgets(phy, sizeof(phy), f))
+			phy[strcspn(phy, "\n")] = 0;
+		fclose(f);
+	}
+	read_recv(phy, &pkts, &crc, &phyerr);
+	read_survey(&noise, &active, &busy, &rxt);
+	int n = snprintf(buf, sizeof(buf),
+		"{\"cap\":%lu,\"pkts\":%ld,\"crc\":%ld,\"phy\":%ld,\"noise\":%d,"
+		"\"active\":%lld,\"busy\":%lld,\"rxt\":%lld}",
+		pkt_captured, pkts, crc, phyerr, noise, active, busy, rxt);
+	if (n > 0 && n < (int)sizeof(buf))
+		mosquitto_publish(m, NULL, topic_health, n, buf, 0, false);
+}
+
 /* Own thread: pcap_loop may block indefinitely on a quiet channel
  * (TPACKET_V3 polls without timeout), so it cannot drive the timer. */
 static void *stats_thread(void *arg)
@@ -188,8 +287,11 @@ static void *stats_thread(void *arg)
 	while (running) {
 		for (int i = 0; i < STATS_INTERVAL && running; i++)
 			sleep(1);
-		if (running && mqtt_up)
+		if (running && mqtt_up) {
 			publish_stats(mosq);
+			if (health)
+				publish_health(mosq);
+		}
 		clock_gettime(CLOCK_MONOTONIC, &now);
 		if (mqtt_up)
 			ok = now;
@@ -312,6 +414,7 @@ static unsigned int radiotap_len(const u_char *p, unsigned int caplen)
 static void pkt_handler(u_char *ud, const struct pcap_pkthdr *h, const u_char *bytes)
 {
 	(void)ud;
+	pkt_captured++;
 	if (!mosq) return;
 	unsigned int rt = radiotap_len(bytes, h->caplen);
 	const u_char *frame = bytes + rt;
@@ -346,6 +449,7 @@ static void usage(void)
 	    "  -V VER     image build number, published retained to otm/<node>/build\n"
 	    "  -G COMMIT  image commit for otm/<node>/build\n"
 	    "  -L LOC     \"lat,lon[,alt]\" retained to otm/<node>/location, \"\" clears it\n"
+	    "  -H         receiver health to otm/<node>/health every 60 s\n"
 	    "  -f         stay in foreground\n");
 }
 
@@ -358,7 +462,7 @@ int main(int argc, char **argv)
 	int foreground          = 0;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "i:b:n:c:s:x:V:G:L:vfh")) != -1) {
+	while ((opt = getopt(argc, argv, "i:b:n:c:s:x:V:G:L:Hvfh")) != -1) {
 		switch (opt) {
 		case 'i': cap_iface   = optarg; break;
 		case 'b': broker_uri  = optarg; break;
@@ -370,6 +474,7 @@ int main(int argc, char **argv)
 		case 'V': build_version = optarg; break;
 		case 'G': build_commit  = optarg; break;
 		case 'L': location      = optarg; break;
+		case 'H': health        = 1;      break;
 		case 'f': foreground  = 1;      break;
 		case 'h':
 		default:  usage(); return opt == 'h' ? 0 : 1;
@@ -394,6 +499,7 @@ int main(int argc, char **argv)
 	snprintf(topic_stats,  sizeof(topic_stats),  "its/%s/stats",  node_id);
 	snprintf(topic_build,  sizeof(topic_build),  "otm/%s/build",  node_id);
 	snprintf(topic_location, sizeof(topic_location), "otm/%s/location", node_id);
+	snprintf(topic_health, sizeof(topic_health), "otm/%s/health", node_id);
 
 	/* Under procd stderr already ends up in syslog; LOG_PERROR would log
 	 * every line twice. Only mirror to stderr on an interactive terminal. */

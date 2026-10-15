@@ -155,7 +155,7 @@ case "$broker" in mqtt://*)
 		loc=$(otm_location "$latitude" "$longitude" "$altitude") ||
 			log "location not shared: latitude/longitude invalid ('$latitude', '$longitude')" ;;
 	esac
-	set -- "$@" -L "$loc" ;;
+	set -- "$@" -L "$loc" -H ;;
 esac
 [ "$verbose" -ge 1 ] 2>/dev/null && set -- "$@" -v
 [ "$verbose" -ge 2 ] 2>/dev/null && set -- "$@" -v
