@@ -143,7 +143,13 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   (`its/<node>/command`, Konsolenbefehle vom Server) ist bewusst nicht umgesetzt.
   Nur über den Proxy kommen dazu, retained und außerhalb von `its/#`, also nicht an
   OpenTrafficMap weitergereicht: `otm/<node>/build` (Build-Nummer, Commit, Bridge,
-  Modell) und, wenn geteilt, `otm/<node>/location`.
+  Modell) und, wenn geteilt, `otm/<node>/location`. Dazu jede Minute
+  `otm/<node>/health` (ab 0.16.0): Rahmen seit Start, die ath9k-Zähler aus debugfs (alle
+  Rahmen, CRC-Fehler = Präambel erkannt, PHY-Fehler = Energie gesehen) und der Survey des
+  Kanals (Rauschen, Belegtzeit). Im Grafana bewertet die Tabelle „Empfangs-Health (6 h)“
+  jede Station: empfängt ITS, nur Rauschen (Radio lebt, kein Verkehr) oder taub (kein
+  Zähler bewegt sich). Hintergrund: Es gibt Geräte, die 5.9 GHz trotz passendem Chip nicht
+  empfangen, siehe [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md).
 - **Position** (wie bei Gluon, `gluon-node-info.@location[0]`): standardmäßig nicht geteilt.
 
   ```

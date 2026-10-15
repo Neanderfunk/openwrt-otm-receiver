@@ -430,6 +430,220 @@
     "showHeader": true,
     "cellHeight": "sm"
    }
+  },
+  {
+   "id": 10,
+   "title": "Empfangs-Health (6 h)",
+   "type": "table",
+   "description": "Ab otm-bridge 0.16.0. Bewertung ueber die letzten 6 Stunden: 'empfaengt ITS' = mindestens ein ITS-Frame; 'nur Rauschen' = das Radio sieht Rahmen, CRC- oder PHY-Fehler, aber kein ITS (Standort ohne Verkehr?); 'taub?' = kein einziger Zaehler bewegt sich (so sah der NanoStation-Nachbau aus). CRC-Fehler: Praeambel erkannt, Inhalt kaputt. PHY-Fehler: Energie gesehen, nichts Dekodierbares.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 48,
+    "w": 24,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "clamp_max(sum by (node) (increase(otm_rx_pkts[6h]) + increase(otm_rx_crc[6h]) + increase(otm_rx_phy[6h])), 1) + (clamp_max(sum by (node) (increase(otm_frames[6h])), 1) or on(node) (sum by (node) (increase(otm_rx_pkts[6h]) + increase(otm_rx_crc[6h]) + increase(otm_rx_phy[6h])) * 0))"
+    },
+    {
+     "refId": "B",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "sum by (node) (increase(otm_frames[6h]))"
+    },
+    {
+     "refId": "C",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "sum by (node) (increase(otm_rx_pkts[6h]))"
+    },
+    {
+     "refId": "D",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "sum by (node) (increase(otm_rx_crc[6h]))"
+    },
+    {
+     "refId": "E",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "sum by (node) (increase(otm_rx_phy[6h]))"
+    },
+    {
+     "refId": "F",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "max by (node) (last_over_time(otm_rx_noise[15m]))"
+    },
+    {
+     "refId": "G",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "100 * sum by (node) (increase(otm_rx_busy[6h])) / sum by (node) (increase(otm_rx_active[6h]))"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "joinByField",
+     "options": {
+      "byField": "node",
+      "mode": "outer"
+     }
+    },
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true,
+       "Time 1": true,
+       "Time 2": true,
+       "Time 3": true,
+       "Time 4": true,
+       "Time 5": true,
+       "Time 6": true,
+       "Time 7": true
+      },
+      "indexByName": {
+       "node": 0,
+       "Value #A": 1,
+       "Value #B": 2,
+       "Value #C": 3,
+       "Value #D": 4,
+       "Value #E": 5,
+       "Value #F": 6,
+       "Value #G": 7
+      },
+      "renameByName": {
+       "node": "Empfaenger",
+       "Value #A": "Bewertung",
+       "Value #B": "ITS-Frames",
+       "Value #C": "Rahmen gesamt",
+       "Value #D": "CRC-Fehler",
+       "Value #E": "PHY-Fehler",
+       "Value #F": "Rauschen (dBm)",
+       "Value #G": "Kanal belegt (%)"
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "Empfaenger"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "align": "left"
+     },
+     "decimals": 0
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Bewertung"
+      },
+      "properties": [
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "2": {
+            "text": "empfaengt ITS",
+            "color": "green",
+            "index": 0
+           },
+           "1": {
+            "text": "nur Rauschen",
+            "color": "orange",
+            "index": 1
+           },
+           "0": {
+            "text": "taub?",
+            "color": "red",
+            "index": 2
+           }
+          }
+         }
+        ]
+       },
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "color-text"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Kanal belegt (%)"
+      },
+      "properties": [
+       {
+        "id": "decimals",
+        "value": 1
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   }
   }
  ],
  "tags": [
