@@ -151,10 +151,11 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   uci set otm-bridge.location.latitude=51.2345
   uci set otm-bridge.location.longitude=6.789
   uci commit otm-bridge
+  reload_config
   ```
 
-  Komma oder Punkt gehen beide, `altitude` (Meter) ist freiwillig. Die Bridge startet nach
-  `uci commit` neu und meldet die Position; `share_location=0` löscht sie wieder. Sie
+  Komma oder Punkt gehen beide, `altitude` (Meter) ist freiwillig. Nach `reload_config`
+  startet die Bridge neu und meldet die Position; `share_location=0` löscht sie wieder. Sie
   erscheint nur auf der Heatmap in unserem Grafana. Auf der Karte von OpenTrafficMap stehen
   Empfänger über deren Self-Service-Portal (dort pflegt OTM Position und Namen
   serverseitig), nicht über die Firmware.
