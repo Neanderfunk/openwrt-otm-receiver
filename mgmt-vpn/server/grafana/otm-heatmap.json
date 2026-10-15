@@ -103,7 +103,8 @@
     "defaults": {
      "color": {
       "mode": "continuous-YlRd"
-     }
+     },
+     "displayName": "Frames"
     },
     "overrides": []
    },
@@ -143,13 +144,40 @@
        "longitude": "lon"
       },
       "config": {
-       "blur": 15,
-       "radius": 6,
+       "blur": 25,
+       "radius": 14,
        "weight": {
         "field": "Value",
         "fixed": 1,
         "min": 0,
         "max": 1
+       }
+      },
+      "opacity": 0.8
+     },
+     {
+      "type": "markers",
+      "name": "Zellen",
+      "tooltip": true,
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "showLegend": false,
+       "style": {
+        "size": {
+         "fixed": 3
+        },
+        "opacity": 0.35,
+        "symbol": {
+         "mode": "fixed",
+         "fixed": "img/icons/marker/circle.svg"
+        },
+        "color": {
+         "fixed": "dark-red"
+        }
        }
       }
      }
@@ -222,7 +250,8 @@
     "defaults": {
      "color": {
       "mode": "continuous-YlRd"
-     }
+     },
+     "displayName": "Frames"
     },
     "overrides": []
    },
@@ -262,13 +291,40 @@
        "longitude": "lon"
       },
       "config": {
-       "blur": 15,
-       "radius": 6,
+       "blur": 25,
+       "radius": 14,
        "weight": {
         "field": "Value",
         "fixed": 1,
         "min": 0,
         "max": 1
+       }
+      },
+      "opacity": 0.8
+     },
+     {
+      "type": "markers",
+      "name": "Zellen",
+      "tooltip": true,
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "showLegend": false,
+       "style": {
+        "size": {
+         "fixed": 3
+        },
+        "opacity": 0.35,
+        "symbol": {
+         "mode": "fixed",
+         "fixed": "img/icons/marker/circle.svg"
+        },
+        "color": {
+         "fixed": "dark-red"
+        }
        }
       }
      }
