@@ -139,7 +139,25 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   Mit `uci set otm-bridge.main.node=…` lässt er sich überschreiben.
 - **MQTT**: `its/<node>/{status,info,packet,stats}` im selben Format wie die
   ESP32-C5-Referenzfirmware, je nach `OTM_MQTT` über den Proxy im Tunnel oder direkt an
-  `mqtts://cits1.opentrafficmap.org`.
+  `mqtts://cits1.opentrafficmap.org`. Das Kommando-Topic der Referenzfirmware
+  (`its/<node>/command`, Konsolenbefehle vom Server) ist bewusst nicht umgesetzt.
+  Nur über den Proxy kommen dazu, retained und außerhalb von `its/#`, also nicht an
+  OpenTrafficMap weitergereicht: `otm/<node>/build` (Build-Nummer, Commit, Bridge,
+  Modell) und, wenn geteilt, `otm/<node>/location`.
+- **Position** (wie bei Gluon, `gluon-node-info.@location[0]`): standardmäßig nicht geteilt.
+
+  ```
+  uci set otm-bridge.location.share_location=1
+  uci set otm-bridge.location.latitude=51.2345
+  uci set otm-bridge.location.longitude=6.789
+  uci commit otm-bridge
+  ```
+
+  Komma oder Punkt gehen beide, `altitude` (Meter) ist freiwillig. Die Bridge startet nach
+  `uci commit` neu und meldet die Position; `share_location=0` löscht sie wieder. Sie
+  erscheint nur auf der Heatmap in unserem Grafana. Auf der Karte von OpenTrafficMap stehen
+  Empfänger über deren Self-Service-Portal (dort pflegt OTM Position und Namen
+  serverseitig), nicht über die Firmware.
 - **Management-VPN** (`OTM_VPN=1`): fastd zur Gegenstelle mit eigenem Schlüssel je Gerät,
   ohne Freischaltung; Adresse per DHCP, SSH dort unter `<knoten>.otm`. Die Standardroute
   bleibt am lokalen Uplink. Gegenstelle: [mgmt-vpn/server](mgmt-vpn/server).
@@ -150,7 +168,7 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
 
 | Pfad | Inhalt |
 |---|---|
-| `feed/net/otm-bridge/` | Fork von otm-bridge (0.11.1), als `src-link`-Feed eingebunden |
+| `feed/net/otm-bridge/` | Fork von otm-bridge (inzwischen 0.15.0), als `src-link`-Feed eingebunden |
 | `patches/openwrt-21.02/` | ath9k-Kanäle 170–185, ath-regd bis 5925 MHz, Half-Rate, regdb DE ITS |
 | `files/common/`, `files/local/` | Dateien fürs Image; `local` ist gitignored (SSH-Keys) |
 | `werkzeug/baseline-24h.sh` | 24-h-Messung am laufenden Empfänger, schreibt nur nach `/tmp` |
