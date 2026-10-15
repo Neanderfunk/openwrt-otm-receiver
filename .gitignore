@@ -11,3 +11,5 @@ files/local/
 *.jpeg
 *.png
 *.heic
+# Python-Bytecode
+__pycache__/

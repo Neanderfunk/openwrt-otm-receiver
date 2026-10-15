@@ -298,5 +298,13 @@
  "tags": [
   "otm"
  ],
- "editable": true
+ "editable": true,
+ "links": [
+  {
+   "title": "OTM Heatmap",
+   "type": "link",
+   "url": "/d/otm-heatmap",
+   "icon": "dashboard"
+  }
+ ]
 }
