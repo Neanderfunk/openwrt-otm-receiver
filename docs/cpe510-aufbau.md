@@ -1,14 +1,17 @@
 # TP-Link CPE510 als OTM-Empfänger aufbauen
 
-Für Geräte, die an einen anderen Ort gehen. Gebaut ist OpenWrt 22.03.7 mit unseren
-ITS-Patches, `otm-bridge` und ohne LuCI. Die Images liegen unter
-`build/out/22.03.7/tplink_cpe510-v{1,2,3}/`, je Verzeichnis:
+Für Geräte, die an einen anderen Ort gehen. Die Images sind OpenWrt 25.12.4 mit unseren
+ITS-Patches, `otm-bridge`, Management-VPN und Autoupdater, ohne LuCI. Sie liegen unter
+<http://firmware.ffnef.de/otm/stable/> (ohne SSH-Key, SSH ist dann ganz aus) und
+<http://firmware.ffnef.de/otm/stable-key/> (mit den Neanderfunk-Keys), jeweils:
 
-| Datei | wofür |
+| Verzeichnis, Datei | wofür |
 |---|---|
-| `…-squashfs-factory.bin` (≈6,0 MB) | Umstieg von der TP-Link-Firmware (Pharos) und Versuch über TFTP |
-| `…-squashfs-sysupgrade.bin` (≈7,4 MB) | wenn schon OpenWrt läuft: `sysupgrade -n` |
-| `sha256sums`, `build-info` | Prüfsummen und Herkunft (Commit, OpenWrt-Version, Patches) |
+| `factory/…-tplink_cpe510-v{1,2,3}-squashfs-factory.bin` (≈5.8 MiB) | Umstieg von der TP-Link-Firmware (Pharos) und Versuch über TFTP |
+| `sysupgrade/…-tplink_cpe510-v{1,2,3}-squashfs-sysupgrade.bin` (≈7.4 MiB) | wenn schon OpenWrt läuft |
+| `sha256sums` | Prüfsummen |
+
+Danach hält der Autoupdater das Gerät aktuell, auch das Image mit Key.
 
 **Die Hardware-Version steht auf dem Aufkleber** (v1, v2 oder v3). Im Zweifel erst
 auslesen: Die Pharos-Oberfläche zeigt sie unter Status, ein laufendes OpenWrt unter
@@ -18,9 +21,9 @@ zwingend ihr eigenes Image.
 
 **Erst ein Gerät, dann der Rest.** Für die CPE510 v1.1 gab es 2021 einen Bootloop
 (openwrt/openwrt#7028, Absturz in `of_get_mac_address` beim Ethernet-Treiber). Das betraf
-Kernel 5.4; unser Build nutzt 5.10, in dem dieser Code umgebaut wurde. Nachgewiesen ist
-das für unser Image aber nicht. Deshalb: erst ein Gerät flashen, booten sehen und den
-Empfang prüfen, danach die übrigen.
+Kernel 5.4; 25.12.4 nutzt 6.12, in dem dieser Code umgebaut ist. Eine CPE510 v1 läuft mit
+unserem Image seit Oktober 2026 im Betrieb, v2 und v3 sind ungetestet. Deshalb: erst ein
+Gerät flashen, booten sehen und den Empfang prüfen, danach die übrigen.
 
 Erfahrungswert aus der Neanderfunk-Flotte: 25 Pharos-Geräte (CPE210 v1, v1.1, v3 und eine
 CPE510 v1) laufen dort mit eigener Firmware. Der Weg funktioniert also in der Praxis, eine
@@ -32,13 +35,13 @@ Die safeloader-Images tragen eine **support-list**. Bootloader und Weboberfläch
 damit die Kennung des Geräts, und darin steckt die **Region**. Passt sie nicht, wird das
 Image abgewiesen („Incorrect File“), ganz gleich über welchen Weg.
 
-Unsere Images akzeptieren:
+Unsere Images (25.12.4) akzeptieren laut ihrer support-list:
 
 | Image | Kennungen |
 |---|---|
-| v1 | `CPE510(TP-LINK\|UN\|N300-5):1.0`, `…UN…:1.1`, `…US…:1.1`, `…EU…:1.1`, dazu CPE520 |
-| v2 | `EU`, `UN`, `US` je mit Regionscode `00000000`, `45550000` (ASCII „EU“) und `55530000` („US“), Version 2.0 |
-| v3 | dieselben drei Regionen, Version 3.0 und 3.20 |
+| v1 | `CPE510(TP-LINK\|UN\|N300-5):1.0`; Version 1.1 mit `UN`, `US`, `CA`, `EU`; dazu CPE520 1.1 (`UN`, `US`, `EU`) |
+| v2 | Version 2.0: `EU`, `UN`, `US` ohne Regionscode und je mit Regionscode `00000000`, `45550000` (ASCII „EU“) und `55530000` („US“) |
+| v3 | Version 3.0 wie v2; Version 3.20 nur `UN` mit `00000000`, `US` mit `55530000`, `EU` mit `45550000` |
 
 **Achtung bei v1:** Für Hardware **1.0** ist nur `UN` gelistet, **nicht** `EU`. Eine
 europäische v1.0 nimmt unser Image also nicht an, eine v1.1 schon.
@@ -82,8 +85,9 @@ Schlimmes, dann geht es mit Weg 2 weiter.
    68 Zeichen haben, unserer ist länger.
 4. Unter `System` → `Firmware Update` hochladen und im Dialog **Restore** wählen.
 
-Läuft auf dem Gerät schon OpenWrt, ist beides unnötig: Dann reicht
-`sysupgrade -n` mit dem sysupgrade-Image (`-n`, damit keine alte Konfiguration bleibt).
+Läuft auf dem Gerät schon ein anderes OpenWrt, ist beides unnötig: Dann reicht
+`sysupgrade -n` mit dem sysupgrade-Image (`-n`, damit keine fremde Konfiguration bleibt).
+Läuft schon unser Image, macht der Autoupdater die Updates.
 
 ## Zurück zur TP-Link-Firmware
 
@@ -98,15 +102,20 @@ zur Hardware-Version **und zur Region** passen.
   DHCP-Server erscheint es als **`CPE510-<letzte 4 Stellen der MAC>`**, und genauso heißt
   es auch bei OTM. Ohne DHCP-Server ist es unter **169.254.1.1** erreichbar
   (IPv4-Link-Local, Rechner braucht eine Adresse aus 169.254.0.0/16).
-- **Zugang:** SSH nur mit Key, Passwort-Login ist aus. Wer vor Ort Zugriff braucht, muss
-  seinen öffentlichen Key vorher ins Image bekommen (`files/local/etc/dropbear/authorized_keys`).
-- **Prüfen, ob es empfängt:**
+- **Zugang:** SSH nur mit Key, Passwort-Login ist aus. Das Image aus `stable-key` enthält
+  die Neanderfunk-Keys, das aus `stable` gar keinen (SSH aus). Wer eigene Keys braucht, baut
+  selbst (`files/local/etc/dropbear/authorized_keys` bzw. `OTM_SSH_KEYS`). Über den
+  Management-Tunnel ist das Gerät für uns unter `<knoten>.otm` erreichbar.
+- **Prüfen, ob es empfängt:** am einfachsten im Grafana unter <https://otm.ffnef.de>
+  (Online, Firmware je Empfänger, Empfangs-Health). Auf dem Gerät:
   ```sh
   iw dev mon0 info                       # channel 180 (5900 MHz), width: 10 MHz
   cat /sys/class/net/mon0/statistics/rx_packets
-  logread | grep otm-bridge              # "mqtt connected" nach NTP-Sync
+  logread | grep otm-bridge              # "mqtt connected", sobald der Tunnel steht
   cat /etc/otm-build-info                # welches Image läuft hier
   ```
+- **Position teilen** (für die Heatmap, nur mit SSH): siehe README, Abschnitt „Was das
+  Gerät nach dem ersten Boot tut“.
 - **Ausrichtung:** Die CPE510 hat eine Sektorantenne mit etwa 13 dBi. Sie gehört auf die
   Straße gerichtet, nicht in den Raum. Der Unterschied ist größer als alles, was Software
   ausmacht.
