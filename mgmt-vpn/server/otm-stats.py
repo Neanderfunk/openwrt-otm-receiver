@@ -19,6 +19,8 @@
 #   otm_node_build{node,version,commit,bridge,model}  1 (Firmware-Stand, aus
 #                           otm/<node>/build retained; aeltere Bridges nur
 #                           bridge/model aus its/<node>/info beim Verbinden)
+#   otm_node_location{node,lat,lon}  1 (Empfaengerposition, nur wenn der Knoten
+#                           sie teilt: otm/<node>/location retained, ab 0.15.0)
 #
 # Absenderposition: Long Position Vector aus dem GeoNetworking-Header (bei
 # signierten Paketen im unsecuredData-Teil von IEEE 1609.2), gerundet auf
@@ -34,6 +36,7 @@ offen = {}                       # key -> [erste_zeit, set(nodes)]
 zaehler = collections.Counter()  # (metrik, label) -> Wert, kumulativ
 gauges = {}                      # (metrik, label) -> Wert
 firmware = {}                    # node -> {version, commit, bridge, model}
+standorte = {}                   # node -> (lat, lon)
 
 def key(f):
 	if len(f) < 40 or ((f[0] >> 2) & 3) != 2:
@@ -85,6 +88,14 @@ def position(f):
 
 def on_message(c, u, m):
 	t = m.topic.split('/')
+	if len(t) == 3 and t[0] == 'otm' and t[2] == 'location':
+		with lock:
+			try:
+				l = json.loads(m.payload)
+				standorte[t[1]] = ('%.6f' % float(l['lat']), '%.6f' % float(l['lon']))
+			except Exception:
+				standorte.pop(t[1], None)   # leer = nicht (mehr) geteilt
+		return
 	if len(t) == 3 and t[0] == 'otm' and t[2] == 'build':
 		try:
 			b = json.loads(m.payload)
@@ -152,6 +163,7 @@ def auswerten():
 		gauges[('union_stations', '')] = len(stationen)
 		werte = list(zaehler.items()) + list(gauges.items())
 		fw = {n: dict(f) for n, f in firmware.items()}
+		orte = dict(standorte)
 	ts = int(now) * 10**9
 	zeilen = []
 	for (metrik, label), wert in werte:
@@ -168,6 +180,8 @@ def auswerten():
 	for n, f in fw.items():
 		tags = ''.join(',%s=%s' % (k, esc(f.get(k) or '-')) for k in ('version', 'commit', 'bridge', 'model'))
 		zeilen.append('otm,node=%s%s node_build=1 %d' % (esc(n), tags, ts))
+	for n, (lat, lon) in orte.items():
+		zeilen.append('otm,node=%s,lat=%s,lon=%s node_location=1 %d' % (esc(n), lat, lon, ts))
 	if zeilen:
 		try:
 			urllib.request.urlopen(VM, '\n'.join(zeilen).encode(), timeout=10)
@@ -177,7 +191,7 @@ def auswerten():
 def main():
 	c = mqtt.Client(client_id='otm-stats')
 	c.on_message = on_message
-	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0)])
+	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0), ('otm/+/location', 0)])
 	c.connect_async('127.0.0.1', 1883, 60)
 	c.loop_start()
 	while True:
