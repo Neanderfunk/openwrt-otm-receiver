@@ -25,8 +25,11 @@ Allgemeine Fassung für alle Geräte: Router-Werkstatt `docs/flash-schreibschutz
   `/etc/modules.d`: `mount_root` braucht den entsperrten Flash schon in
   preinit, sonst RAM-Overlay und die gesicherte Konfiguration kommt nicht
   zurück. So lief sysupgrade am 14.10. vollständig durch (Lauf 6).
+- Am 15.10. lief auch der Autoupdater vollständig durch (Lauf 7), ebenso das
+  Update auf den nächsten Release.
 - **Noch offen:** das Fehlerbild „schreibt gar nichts“ (Läufe 2 und 3, von
-  Hand entsperrt) ist nicht erklärt. Weitere Upgrades beobachten.
+  Hand entsperrt) ist nicht erklärt. Seit das Modul in preinit lädt, trat es
+  nicht mehr auf.
 
 ## Befunde der Reihe nach
 
@@ -86,6 +89,7 @@ Allgemeine Fassung für alle Geräte: Router-Werkstatt `docs/flash-schreibschutz
 | 4 | von Hand | 8e6ab30 ohne Key | Konfiguration verloren, ohne Key kein SSH (dropbear aus), TFTP-Rescue nötig |
 | 5 | Modul beim Booten (modules.d) | 8ccf43b mit Key (gleiches Image) | Konfiguration verloren (beide Marker weg, neuer fastd-Schlüssel); Ursache RAM-Overlay, siehe 12. |
 | 6 | Modul beim Booten (modules.d, Gerät lief auf RAM-Overlay), neues Image lädt es aus modules-boot.d | f1baf30 mit Key, Version 202610141907 | **voll erfolgreich**: `/rom` neu, `/root`-Marker weg, `/etc`-Marker da, fastd-Schlüssel gleich, Overlay auf jffs2 |
+| 7 | Modul aus modules-boot.d; **Autoupdater** (15.10., von Hand angestoßen, Manifest mit 2 Signaturen) | 8a3fd14 ohne Key, Version 202610150031 | **voll erfolgreich**: `/rom` neu, `/root`-Marker weg, `/etc`-Marker da, fastd-Schlüssel und SSH-Keys gleich, Overlay auf jffs2 |
 
 Es gab zwei Fehlerbilder: „Upgrade-Phase schreibt gar nichts“ (2, 3) und
 „Upgrade-Phase läuft durch, die Konfiguration kommt nicht zurück“ (4, 5). Das
@@ -119,9 +123,11 @@ geschrieben wurde, ist nicht feststellbar (gleiches Image).
 
 ## Nächste Schritte, falls es weitergehen soll
 
-- Weitere Upgrades (auch über den Autoupdater) mit Markertest prüfen. Tritt
-  „schreibt gar nichts“ wieder auf: Ausgabe der Upgrade-Phase (stage2) übers
-  Netz mitschneiden.
+- Tritt „schreibt gar nichts“ wieder auf: Ausgabe der Upgrade-Phase (stage2)
+  übers Netz mitschneiden.
+- Die anderen XW-Boards (NanoStation (Loco) M XW, PowerBeam M5 XW, Bullet M XW)
+  bekommen das Modul mit demselben GPIO; ein erstes Update dort mit Markertest
+  prüfen.
 - Der Bootloader-Rückschritt auf s776 ist mit dem Modul nicht mehr nötig.
 - **Testregel:** für Upgrade-Versuche nur Images mit Key nehmen. Geht die
   Konfiguration verloren, schaltet ein Image ohne Key SSH ab.
