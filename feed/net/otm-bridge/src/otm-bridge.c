@@ -9,6 +9,9 @@
  *   its/<node>/info     {"emac":"aa:bb:..","ver":"...","hwv":"..."}  (on connect)
  *   its/<node>/packet   raw 802.11 frame (radiotap stripped), QoS 0
  *   its/<node>/stats    {"rbt":<seconds since boot>}  (on connect, every 60 s)
+ *   otm/<node>/build    {"version":"..","commit":"..","bridge":"..","model":".."}
+ *                       (on connect, retained; only with -V, i.e. via our proxy:
+ *                       outside its/# so it is not forwarded to opentrafficmap)
  *
  * <node> defaults to the capture interface MAC as 12 lowercase hex chars.
  */
@@ -26,7 +29,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.13.2"
+#define OTM_BRIDGE_VERSION "0.14.0"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
@@ -42,6 +45,11 @@ static char topic_packet[160];
 static char topic_status[160];
 static char topic_info[160];
 static char topic_stats[160];
+static char topic_build[160];
+
+/* -V/-G: Build-Nummer und Commit des Images (aus /etc/otm-build-info) */
+static const char *build_version;
+static const char *build_commit;
 
 static const char *cap_iface = "mon0";
 static int verbose;
@@ -244,6 +252,14 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 		 "{\"emac\":\"%s\",\"ver\":\"otm-bridge-%s\",\"hwv\":\"%s\"}",
 		 mac_colon, OTM_BRIDGE_VERSION, model);
 	mosquitto_publish(m, NULL, topic_info, n, info, 0, false);
+	if (build_version) {
+		char build[320];
+		n = snprintf(build, sizeof(build),
+			 "{\"version\":\"%s\",\"commit\":\"%s\",\"bridge\":\"%s\",\"model\":\"%s\"}",
+			 build_version, build_commit ? build_commit : "", OTM_BRIDGE_VERSION, model);
+		if (n > 0 && n < (int)sizeof(build))
+			mosquitto_publish(m, NULL, topic_build, n, build, 0, true);
+	}
 	publish_stats(m);
 }
 
@@ -311,6 +327,8 @@ static void usage(void)
 	    "  -s SNAP    pcap snap length (default 2300)\n"
 	    "  -v         verbose (repeat for more)\n"
 	    "  -x SECS    exit after SECS without broker connection (default: never)\n"
+	    "  -V VER     image build number, published retained to otm/<node>/build\n"
+	    "  -G COMMIT  image commit for otm/<node>/build\n"
 	    "  -f         stay in foreground\n");
 }
 
@@ -323,7 +341,7 @@ int main(int argc, char **argv)
 	int foreground          = 0;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "i:b:n:c:s:x:vfh")) != -1) {
+	while ((opt = getopt(argc, argv, "i:b:n:c:s:x:V:G:vfh")) != -1) {
 		switch (opt) {
 		case 'i': cap_iface   = optarg; break;
 		case 'b': broker_uri  = optarg; break;
@@ -332,6 +350,8 @@ int main(int argc, char **argv)
 		case 's': snaplen     = atoi(optarg); break;
 		case 'v': verbose++;            break;
 		case 'x': giveup      = atoi(optarg); break;
+		case 'V': build_version = optarg; break;
+		case 'G': build_commit  = optarg; break;
 		case 'f': foreground  = 1;      break;
 		case 'h':
 		default:  usage(); return opt == 'h' ? 0 : 1;
@@ -354,6 +374,7 @@ int main(int argc, char **argv)
 	snprintf(topic_status, sizeof(topic_status), "its/%s/status", node_id);
 	snprintf(topic_info,   sizeof(topic_info),   "its/%s/info",   node_id);
 	snprintf(topic_stats,  sizeof(topic_stats),  "its/%s/stats",  node_id);
+	snprintf(topic_build,  sizeof(topic_build),  "otm/%s/build",  node_id);
 
 	/* Under procd stderr already ends up in syslog; LOG_PERROR would log
 	 * every line twice. Only mirror to stderr on an interactive terminal. */

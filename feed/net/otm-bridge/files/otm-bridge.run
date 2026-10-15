@@ -135,6 +135,12 @@ log "transport $transport, broker $broker"
 set -- -f -i "$iface" -b "$broker"
 [ -n "$aufgeben" ] && set -- "$@" -x "$aufgeben"
 [ -n "$node" ] && set -- "$@" -n "$node"
+# Build-Nummer fuer die Statistik, nur an unseren Proxy (otm/<node>/build)
+case "$broker" in mqtt://*)
+	v=$(sed -n 's/^version=//p' /etc/otm-build-info 2>/dev/null)
+	c=$(sed -n 's/^otm_commit=//p' /etc/otm-build-info 2>/dev/null)
+	[ -n "$v" ] && set -- "$@" -V "$v" -G "$c" ;;
+esac
 [ "$verbose" -ge 1 ] 2>/dev/null && set -- "$@" -v
 [ "$verbose" -ge 2 ] 2>/dev/null && set -- "$@" -v
 exec /usr/bin/otm-bridge "$@"
