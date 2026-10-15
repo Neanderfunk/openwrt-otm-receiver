@@ -1,6 +1,6 @@
 # Gerätekandidaten für den OTM-Empfänger
 
-Stand 14.09.2026. Voraussetzung ist ein **5-GHz-Funkteil mit ath9k-Treiber**. Nur dort
+Stand der Marktübersicht 14.09.2026 (Geräteliste und Befunde ergänzt bis 15.10.2026). Voraussetzung ist ein **5-GHz-Funkteil mit ath9k-Treiber**. Nur dort
 lassen sich die ITS-Kanäle und 10 MHz (Half-Rate) nachrüsten. Geräte, deren 5 GHz über
 ath10k, mt76 o. Ä. läuft, scheiden aus (siehe unten).
 
@@ -13,11 +13,14 @@ ath10k, mt76 o. Ä. läuft, scheiden aus (siehe unten).
   OTM-Chat (19.05.2026).
 - **Preise**: Angebote auf Kleinanzeigen am 14.09.2026 abends (Festpreise und VB), gebraucht.
   eBay und Geizhals ließen sich nicht automatisch abfragen (Bot-Schutz, HTTP 403).
-- **21.02.7**: ✔ = fertiges Release-Image vorhanden, das `build.sh` direkt nutzen kann.
+- **21.02.7**: ✔ = fertiges Release-Image von OpenWrt 21.02.7. Das war im September die
+  Bauvorlage. Seit Oktober 2026 bauen wir mit **25.12.4**; welche Geräte es dort als fertiges
+  Image gibt, steht in der README (Abschnitt Geräte) und in `release.sh`.
 
-Einschränkung für alle Geräte: Frontends und Antennen sind laut Datenblatt bis 5,85 GHz
-spezifiziert. Wie viel bei 5,9 GHz verloren geht, muss man je Gerät messen
-(`werkzeug/baseline-24h.sh`).
+Einschränkung für alle Geräte: Frontends und Antennen sind laut Datenblatt bis 5.85 GHz
+spezifiziert. Wie viel bei 5.9 GHz verloren geht, muss man je Gerät messen
+(`werkzeug/baseline-24h.sh`), und manche Geräte empfangen dort gar nichts (siehe
+[Taub trotz passendem Chip](#taub-trotz-passendem-chip)).
 
 ## Indoor
 
@@ -51,8 +54,8 @@ spezifiziert. Wie viel bei 5,9 GHz verloren geht, muss man je Gerät messen
 | **TP-Link CPE510 v1–v3**, CPE610 v1/v2, WBS510 v1/v2 | AR9344 | 64/8 | ✔ | ~65 | 30–40 €/Stück (3) | wird noch neu verkauft; auch Münster nennt ihn |
 | Ubiquiti Bullet M5 (XM/XW) | AR9280 / AR9342 | 32/8 / 64/8 | ✔ | 17* | 1 Angebot | Antenne frei wählbar (N-Buchse) |
 | Ubiquiti Rocket M5 (XM/XW) | AR9280 / AR9342 | 64/8 | ✔ | ~5 | keins | Antenne frei wählbar |
-| Ubiquiti LiteBeam M5 (XW) | AR9342 | 64/8 | ✘ (Backport) | 0 | 50–70 € (2) | Richtantenne 23 dBi |
-| Ubiquiti NanoBeam M5, PowerBeam M5 (XW) | AR9342 | 64/8 | ✘ (Backport) | 2 · 2 | keins | |
+| Ubiquiti LiteBeam M5 (XW) | AR9342 | 64/8 | ✘ (25.12.4: ✔, im Betrieb) | 0 | 50–70 € (2) | Richtantenne 23 dBi; Flash-Schreibschutz, siehe [litebeam-flash-schutz.md](litebeam-flash-schutz.md) |
+| Ubiquiti NanoBeam M5, PowerBeam M5 (XW) | AR9342 | 64/8 | ✘ (25.12.4: ✔, ungetestet) | 2 · 2 | keins | ein Image für beide |
 | Ubiquiti AirGrid M5 (XM) | AR9280 | 32/8 | ✘ | – | nicht abgefragt | |
 | MikroTik SXT Lite5, LHG 5 | AR9344 | 64/16–NAND | ✘ (erst ab 22.03/23.05) | – | nicht abgefragt | werden noch neu verkauft |
 
@@ -65,7 +68,7 @@ bei Freifunk häufiger. Die Zahlen sind deshalb Obergrenzen.
 Bei **abnehmbaren Antennen** ist unklar, womit das Gerät tatsächlich läuft. Gebraucht
 bekommt man oft beliebige Antennen dazu, auch reine 2.4-GHz-Dipole. Ohne einen VNA über
 6 GHz lässt sich das nicht nachprüfen, und im Betrieb fällt es nie auf. **Eingebaute
-Antennen** sind zwar auch nur bis 5,85 GHz spezifiziert, aber bei jedem Exemplar gleich.
+Antennen** sind zwar auch nur bis 5.85 GHz spezifiziert, aber bei jedem Exemplar gleich.
 Messergebnisse gelten dann für alle Geräte dieses Typs.
 
 Empfehlung: Geräte mit eingebauten Antennen vorziehen. Wer ein Gerät mit abnehmbaren

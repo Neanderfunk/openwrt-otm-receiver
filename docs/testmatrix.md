@@ -1,5 +1,8 @@
 # Testmatrix: Hardware × Software
 
+**Abgeschlossen am 05.10.2026**, Ergebnis siehe [Abschluss der Messreihe](#abschluss-der-messreihe-05102026).
+Die Versionsangaben unten beschreiben den damaligen Stand.
+
 Frage: Hängt der Empfang am Gerät, an der OpenWrt-Version oder am Paket? Möglicherweise
 ist das Ergebnis „Jacke wie Hose“. Auch das wäre eine Erkenntnis.
 
