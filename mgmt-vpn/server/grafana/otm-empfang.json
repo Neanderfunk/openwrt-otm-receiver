@@ -46,8 +46,15 @@
    "fieldConfig": {
     "defaults": {
      "custom": {
-      "drawStyle": "bars",
-      "fillOpacity": 60
+      "drawStyle": "line",
+      "fillOpacity": 8,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
      }
     },
     "overrides": []
@@ -82,8 +89,15 @@
    "fieldConfig": {
     "defaults": {
      "custom": {
-      "drawStyle": "bars",
-      "fillOpacity": 60
+      "drawStyle": "line",
+      "fillOpacity": 8,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
      }
     },
     "overrides": []
@@ -118,8 +132,15 @@
    "fieldConfig": {
     "defaults": {
      "custom": {
-      "drawStyle": "bars",
-      "fillOpacity": 60
+      "drawStyle": "line",
+      "fillOpacity": 8,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
      }
     },
     "overrides": []
@@ -154,7 +175,17 @@
    "fieldConfig": {
     "defaults": {
      "unit": "percentunit",
-     "custom": {}
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 1,
+      "fillOpacity": 8,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     }
     },
     "overrides": []
    },
@@ -187,7 +218,17 @@
    ],
    "fieldConfig": {
     "defaults": {
-     "custom": {}
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 1,
+      "fillOpacity": 8,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     }
     },
     "overrides": []
    },
@@ -252,7 +293,17 @@
    "fieldConfig": {
     "defaults": {
      "unit": "s",
-     "custom": {}
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 1,
+      "fillOpacity": 8,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     }
     },
     "overrides": []
    },
@@ -286,8 +337,15 @@
    "fieldConfig": {
     "defaults": {
      "custom": {
-      "drawStyle": "bars",
-      "fillOpacity": 60
+      "drawStyle": "line",
+      "fillOpacity": 8,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
      }
     },
     "overrides": []
