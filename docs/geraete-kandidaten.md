@@ -25,14 +25,14 @@ spezifiziert. Wie viel bei 5,9 GHz verloren geht, muss man je Gerät messen
 |---|---|---|---|---|---|---|
 | **TP-Link TL-WDR3600 v1** | AR9582, 2x2 | 128/8 | ✔ | 660 | 10–30 € (7, u. a. 5 Stück à 15 € VB) | **am Gerät getestet**, läuft out of the box |
 | **TP-Link TL-WDR4300 v1** | AR9580, 3x3 | 128/8 | ✔ | 644 | 15–25 € (7) | Referenz (lief 90 Tage unter 25.12), Image gebaut |
-| **AVM FRITZ!Box 3370** (Rev. 2) | AR9380, wahlweise 2,4/5 | 128/NAND | ✔ | 19 | meist 10 €, 4–25 € (25) | am billigsten und am leichtesten zu bekommen; nur Rev. 2 (Hynix/Micron); AVM-Kalibrierdaten prüfen |
-| **AVM FRITZ!WLAN Repeater 300E** | AR9382, wahlweise 2,4/5 | 64/16 | ✔ | 21 | 15–30 € (12) | Steckdosengerät, gut fürs Fenster zur Straße; Kalibrierdaten prüfen |
+| **AVM FRITZ!Box 3370** (Rev. 2) | AR9380, wahlweise 2.4/5 | 128/NAND | ✔ | 19 | meist 10 €, 4–25 € (25) | am billigsten und am leichtesten zu bekommen; nur Rev. 2 (Hynix/Micron); AVM-Kalibrierdaten prüfen |
+| **AVM FRITZ!WLAN Repeater 300E** | AR9382, wahlweise 2.4/5 | 64/16 | ✔ | 21 | 15–30 € (12) | Steckdosengerät, gut fürs Fenster zur Straße; Kalibrierdaten prüfen |
 | TP-Link TL-WDR4900 v1 | AR9580 | 128/16 | ✔ (mpc85xx) | 165 | ~30 € (1) | PowerPC, eigenes Target |
 | TP-Link TL-WDR4310 v1, Mercury MW4530R v1 | AR9580 | 128/8 | ✔ | ~0 | nicht abgefragt | Schwester bzw. Klon des WDR4300 |
 | Enterasys WS-AP3710i | AR9590, 3x3 | 256/32 | ✔ (mpc85xx) | 75 | 29 €/Stück (Posten mit 30+) | Enterprise-AP, PoE; WS-AP3705i ✔ (6 Knoten), WS-AP3715i nur snapshot |
 | Aerohive HiveAP-330 | AR9390 (mPCIe) | 256/64 | ✔ (mpc85xx) | 49 | keins | HiveAP-121: AR9382, ✔ (ath79-nand), 12 Knoten |
 | Netgear WNDR3700 v1/v2, WNDR3800 | AR9220 | 64–128/8–16 | ✔ | ~60 | WNDR3700 8–25 € (10) | ältere 802.11n-Generation; v4 und WNDR4300 mit AR9580 (NAND) |
-| Netgear WNDR4300 v2, WNDR4500 v3 | AR9580 (SoC QCA9563 nur 2,4 GHz) | 128/NAND | ✔ | ~0 | nicht abgefragt | |
+| Netgear WNDR4300 v2, WNDR4500 v3 | AR9580 (SoC QCA9563 nur 2.4 GHz) | 128/NAND | ✔ | ~0 | nicht abgefragt | |
 | TP-Link TL-WDR3500 v1 | AR9582 | 128/8 | ✔ | 34 | Einzelstück | |
 | Ubiquiti UniFi AP Pro (UAP-PRO) | AR958x-Familie (PCI 168c:0033), SoC AR9344 | 128/16 | ✔ | 28 | 1 Posten: 7 Stück 45 € | nicht mit UAP-AC-Pro (ath10k) verwechseln; die ToH nennt fälschlich AR9280 |
 | AVM FRITZ!Box 3390 | AR9580-Klasse | 128/NAND | ✘ (erst ab 22.03) | ~0 | 8–39 € (13) | Münsters Referenzgerät (25.12); für uns braucht es einen Backport |
@@ -57,13 +57,13 @@ spezifiziert. Wie viel bei 5,9 GHz verloren geht, muss man je Gerät messen
 | MikroTik SXT Lite5, LHG 5 | AR9344 | 64/16–NAND | ✘ (erst ab 22.03/23.05) | – | nicht abgefragt | werden noch neu verkauft |
 
 \* Die Gluon-Modellnamen der Ubiquiti-M-Serie („Nanostation M (XW)“, „Loco M (XW)“,
-„Bullet M“) unterscheiden **nicht zwischen M2 und M5**. M2 (2,4 GHz) ist ungeeignet und
+„Bullet M“) unterscheiden **nicht zwischen M2 und M5**. M2 (2.4 GHz) ist ungeeignet und
 bei Freifunk häufiger. Die Zahlen sind deshalb Obergrenzen.
 
 ## Antennen als Kaufkriterium
 
 Bei **abnehmbaren Antennen** ist unklar, womit das Gerät tatsächlich läuft. Gebraucht
-bekommt man oft beliebige Antennen dazu, auch reine 2,4-GHz-Dipole. Ohne einen VNA über
+bekommt man oft beliebige Antennen dazu, auch reine 2.4-GHz-Dipole. Ohne einen VNA über
 6 GHz lässt sich das nicht nachprüfen, und im Betrieb fällt es nie auf. **Eingebaute
 Antennen** sind zwar auch nur bis 5,85 GHz spezifiziert, aber bei jedem Exemplar gleich.
 Messergebnisse gelten dann für alle Geräte dieses Typs.
@@ -87,6 +87,31 @@ Antennen nutzt, sollte die Antennen per Referenzmessung prüfen (siehe
   Patches betreffen den Code, den ath9k und ath9k_htc gemeinsam nutzen. Ob Half-Rate über
   die HTC-Firmware funktioniert, ist nicht geprüft.
 
+## Taub trotz passendem Chip
+
+Nicht jedes Gerät mit ath9k-Chip empfängt 5.9 GHz, und der Grund lässt sich nicht immer
+klären. Beispiel aus dem Oktober 2026: ein Nachbau der NanoStation M5 XM (YF5300-G22P16,
+AR7241 + AR9280, Weboberfläche und `board.info` von Ubiquiti abgeschrieben).
+
+- Treiber, Regdomain und 10-MHz-Betrieb wie bei den anderen Geräten: `mon0` lief auf
+  5900 MHz, der Rauschwert war unauffällig (-95 dBm), die Bridge verbunden. Es kamen nur
+  keine Frames an.
+- Sendetest: Eine CPE510 sendete OCB-Testframes mit 10 MHz. Auf 5745 MHz: 20 gesendet, 21
+  empfangen. Auf 5825 und 5865 MHz: je 21 gesendet, 0 empfangen. Normaler 20-MHz-Verkehr kam
+  ebenfalls nur bis 5745 MHz an.
+- Ausgeschlossen: die GPIOs des AR9280 (alle 10 einzeln high und low, keine Änderung) und die
+  Kalibrierdaten in der ART-Partition (5-GHz-Stützstellen 5300-5825 MHz glatt, Zielleistung
+  und CTL-Kanten bis 5825 MHz unauffällig; der Empfang hängt an diesen Tabellen ohnehin nicht).
+- Originale NanoStation M5 XM empfangen laut AREDN bis 5925 MHz.
+- Vermutung, nicht belegt: Bandfilter oder Frontend des Nachbaus enden unter 5.8 GHz.
+
+Folgen:
+
+- Jeden neuen Gerätetyp, und erst recht jeden Nachbau, mit einem Sendetest oder am Fenster mit
+  echtem Verkehr prüfen, bevor er draußen hängt.
+- Ein Empfänger, der lange nichts meldet, kann taub sein und nicht nur ungünstig stehen. Das
+  soll die Empfangs-Health-Metrik erkennen (siehe README, Abschnitt MQTT).
+
 ## Ungeeignet (häufig gefragt)
 
 | Gerät | Grund |
@@ -94,5 +119,5 @@ Antennen nutzt, sollte die Antennen per Referenzmessung prüfen (siehe
 | UniFi AC Mesh / Lite / LR / Pro, LiteBeam 5AC (Gen1/Gen2), NanoStation 5AC, PowerBeam 5AC | 5 GHz über ath10k (QCA988x): keine 10-MHz-Kanäle, PHY in der Firmware |
 | TP-Link Archer C7 (alle), FRITZ!Box 4040, sämtliche IPQ40xx-Geräte | 5 GHz über ath10k |
 | Archer C50/C6 v3, alle MediaTek-Geräte | mt76 |
-| NanoStation M2 / Loco M2, Bullet M2, Rocket M2, UniFi AP, AP Outdoor+ | nur 2,4 GHz |
-| FRITZ!Box 7362 SL, 7412 | nur 2,4 GHz |
+| NanoStation M2 / Loco M2, Bullet M2, Rocket M2, UniFi AP, AP Outdoor+ | nur 2.4 GHz |
+| FRITZ!Box 7362 SL, 7412 | nur 2.4 GHz |
