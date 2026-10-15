@@ -39,3 +39,21 @@ otm_its_phy() {
 	done
 	return 1
 }
+
+# Position fuer otm/<node>/location: "lat,lon[,alt]" in Dezimalgrad, auf
+# 6 Nachkommastellen (~0.1 m). Nimmt Komma oder Punkt, Leerzeichen und ein
+# vorangestelltes "+". Ungueltig, ausserhalb des Bereichs oder 0/0: Status 1.
+otm_location() {
+	local lat lon alt
+	lat=$(echo "$1" | tr ',' '.' | tr -d ' +')
+	lon=$(echo "$2" | tr ',' '.' | tr -d ' +')
+	alt=$(echo "$3" | tr ',' '.' | tr -d ' +')
+	awk -v a="$lat" -v o="$lon" -v h="$alt" 'BEGIN {
+		num = "^-?[0-9]+(\\.[0-9]+)?$"
+		if (a !~ num || o !~ num || (h != "" && h !~ num)) exit 1
+		if (a < -90 || a > 90 || o < -180 || o > 180 || (a == 0 && o == 0)) exit 1
+		s = sprintf("%.6f,%.6f", a, o)
+		if (h != "") s = s sprintf(",%.1f", h)
+		print s
+	}'
+}

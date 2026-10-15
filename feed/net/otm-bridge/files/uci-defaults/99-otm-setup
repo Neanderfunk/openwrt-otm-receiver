@@ -149,4 +149,14 @@ fi
 uci set system.@system[0].hostname="$name"
 uci commit system
 
+# --- Position (wie Gluon), auch nach Update mit alter Konfiguration ---------
+if ! uci -q get otm-bridge.location >/dev/null; then
+	uci set otm-bridge.location=location
+	uci set otm-bridge.location.share_location=0
+	uci set otm-bridge.location.latitude=''
+	uci set otm-bridge.location.longitude=''
+	uci set otm-bridge.location.altitude=''
+	uci commit otm-bridge
+fi
+
 exit 0

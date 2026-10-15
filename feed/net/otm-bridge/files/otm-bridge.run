@@ -41,6 +41,10 @@ config_get broker_direct main broker_direct 'mqtts://cits1.opentrafficmap.org'
 config_get timefile main timefile /var/state/otm-bridge-time
 config_get node     main node     ''
 config_get verbose  main verbose  1
+config_get share_location location share_location 0
+config_get latitude  location latitude  ''
+config_get longitude location longitude ''
+config_get altitude  location altitude  ''
 
 # 5850-5925 MHz only exist in the patched regdb entry for $country; after
 # boot the global domain is 00. The change is applied asynchronously, so
@@ -139,7 +143,14 @@ set -- -f -i "$iface" -b "$broker"
 case "$broker" in mqtt://*)
 	v=$(sed -n 's/^version=//p' /etc/otm-build-info 2>/dev/null)
 	c=$(sed -n 's/^otm_commit=//p' /etc/otm-build-info 2>/dev/null)
-	[ -n "$v" ] && set -- "$@" -V "$v" -G "$c" ;;
+	[ -n "$v" ] && set -- "$@" -V "$v" -G "$c"
+	# Position: leer = eine frueher gemeldete wieder loeschen
+	loc=""
+	case "$share_location" in 1|on|true|yes)
+		loc=$(otm_location "$latitude" "$longitude" "$altitude") ||
+			log "location not shared: latitude/longitude invalid ('$latitude', '$longitude')" ;;
+	esac
+	set -- "$@" -L "$loc" ;;
 esac
 [ "$verbose" -ge 1 ] 2>/dev/null && set -- "$@" -v
 [ "$verbose" -ge 2 ] 2>/dev/null && set -- "$@" -v

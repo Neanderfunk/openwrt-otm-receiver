@@ -12,6 +12,8 @@
  *   otm/<node>/build    {"version":"..","commit":"..","bridge":"..","model":".."}
  *                       (on connect, retained; only with -V, i.e. via our proxy:
  *                       outside its/# so it is not forwarded to opentrafficmap)
+ *   otm/<node>/location {"lat":..,"lon":..[,"alt":..]}  (on connect, retained;
+ *                       only with -L; -L "" clears a previously shared one)
  *
  * <node> defaults to the capture interface MAC as 12 lowercase hex chars.
  */
@@ -29,7 +31,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.14.0"
+#define OTM_BRIDGE_VERSION "0.15.0"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
@@ -46,10 +48,13 @@ static char topic_status[160];
 static char topic_info[160];
 static char topic_stats[160];
 static char topic_build[160];
+static char topic_location[160];
 
 /* -V/-G: Build-Nummer und Commit des Images (aus /etc/otm-build-info) */
 static const char *build_version;
 static const char *build_commit;
+/* -L "lat,lon[,alt]" oder "" (Position nicht teilen, alte loeschen) */
+static const char *location;
 
 static const char *cap_iface = "mon0";
 static int verbose;
@@ -260,6 +265,17 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 		if (n > 0 && n < (int)sizeof(build))
 			mosquitto_publish(m, NULL, topic_build, n, build, 0, true);
 	}
+	if (location) {
+		char loc[128] = "";
+		double lat, lon, alt;
+		int k = sscanf(location, "%lf,%lf,%lf", &lat, &lon, &alt);
+		n = 0;
+		if (k >= 2 && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)
+			n = k == 3 ? snprintf(loc, sizeof(loc), "{\"lat\":%.6f,\"lon\":%.6f,\"alt\":%.1f}", lat, lon, alt)
+			           : snprintf(loc, sizeof(loc), "{\"lat\":%.6f,\"lon\":%.6f}", lat, lon);
+		/* leere retained Nachricht loescht eine frueher geteilte Position */
+		mosquitto_publish(m, NULL, topic_location, n > 0 ? n : 0, loc, 0, true);
+	}
 	publish_stats(m);
 }
 
@@ -329,6 +345,7 @@ static void usage(void)
 	    "  -x SECS    exit after SECS without broker connection (default: never)\n"
 	    "  -V VER     image build number, published retained to otm/<node>/build\n"
 	    "  -G COMMIT  image commit for otm/<node>/build\n"
+	    "  -L LOC     \"lat,lon[,alt]\" retained to otm/<node>/location, \"\" clears it\n"
 	    "  -f         stay in foreground\n");
 }
 
@@ -341,7 +358,7 @@ int main(int argc, char **argv)
 	int foreground          = 0;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "i:b:n:c:s:x:V:G:vfh")) != -1) {
+	while ((opt = getopt(argc, argv, "i:b:n:c:s:x:V:G:L:vfh")) != -1) {
 		switch (opt) {
 		case 'i': cap_iface   = optarg; break;
 		case 'b': broker_uri  = optarg; break;
@@ -352,6 +369,7 @@ int main(int argc, char **argv)
 		case 'x': giveup      = atoi(optarg); break;
 		case 'V': build_version = optarg; break;
 		case 'G': build_commit  = optarg; break;
+		case 'L': location      = optarg; break;
 		case 'f': foreground  = 1;      break;
 		case 'h':
 		default:  usage(); return opt == 'h' ? 0 : 1;
@@ -375,6 +393,7 @@ int main(int argc, char **argv)
 	snprintf(topic_info,   sizeof(topic_info),   "its/%s/info",   node_id);
 	snprintf(topic_stats,  sizeof(topic_stats),  "its/%s/stats",  node_id);
 	snprintf(topic_build,  sizeof(topic_build),  "otm/%s/build",  node_id);
+	snprintf(topic_location, sizeof(topic_location), "otm/%s/location", node_id);
 
 	/* Under procd stderr already ends up in syslog; LOG_PERROR would log
 	 * every line twice. Only mirror to stderr on an interactive terminal. */
