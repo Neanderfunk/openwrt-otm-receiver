@@ -132,6 +132,11 @@ if [ -z "$broker" ]; then
 		warte_tunnel 120 || log "no tunnel to $broker_proxy after 120 s, starting anyway"
 		broker=$broker_proxy ;;
 	esac
+elif [ "$broker" = "$broker_proxy" ]; then
+	# fester Broker = unser Proxy (alte Konfigurationen): trotzdem auf den
+	# Tunnel warten, sonst geht der erste Versuch ueber die Default-Route und
+	# haengt bis zum TCP-Timeout (~2 min)
+	warte_tunnel 120 || log "no tunnel to $broker_proxy after 120 s, starting anyway"
 fi
 case "$broker" in mqtts://*) warte_ntp ;; esac
 log "transport $transport, broker $broker"

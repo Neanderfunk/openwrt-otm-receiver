@@ -149,6 +149,13 @@ fi
 uci set system.@system[0].hostname="$name"
 uci commit system
 
+# --- Alte Konfiguration: fester Broker = Proxy ist seit option transport -----
+# ueberfluessig und uebergeht die Wegwahl
+if [ "$(uci -q get otm-bridge.main.broker)" = "mqtt://10.66.0.1" ]; then
+	uci delete otm-bridge.main.broker
+	uci commit otm-bridge
+fi
+
 # --- Position (wie Gluon), auch nach Update mit alter Konfiguration ---------
 if ! uci -q get otm-bridge.location >/dev/null; then
 	uci set otm-bridge.location=location
