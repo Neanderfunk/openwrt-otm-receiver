@@ -1,8 +1,13 @@
 # OTM-Empfänger auf OpenWrt
 
-Passiver ITS-G5-Empfänger (802.11p, 5,9 GHz) für [opentrafficmap.org](https://opentrafficmap.org/)
-auf Routern mit ath9k-Funkteil. Plain OpenWrt 21.02.7, kein LuCI. Nach dem
-Flashen läuft das Gerät ohne Handarbeit: Kabel an irgendeinen Port, fertig.
+Passiver ITS-G5-Empfänger (802.11p, 5.9 GHz) für [opentrafficmap.org](https://opentrafficmap.org/)
+auf Routern mit ath9k-Funkteil. Plain OpenWrt 25.12.4 (NanoStation M XM: 21.02.7), kein LuCI.
+Nach dem Flashen läuft das Gerät ohne Handarbeit: Kabel an irgendeinen Port, fertig. Die
+Daten gehen per MQTT durch einen fastd-Tunnel an einen Proxy, der sie per TLS an
+OpenTrafficMap weiterreicht; die alten Geräte mit wenig Flash brauchen so keinen TLS-Stack.
+
+Fertige Images: <http://firmware.ffnef.de/otm/stable/> (`factory/` für den Umstieg von der
+Herstellerfirmware, `sysupgrade/` für Geräte mit OpenWrt). Statistik: <https://otm.ffnef.de>.
 
 Vorbild und Basis: [MPW1412/openwrt-otm-bridge](https://github.com/MPW1412/openwrt-otm-bridge)
 und [MPW1412/avm-fritz3390-802.11p-otm](https://github.com/MPW1412/avm-fritz3390-802.11p-otm),
@@ -11,12 +16,19 @@ die Kanal-Patches gehen auf OpenWrt-V2X (Raviglione) bzw. Klingler/Pannu (CCS La
 ## Bauen
 
 ```sh
-./build.sh                                   # WDR4300 + WDR3600
-PROFILES="tplink_tl-wdr3600-v1" ./build.sh   # einzelnes Profil
+./release.sh                                                  # alle Geräte, wie veröffentlicht
+OWRT_VER=25.12.4 PROFILES="tplink_tl-wdr3600-v1" ./build.sh   # einzelnes Profil
+OWRT_VER=25.12.4 TARGET=lantiq SUBTARGET=xrx200 PROFILES=avm_fritz3390 ./build.sh
 ```
 
-Kein Komplettbau. Das SDK baut nur die gepatchten Pakete (mac80211, wireless-regdb, otm-bridge,
-Paketrevision `91`), der ImageBuilder baut daraus mit dem Release-Kernel das Image.
+`build.sh` baut ein Target und eine Liste von Profilen. Ohne Angaben nimmt es noch die alten
+Vorgaben OpenWrt 21.02.7 und WDR4300 + WDR3600; für alles außer der NanoStation M XM
+`OWRT_VER=25.12.4` setzen. `release.sh` ruft `build.sh` für alle Geräte auf, siehe
+[Veröffentlichen](#veröffentlichen).
+
+Kein Komplettbau. Das SDK baut nur die gepatchten und eigenen Pakete (mac80211,
+wireless-regdb mit Paketrevision `91`, otm-bridge, otm-mgmt-vpn, otm-autoupdater, für
+Ubiquiti XW kmod-otm-spinor-unlock), der ImageBuilder baut daraus mit dem Release-Kernel das Image.
 Ergebnis unter `build/out/<release>/<profil>/`. Dort liegen Image, Manifest, sha256sums und `build-info`;
 dieselbe Datei steht im Gerät unter `/etc/otm-build-info`.
 
@@ -68,11 +80,14 @@ Vorgabe in `/etc/config/autoupdater`: Branch `stable`, Mirror
 `http://firmware.ffnef.de/otm/stable/sysupgrade`, 3 von 5 Signaturen, Schlüssel wie in
 den Neanderfunk-Sites (`buildkeys/ffnef.signkeys` in FirmwareConfigs). http genügt, die
 Signatur schützt. Von Hand: `otm-autoupdater -n` (nur prüfen), `-f` (auch wenn abgeschaltet).
+Die Mindestzahl lässt sich je Gerät senken, etwa für einen Test:
+`uci set autoupdater.stable.good_signatures=2; uci commit autoupdater`. Sie bleibt bei
+Updates erhalten.
 
 Manifest-Zeilen: `<board_name> <version> <sha256> <größe> <datei>`, `board_name` wie in
 `/tmp/sysinfo/board_name` (z. B. `tplink,cpe510-v1`).
 
-### LiteBeam M5 XW: Flash-Schreibschutz
+### Ubiquiti XW: Flash-Schreibschutz
 
 Der Ubiquiti-Bootloader lässt beim LiteBeam M5 XW den unteren Flash geschützt (Statusregister
 `0x9c`: SRWD und BP0-2). Ohne Gegenmaßnahme meldet `sysupgrade` Erfolg, schreibt aber nur die
@@ -82,20 +97,27 @@ Schreibschutz-Pin des Flash (SoC-GPIO 0, unter 19.07 "SPI nWP", im ath79-Device-
 PHY-Reset geführt) und löscht das Statusregister, wie Linux 4.14 es bei Macronix tat. Es lädt
 aus `/etc/modules-boot.d`, also vor `mount_root`; sonst kann das Overlay nach dem Upgrade nicht
 gelöscht werden, das System läuft mit RAM-Overlay und die Konfiguration kommt nicht zurück.
-Damit lief `sysupgrade` am 14.10. vollständig durch. Ein LiteBeam mit älterem OTM-Image ohne
-dieses Modul braucht einmal TFTP-Rescue oder das Modul von Hand
-(`insmod … wp_gpio=512 wp_level=0`). Einzelheiten: `docs/litebeam-flash-schutz.md`.
+Damit liefen am LiteBeam `sysupgrade` (14.10.) und der Autoupdater (15.10.) vollständig durch.
+Die übrigen XW-Boards sind elektrisch gleich aufgebaut und bekommen das Modul ebenfalls; dort
+ist es ungetestet. Ein XW-Gerät mit älterem OTM-Image ohne dieses Modul braucht einmal
+TFTP-Rescue oder das Modul von Hand (`insmod … wp_gpio=512 wp_level=0`). Einzelheiten:
+[docs/litebeam-flash-schutz.md](docs/litebeam-flash-schutz.md).
 
 ### Veröffentlichen
 
-Jeder Lauf von `build.sh` legt unter `build/out/otm/<branch>/` an, was auf den Server gehört
-(`firmware.ffnef.de/otm/<branch>/`):
+`./release.sh` baut alle Geräte zweimal, ohne Key und mit Key, mit derselben Versionsnummer
+(Vorgabe: Startzeit, sonst `OTM_VERSION=…`), und legt alles unter
+`build/release-<version>/otm/` ab. Das Verzeichnis kommt so nach `firmware.ffnef.de/otm/`:
 
-- `sysupgrade/`: Images und `<branch>.manifest`, **unsigniert**
-- `factory/`: Images für den Erstumstieg von der Herstellerfirmware
+- `stable/sysupgrade/`: Images und `stable.manifest`, **unsigniert**
+- `stable/factory/`: Images für den Erstumstieg von der Herstellerfirmware
+- `stable-key/{sysupgrade,factory}/`: dieselben Images mit eingebauten SSH-Keys, ohne
+  Manifest. Auch Geräte mit Key aktualisieren aus `stable`; ihre Keys stehen in der
+  Konfiguration und bleiben erhalten.
 
-Läufe für weitere Targets (lantiq, 21.02) ergänzen das Verzeichnis; ein Profil, das neu gebaut
-wird, ersetzt seine alten Dateien und Manifest-Zeilen. Signiert wird wie bei Gluon:
+Einzelne `build.sh`-Läufe legen ihr Ergebnis unter `build/out/otm<variante>/<branch>/` ab;
+weitere Targets ergänzen das Verzeichnis, ein neu gebautes Profil ersetzt seine alten Dateien
+und Manifest-Zeilen. Signiert wird wie bei Gluon:
 
 ```sh
 gluon/contrib/sign.sh <secret> build/out/otm/stable/sysupgrade/stable.manifest
@@ -103,7 +125,8 @@ gluon/contrib/sign.sh <secret> build/out/otm/stable/sysupgrade/stable.manifest
 
 ## Flashen
 
-Immer ohne alte Konfiguration, denn ein Image von 25.12 oder aus Münster passt nicht dazu:
+**Erstinstallation** (Herstellerfirmware: `factory`-Image über deren Weboberfläche bzw.
+TFTP; anderes OpenWrt, z. B. ein Image aus Münster: `sysupgrade` **ohne** alte Konfiguration):
 
 ```sh
 scp -O openwrt-*-sysupgrade.bin root@<gerät>:/tmp/
@@ -111,6 +134,9 @@ ssh root@<gerät> 'sysupgrade -T /tmp/openwrt-*-sysupgrade.bin && sysupgrade -n 
 ```
 
 Die Host-Keys werden dabei neu erzeugt. Den alten `known_hosts`-Eintrag vorher entfernen.
+
+**Updates** zwischen unseren Images macht der Autoupdater, mit erhaltener Konfiguration
+(SSH-Keys, fastd-Schlüssel, Position). Von Hand geht dasselbe mit `sysupgrade` ohne `-n`.
 
 Für die TP-Link CPE510 (Pharos-Bootloader, TFTP bzw. Weboberfläche) gibt es eine eigene
 Feldanleitung: [docs/cpe510-aufbau.md](docs/cpe510-aufbau.md).
@@ -168,26 +194,47 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
 - **Management-VPN** (`OTM_VPN=1`): fastd zur Gegenstelle mit eigenem Schlüssel je Gerät,
   ohne Freischaltung; Adresse per DHCP, SSH dort unter `<knoten>.otm`. Die Standardroute
   bleibt am lokalen Uplink. Gegenstelle: [mgmt-vpn/server](mgmt-vpn/server).
+- **Autoupdater**: einmal am Tag, siehe [Autoupdater](#autoupdater).
 - **Nur Empfang**: Die ITS-Regel in der regdb trägt `NO-IR`. Tunen im Monitor-Modus geht,
   OCB-Join und Injection sind gesperrt.
+
+## Statistik
+
+Die Gegenstelle ([mgmt-vpn/server](mgmt-vpn/server)) betreibt neben fastd den MQTT-Proxy
+(mosquitto-Bridge nach `cits1.opentrafficmap.org`, nur ausgehend), `otm-stats.py`
+(liest am Proxy mit, entdoppelt Frames über alle Empfänger, schreibt jede Minute nach
+VictoriaMetrics) und Grafana unter <https://otm.ffnef.de>, ohne Anmeldung lesbar:
+
+- **OTM Empfang**: Frames je Empfänger, nur von einem Empfänger gesehene Frames, Anteil,
+  verschiedene Absender, Online/Uptime, Firmware je Empfänger, Empfangs-Health (6 h)
+- **OTM Heatmap**: Absenderpositionen (aus dem GeoNetworking-Header, Raster ~100 m),
+  global und je Empfänger, dazu geteilte Empfängerpositionen; Kacheln von tiles.ffdus.de
+
+Eine abgebaute Station verschwindet aus den Tabellen mit einer leeren retained Nachricht
+auf `its/<node>/status` am Proxy.
 
 ## Aufbau
 
 | Pfad | Inhalt |
 |---|---|
-| `feed/net/otm-bridge/` | Fork von otm-bridge (inzwischen 0.15.0), als `src-link`-Feed eingebunden |
-| `patches/openwrt-21.02/` | ath9k-Kanäle 170–185, ath-regd bis 5925 MHz, Half-Rate, regdb DE ITS |
+| `build.sh`, `release.sh` | Bau eines Targets bzw. des ganzen Release |
+| `feed/net/otm-bridge/` | Fork von otm-bridge (inzwischen 0.16.0), als `src-link`-Feed eingebunden |
+| `feed/net/otm-mgmt-vpn/` | Management-VPN (fastd), uci-defaults |
+| `feed/admin/otm-autoupdater/` | Autoupdater nach Gluon-Art |
+| `feed/kernel/otm-spinor-unlock/` | Kernel-Modul gegen den Flash-Schreibschutz der Ubiquiti-XW-Boards |
+| `patches/openwrt-{21.02,22.03,25.12}/` | ath9k-Kanäle 170–185, ath-regd bis 5925 MHz, Half-Rate, regdb DE ITS |
 | `files/common/`, `files/local/` | Dateien fürs Image; `local` ist gitignored (SSH-Keys) |
-| `werkzeug/baseline-24h.sh` | 24-h-Messung am laufenden Empfänger, schreibt nur nach `/tmp` |
-| `geraete/` | Config-Backups einzelner Geräte (gitignored, enthalten Host-Keys) |
+| `mgmt-vpn/server/` | Gegenstelle: fastd, dnsmasq, nftables, MQTT-Proxy, Statistik, Grafana |
+| `werkzeug/` | Messwerkzeuge der Testreihen (z. B. `baseline-24h.sh`, schreibt nur nach `/tmp`) |
+| `docs/` | Gerätekandidaten, Feldanleitung CPE510, LiteBeam-Flash-Schutz, Testmatrix |
+| `geraete/` | Config-Backups und Messdaten einzelner Geräte (gitignored) |
 
 ## Geräte
 
 | Gerät | Stand |
 |---|---|
-| TP-Link TL-WDR3600 v1, TL-WDR4300 v1, CPE510, AVM FRITZ!Box 3390 | im Betrieb, empfangen ITS-G5 |
-| Ubiquiti LiteBeam M5 XW | im Betrieb (Empfang noch nicht belegt), sysupgrade mit `kmod-otm-spinor-unlock` |
-| Ubiquiti NanoStation M5 (XM) | 21.02.7; ein Nachbau (AR9280) war ab 5805 MHz taub |
+| TP-Link TL-WDR3600 v1, TL-WDR4300 v1, CPE510 v1, AVM FRITZ!Box 3390, Ubiquiti LiteBeam M5 XW | im Betrieb, empfangen ITS-G5, Autoupdater |
+| Ubiquiti NanoStation M5 (XM) | Image mit 21.02.7; beim einzigen getesteten Nachbau (AR9280) kam auf 5745 MHz Testverkehr an, ab 5825 MHz nichts mehr, siehe [docs](docs/geraete-kandidaten.md#taub-trotz-passendem-chip) |
 | TP-Link CPE610 v1/v2, WBS510 v1/v2, TL-WDR3500 v1, TL-WDR4310 v1 | Images gebaut, ungetestet (ath9k, 5 GHz) |
 | Ubiquiti NanoStation (Loco) M5 XW, PowerBeam M5 XW, Bullet M5 XW | Images gebaut, ungetestet; Flash-Entsperren wie beim LiteBeam |
 | LiteBeam 5AC, UniFi AC Mesh, CPE710 | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
