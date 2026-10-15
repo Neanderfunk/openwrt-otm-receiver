@@ -25,8 +25,7 @@ Allgemeine Fassung für alle Geräte: Router-Werkstatt `docs/flash-schreibschutz
   `/etc/modules.d`: `mount_root` braucht den entsperrten Flash schon in
   preinit, sonst RAM-Overlay und die gesicherte Konfiguration kommt nicht
   zurück. So lief sysupgrade am 14.10. vollständig durch (Lauf 6).
-- Am 15.10. lief auch der Autoupdater vollständig durch (Lauf 7), ebenso das
-  Update auf den nächsten Release.
+- Am 15.10. lief auch der Autoupdater vollständig durch (Lauf 7).
 - **Noch offen:** das Fehlerbild „schreibt gar nichts“ (Läufe 2 und 3, von
   Hand entsperrt) ist nicht erklärt. Seit das Modul in preinit lädt, trat es
   nicht mehr auf.
