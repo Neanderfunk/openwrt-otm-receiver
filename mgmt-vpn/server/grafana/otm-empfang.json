@@ -293,6 +293,143 @@
     "overrides": []
    },
    "options": {}
+  },
+  {
+   "id": 9,
+   "title": "Firmware je Empfaenger",
+   "type": "table",
+   "description": "Build-Nummer und Commit des Images ab otm-bridge 0.14.0; aeltere Staende melden nur Bridge-Version und Modell, und das nur beim Verbinden",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 40,
+    "w": 24,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "max by (node, version, commit, bridge, model) (last_over_time(otm_node_build[15m]))"
+    },
+    {
+     "refId": "B",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "max by (node) (last_over_time(otm_node_online[15m]))"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "joinByField",
+     "options": {
+      "byField": "node",
+      "mode": "outer"
+     }
+    },
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true,
+       "Time 1": true,
+       "Time 2": true,
+       "Value #A": true
+      },
+      "indexByName": {
+       "node": 0,
+       "Value #B": 1,
+       "version": 2,
+       "commit": 3,
+       "bridge": 4,
+       "model": 5
+      },
+      "renameByName": {
+       "node": "Empfaenger",
+       "Value #B": "Status",
+       "version": "Build",
+       "commit": "Commit",
+       "bridge": "otm-bridge",
+       "model": "Modell"
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "Empfaenger"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "align": "left"
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Status"
+      },
+      "properties": [
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "1": {
+            "text": "online",
+            "color": "green",
+            "index": 0
+           },
+           "0": {
+            "text": "offline",
+            "color": "red",
+            "index": 1
+           }
+          }
+         }
+        ]
+       },
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "color-text"
+        }
+       },
+       {
+        "id": "custom.width",
+        "value": 90
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   }
   }
  ],
  "tags": [
