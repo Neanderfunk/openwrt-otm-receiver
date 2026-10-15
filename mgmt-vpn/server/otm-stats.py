@@ -16,6 +16,9 @@
 #   otm_node_online{node}   1 online, 0 offline (aus its/<node>/status)
 #   otm_pos{node,lat,lon}   Frames je Rasterzelle der Absenderposition
 #   otm_pos_union{lat,lon}  verschiedene Frames je Rasterzelle, alle Empfaenger
+#   otm_node_build{node,version,commit,bridge,model}  1 (Firmware-Stand, aus
+#                           otm/<node>/build retained; aeltere Bridges nur
+#                           bridge/model aus its/<node>/info beim Verbinden)
 #
 # Absenderposition: Long Position Vector aus dem GeoNetworking-Header (bei
 # signierten Paketen im unsecuredData-Teil von IEEE 1609.2), gerundet auf
@@ -30,6 +33,7 @@ lock = threading.Lock()
 offen = {}                       # key -> [erste_zeit, set(nodes)]
 zaehler = collections.Counter()  # (metrik, label) -> Wert, kumulativ
 gauges = {}                      # (metrik, label) -> Wert
+firmware = {}                    # node -> {version, commit, bridge, model}
 
 def key(f):
 	if len(f) < 40 or ((f[0] >> 2) & 3) != 2:
@@ -81,9 +85,27 @@ def position(f):
 
 def on_message(c, u, m):
 	t = m.topic.split('/')
+	if len(t) == 3 and t[0] == 'otm' and t[2] == 'build':
+		try:
+			b = json.loads(m.payload)
+		except Exception:
+			return
+		with lock:
+			firmware[t[1]] = {k: str(b.get(k, '')) for k in ('version', 'commit', 'bridge', 'model')}
+		return
 	if len(t) != 3 or t[0] != 'its':
 		return
 	node, art = t[1], t[2]
+	if art == 'info':
+		try:
+			i = json.loads(m.payload)
+		except Exception:
+			return
+		with lock:
+			f = firmware.setdefault(node, {'version': '', 'commit': ''})
+			f['bridge'] = str(i.get('ver', '')).replace('otm-bridge-', '')
+			f['model'] = str(i.get('hwv', ''))
+		return
 	now = time.time()
 	with lock:
 		if art == 'packet':
@@ -105,6 +127,10 @@ def on_message(c, u, m):
 		elif art == 'status':
 			gauges[('node_online', node)] = 1 if m.payload == b'online' else 0
 
+def esc(v):
+	"""Tag-Wert fuer das Influx-Line-Protokoll."""
+	return v.replace('\\', '').replace(' ', '\\ ').replace(',', '\\,').replace('=', '\\=')
+
 def auswerten():
 	now = time.time()
 	stationen = set()
@@ -125,6 +151,7 @@ def auswerten():
 					zaehler[('pos', (n, pos))] += 1
 		gauges[('union_stations', '')] = len(stationen)
 		werte = list(zaehler.items()) + list(gauges.items())
+		fw = {n: dict(f) for n, f in firmware.items()}
 	ts = int(now) * 10**9
 	zeilen = []
 	for (metrik, label), wert in werte:
@@ -138,6 +165,9 @@ def auswerten():
 		else:
 			tag = ''
 		zeilen.append('otm%s %s=%s %d' % (tag, metrik, wert, ts))
+	for n, f in fw.items():
+		tags = ''.join(',%s=%s' % (k, esc(f.get(k) or '-')) for k in ('version', 'commit', 'bridge', 'model'))
+		zeilen.append('otm,node=%s%s node_build=1 %d' % (esc(n), tags, ts))
 	if zeilen:
 		try:
 			urllib.request.urlopen(VM, '\n'.join(zeilen).encode(), timeout=10)
@@ -147,7 +177,7 @@ def auswerten():
 def main():
 	c = mqtt.Client(client_id='otm-stats')
 	c.on_message = on_message
-	c.on_connect = lambda c, u, f, rc: c.subscribe('its/#')
+	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0)])
 	c.connect_async('127.0.0.1', 1883, 60)
 	c.loop_start()
 	while True:
