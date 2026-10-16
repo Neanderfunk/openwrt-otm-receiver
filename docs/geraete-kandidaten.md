@@ -115,12 +115,30 @@ Folgen:
 - Ein Empfänger, der lange nichts meldet, kann taub sein und nicht nur ungünstig stehen. Das
   soll die Empfangs-Health-Metrik erkennen (siehe README, Abschnitt MQTT).
 
+## mt76 (MediaTek): 10 MHz nur auf dem Papier
+
+Versuch am 16.10.2026 mit einer Cudy WR3000 v1 (MT7981, Treiber mt7915, WM-Firmware vom
+23.08.2024), OpenWrt 25.12.4 mit dem Patch `patches/openwrt-25.12/mt76/900-…` (ITS-Kanäle,
+`WIPHY_FLAG_SUPPORTS_5_10_MHZ`). Der Treiber reicht 10 MHz als `CMD_CBW_10MHZ` an die
+Firmware weiter.
+
+- `iw` nimmt 5900 MHz mit 10 MHz an, `mon0` meldet `width: 10 MHz`, die Firmware keinen Fehler.
+- Auf 5745 MHz, eingestellt auf 10 MHz, empfing die WR3000 die Beacons normaler
+  20-MHz-Access-Points (rund 3500 in 40 s) und OCB-Rahmen der CPE510, wenn diese mit
+  **20 MHz** sendete (22 Rahmen).
+- Sendete die CPE510 mit **10 MHz**, kam bei der WR3000 nichts an (dreimal 20 Rahmen,
+  0 empfangen). Am selben Standort hatte eine ath9k-NanoStation diese Rahmen empfangen.
+
+Die Firmware nimmt die 10-MHz-Einstellung also an, empfängt aber weiter mit 20 MHz. Für
+ITS-G5 taugt mt76 damit nicht, solange die geschlossene Firmware das nicht ändert. Der
+Patch bleibt als Experiment im Repo, `build.sh` baut ihn nur für das Target mediatek.
+
 ## Ungeeignet (häufig gefragt)
 
 | Gerät | Grund |
 |---|---|
 | UniFi AC Mesh / Lite / LR / Pro, LiteBeam 5AC (Gen1/Gen2), NanoStation 5AC, PowerBeam 5AC | 5 GHz über ath10k (QCA988x): keine 10-MHz-Kanäle, PHY in der Firmware |
 | TP-Link Archer C7 (alle), FRITZ!Box 4040, sämtliche IPQ40xx-Geräte | 5 GHz über ath10k |
-| Archer C50/C6 v3, alle MediaTek-Geräte | mt76 |
+| Archer C50/C6 v3, alle MediaTek-Geräte | mt76: keine 10-MHz-Kanäle (Firmware empfängt mit 20 MHz, siehe oben) |
 | NanoStation M2 / Loco M2, Bullet M2, Rocket M2, UniFi AP, AP Outdoor+ | nur 2.4 GHz |
 | FRITZ!Box 7362 SL, 7412 | nur 2.4 GHz |
