@@ -59,7 +59,8 @@
     },
     "overrides": []
    },
-   "options": {}
+   "options": {},
+   "description": "ITS-G5-Frames (GeoNetworking), die jeder Empfänger in der jeweils letzten Stunde an den Proxy gemeldet hat. 'alle zusammen' zählt jeden Frame nur einmal, auch wenn ihn mehrere Empfänger hatten; doppelte erkennt otm-stats an Absender-MAC, Sequenznummer und Inhaltsanfang innerhalb von 5 Sekunden. Nachts ist auf der Straße kaum Verkehr."
   },
   {
    "id": 2,
@@ -102,7 +103,8 @@
     },
     "overrides": []
    },
-   "options": {}
+   "options": {},
+   "description": "Frames, die kein anderer unserer Empfänger hatte. Das ist der eigene Beitrag eines Standorts zur Abdeckung; ein Empfänger mit vielen Frames, aber kaum exklusiven, hört dieselben Sender wie die anderen."
   },
   {
    "id": 3,
@@ -145,7 +147,8 @@
     },
     "overrides": []
    },
-   "options": {}
+   "options": {},
+   "description": "Wie viele unserer Empfänger denselben Frame hatten: n=1 nur einer, n=2 zwei usw. Viel Überlappung heißt, die Standorte hören dieselben Sender."
   },
   {
    "id": 4,
@@ -189,7 +192,8 @@
     },
     "overrides": []
    },
-   "options": {}
+   "options": {},
+   "description": "Anteil der verschiedenen Frames der letzten 24 Stunden, den dieser Empfänger hatte (1 = alle, die irgendeiner unserer Empfänger hatte)."
   },
   {
    "id": 5,
@@ -232,7 +236,8 @@
     },
     "overrides": []
    },
-   "options": {}
+   "options": {},
+   "description": "Zahl der verschiedenen Absender-MAC-Adressen je Minute über alle Empfänger. ITS-Stationen wechseln ihre MAC-Adresse von Zeit zu Zeit (Pseudonyme), die Zahl ist also eine Obergrenze für die Fahrzeuge."
   },
   {
    "id": 6,
@@ -260,10 +265,39 @@
     }
    ],
    "fieldConfig": {
-    "defaults": {},
+    "defaults": {
+     "mappings": [
+      {
+       "type": "value",
+       "options": {
+        "1": {
+         "text": "online",
+         "color": "green",
+         "index": 0
+        },
+        "0": {
+         "text": "offline",
+         "color": "red",
+         "index": 1
+        }
+       }
+      }
+     ],
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "green"
+     }
+    },
     "overrides": []
    },
-   "options": {}
+   "options": {
+    "showValue": "auto",
+    "mergeValues": true,
+    "legend": {
+     "showLegend": false
+    }
+   },
+   "description": "Grün = online, rot = offline. Grundlage ist die retained Statusmeldung jedes Empfängers am Proxy; 'offline' setzt der Broker, wenn die Verbindung abreißt (Last Will). Stationen, die länger als 24 Stunden offline sind, schreibt otm-stats nicht mehr fort: Sie verschwinden aus Online- und Firmware-Tabelle, ihr Verlauf bleibt. Ganz entfernen: leere retained Nachricht auf its/<node>/status."
   },
   {
    "id": 7,
@@ -307,7 +341,8 @@
     },
     "overrides": []
    },
-   "options": {}
+   "options": {},
+   "description": "Zeit seit dem letzten Neustart des Empfängers (aus its/<node>/stats, jede Minute). Ein Sprung auf 0 ist ein Neustart, z. B. durch ein Update."
   },
   {
    "id": 8,
@@ -350,7 +385,8 @@
     },
     "overrides": []
    },
-   "options": {}
+   "options": {},
+   "description": "Alle Rahmen, die die Bridge in der letzten Stunde gemeldet hat, auch solche ohne GeoNetworking (andere 802.11-Rahmen auf dem Kanal). Der Unterschied zu 'ITS-Frames je Empfänger' ist Beifang."
   },
   {
    "id": 9,

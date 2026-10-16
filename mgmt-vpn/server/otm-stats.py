@@ -41,6 +41,8 @@ firmware = {}                    # node -> {version, commit, bridge, model}
 standorte = {}                   # node -> (lat, lon)
 gesundheit = {}                  # node -> (zeit, {feld: wert}) aus otm/<node>/health
 GESUND_MAX = 300                 # aeltere Health-Werte nicht weiterschreiben (offline != taub)
+offline_seit = {}                # node -> Zeitpunkt der Offline-Meldung (seit Start von otm-stats)
+OFFLINE_MAX = 86400              # laenger offline: nicht mehr fortschreiben (faellt aus den Tabellen)
 
 def key(f):
 	if len(f) < 40 or ((f[0] >> 2) & 3) != 2:
@@ -153,7 +155,12 @@ def on_message(c, u, m):
 				pass
 		elif art == 'status':
 			if m.payload:
-				gauges[('node_online', node)] = 1 if m.payload == b'online' else 0
+				online = m.payload == b'online'
+				gauges[('node_online', node)] = 1 if online else 0
+				if online:
+					offline_seit.pop(node, None)
+				else:
+					offline_seit.setdefault(node, now)
 			else:
 				# leere retained Meldung: Station abgebaut, aus der Statistik nehmen
 				gauges.pop(('node_online', node), None)
@@ -161,6 +168,7 @@ def on_message(c, u, m):
 				firmware.pop(node, None)
 				standorte.pop(node, None)
 				gesundheit.pop(node, None)
+				offline_seit.pop(node, None)
 
 def esc(v):
 	"""Tag-Wert fuer das Influx-Line-Protokoll."""
@@ -185,9 +193,11 @@ def auswerten():
 				if pos:
 					zaehler[('pos', (n, pos))] += 1
 		gauges[('union_stations', '')] = len(stationen)
-		werte = list(zaehler.items()) + list(gauges.items())
-		fw = {n: dict(f) for n, f in firmware.items()}
-		orte = dict(standorte)
+		weg = {n for n, t in offline_seit.items() if now - t > OFFLINE_MAX}
+		werte = list(zaehler.items()) + [(k, v) for k, v in gauges.items()
+		                                 if not (k[0] in ('node_online', 'node_uptime') and k[1] in weg)]
+		fw = {n: dict(f) for n, f in firmware.items() if n not in weg}
+		orte = {n: o for n, o in standorte.items() if n not in weg}
 		gesund = {n: dict(w) for n, (z, w) in gesundheit.items() if now - z < GESUND_MAX}
 	ts = int(now) * 10**9
 	zeilen = []
