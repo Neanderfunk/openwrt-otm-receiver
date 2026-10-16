@@ -154,6 +154,7 @@ log "feeds update/install"
 # libpcap explizit: ab 25.12 zieht feeds install es nicht mehr als Abhaengigkeit
 # von otm-bridge nach, der Bau bricht dann an fehlendem pcap.h ab
 ./scripts/feeds install -p base mac80211 wireless-regdb libpcap >/dev/null
+[ "$MT76" = 1 ] && ./scripts/feeds install -p base mt76 >/dev/null
 ./scripts/feeds install -p otm otm-bridge otm-mgmt-vpn otm-autoupdater >/dev/null
 # Flash-Entsperren fuer den LiteBeam M5 XW, braucht Kernel 5.9+ (nicht 21.02)
 KMODS_OTM=""
