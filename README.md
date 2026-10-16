@@ -226,7 +226,7 @@ auf `its/<node>/status` am Proxy.
 | `files/common/`, `files/local/` | Dateien fürs Image; `local` ist gitignored (SSH-Keys) |
 | `mgmt-vpn/server/` | Gegenstelle: fastd, dnsmasq, nftables, MQTT-Proxy, Statistik, Grafana |
 | `werkzeug/` | Messwerkzeuge der Testreihen (z. B. `baseline-24h.sh`, schreibt nur nach `/tmp`) |
-| `docs/` | Gerätekandidaten, Feldanleitung CPE510, LiteBeam-Flash-Schutz, Testmatrix |
+| `docs/` | Gerätekandidaten, Feldanleitung CPE510, LiteBeam-Flash-Schutz, mt76-Versuch (MediaTek), Testmatrix |
 | `geraete/` | Config-Backups und Messdaten einzelner Geräte (gitignored) |
 
 ## Geräte

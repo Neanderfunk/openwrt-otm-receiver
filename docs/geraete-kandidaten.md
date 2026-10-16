@@ -117,33 +117,11 @@ Folgen:
 
 ## mt76 (MediaTek): 10 MHz nur auf dem Papier
 
-Versuch am 16.10.2026 mit einer Cudy WR3000 v1 (MT7981, Treiber mt7915, WM-Firmware vom
-23.08.2024), OpenWrt 25.12.4 mit dem Patch `patches/openwrt-25.12/mt76/900-…` (ITS-Kanäle,
-`WIPHY_FLAG_SUPPORTS_5_10_MHZ`). Der Treiber reicht 10 MHz als `CMD_CBW_10MHZ` an die
-Firmware weiter.
-
-- `iw` nimmt 5900 MHz mit 10 MHz an, `mon0` meldet `width: 10 MHz`, die Firmware keinen Fehler.
-- Auf 5745 MHz, eingestellt auf 10 MHz, empfing die WR3000 die Beacons normaler
-  20-MHz-Access-Points (rund 3500 in 40 s) und OCB-Rahmen der CPE510, wenn diese mit
-  **20 MHz** sendete (22 Rahmen).
-- Sendete die CPE510 mit **10 MHz**, kam bei der WR3000 nichts an (dreimal 20 Rahmen,
-  0 empfangen). Am selben Standort hatte eine ath9k-NanoStation diese Rahmen empfangen.
-
-Die Firmware nimmt die 10-MHz-Einstellung also an, empfängt aber weiter mit 20 MHz.
-
-Nachversuch mit dem mt76-Testmodus (`OTM_TESTMODE=1`, `mt76-test`, Patch 901 für den
-Zustand `tx_cont`):
-
-- **Empfang** (`state=rx_frames`, schaltet die Firmware in ihren Testmodus und stellt den
-  Empfangsweg neu ein): gleiches Bild. 10-MHz-OCB der CPE510: 0 Rahmen, 20-MHz-OCB: 19.
-  Die Rahmen erreichen dabei wie im Normalbetrieb `mon0` und damit die Bridge.
-- **Senden** (`tx_frames`, `tx_cont`): nicht auswertbar. Selbst mit 20 MHz kam keiner der
-  500 Testrahmen bei vier ath9k-Empfängern an, die die Access Points auf demselben Kanal
-  hörten; `tx_cont` mit 20 MHz brachte die WR3000 zum Neustart. Ob die Hardware 10 MHz
-  senden könnte, bleibt damit offen.
-
-Für ITS-G5 taugt mt76 damit nicht, solange die geschlossene Firmware das nicht ändert. Die
-Patches bleiben als Experiment im Repo, `build.sh` wendet sie nur für das Target mediatek an.
+Versuch am 16.10.2026 mit einer Cudy WR3000 v1 (MT7981, Treiber mt7915): Der Treiber lässt
+sich auf 10 MHz bringen, die Firmware empfängt aber weiter mit 20 MHz, im Normal- wie im
+Testmodus. Für ITS-G5 damit unbrauchbar. Alle Einzelheiten samt Chip-Revision,
+Firmware-Ständen und Prüfsummen, auf die sich das Ergebnis bezieht:
+[mt76-its-versuch.md](mt76-its-versuch.md).
 
 ## Ungeeignet (häufig gefragt)
 
