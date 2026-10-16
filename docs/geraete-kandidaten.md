@@ -129,9 +129,21 @@ Firmware weiter.
 - Sendete die CPE510 mit **10 MHz**, kam bei der WR3000 nichts an (dreimal 20 Rahmen,
   0 empfangen). Am selben Standort hatte eine ath9k-NanoStation diese Rahmen empfangen.
 
-Die Firmware nimmt die 10-MHz-Einstellung also an, empfängt aber weiter mit 20 MHz. Für
-ITS-G5 taugt mt76 damit nicht, solange die geschlossene Firmware das nicht ändert. Der
-Patch bleibt als Experiment im Repo, `build.sh` baut ihn nur für das Target mediatek.
+Die Firmware nimmt die 10-MHz-Einstellung also an, empfängt aber weiter mit 20 MHz.
+
+Nachversuch mit dem mt76-Testmodus (`OTM_TESTMODE=1`, `mt76-test`, Patch 901 für den
+Zustand `tx_cont`):
+
+- **Empfang** (`state=rx_frames`, schaltet die Firmware in ihren Testmodus und stellt den
+  Empfangsweg neu ein): gleiches Bild. 10-MHz-OCB der CPE510: 0 Rahmen, 20-MHz-OCB: 19.
+  Die Rahmen erreichen dabei wie im Normalbetrieb `mon0` und damit die Bridge.
+- **Senden** (`tx_frames`, `tx_cont`): nicht auswertbar. Selbst mit 20 MHz kam keiner der
+  500 Testrahmen bei vier ath9k-Empfängern an, die die Access Points auf demselben Kanal
+  hörten; `tx_cont` mit 20 MHz brachte die WR3000 zum Neustart. Ob die Hardware 10 MHz
+  senden könnte, bleibt damit offen.
+
+Für ITS-G5 taugt mt76 damit nicht, solange die geschlossene Firmware das nicht ändert. Die
+Patches bleiben als Experiment im Repo, `build.sh` wendet sie nur für das Target mediatek an.
 
 ## Ungeeignet (häufig gefragt)
 
