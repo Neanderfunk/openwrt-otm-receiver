@@ -98,6 +98,14 @@ if [ "$OTM_MQTT" = proxy ]; then
 else
 	IMAGE_PACKAGES="libmosquitto-ssl ca-bundle $IMAGE_PACKAGES"
 fi
+# Funktreiber je Target: ath9k (ath79, lantiq) aus dem gepatchten mac80211;
+# mediatek (filogic, z. B. Cudy WR3000): mt76/mt7915 mit dem 10-MHz-Experiment
+# (patches/.../mt76). PIN_KMODS: unsere Bauten im Image festnageln und pruefen.
+case "$TARGET" in
+mediatek) MT76=1; PIN_KMODS="kmod-mt76-core kmod-mt76-connac kmod-mt7915e" ;;
+*)        MT76=0; PIN_KMODS="kmod-ath9k" ;;
+esac
+
 # lantiq (FRITZ!Box 3390 u. a.): DSL-Stack wird fuer den Empfaenger nicht gebraucht
 case "$TARGET" in
 lantiq) IMAGE_PACKAGES="$IMAGE_PACKAGES -ppp-mod-pppoa -ltq-vdsl-app -ltq-vdsl-vr9-vectoring-fw-installer \
@@ -160,20 +168,25 @@ esac
 if [ -d feeds/base/package/kernel/mac80211 ]; then
 	MAC=package/kernel/mac80211
 	REGDB=package/firmware/wireless-regdb
+	MT76DIR=package/kernel/mt76
 else
 	MAC=kernel/mac80211
 	REGDB=firmware/wireless-regdb
+	MT76DIR=kernel/mt76
 fi
-git -C feeds/base checkout -q -- "$MAC" "$REGDB"
-git -C feeds/base clean -q -fdx -- "$MAC" "$REGDB"
+git -C feeds/base checkout -q -- "$MAC" "$REGDB" "$MT76DIR"
+git -C feeds/base clean -q -fdx -- "$MAC" "$REGDB" "$MT76DIR"
 [ -d "$PATCHES" ] || die "keine Patches fuer ${OWRT_VER%.*}: $PATCHES fehlt"
 # je Unterordner (ath, ath9k, ...) in den gleichnamigen des Pakets: die
 # Ordner-Reihenfolge von mac80211 bestimmt, auf welchem Stand ein Patch aufsetzt
 GENOMMEN=""
-for d in "$PATCHES"/mac80211/*/ "$PATCHES"/wireless-regdb/; do
+MT76_PATCHES=""
+[ "$MT76" = 1 ] && MT76_PATCHES="$PATCHES/mt76/"
+for d in "$PATCHES"/mac80211/*/ "$PATCHES"/wireless-regdb/ $MT76_PATCHES; do
 	d=${d%/}
 	case "$d" in
 	*/wireless-regdb) ziel="feeds/base/$REGDB/patches" ;;
+	*/mt76) ziel="feeds/base/$MT76DIR/patches"; mkdir -p "$ziel" ;;
 	*) ziel="feeds/base/$MAC/patches/${d##*/}"; mkdir -p "$ziel" ;;
 	esac
 	for f in "$d"/*.patch; do
@@ -187,6 +200,8 @@ for d in "$PATCHES"/mac80211/*/ "$PATCHES"/wireless-regdb/; do
 done
 [ -n "$GENOMMEN" ] || die "kein einziger Patch uebrig (SKIP_PATCHES=$SKIP_PATCHES)"
 sed -i "s/^PKG_RELEASE:=.*/PKG_RELEASE:=$OTM_RELEASE/" "feeds/base/$MAC/Makefile" "feeds/base/$REGDB/Makefile"
+# mt76 schreibt "PKG_RELEASE=2" (ohne Doppelpunkt)
+[ "$MT76" = 1 ] && sed -i "s/^PKG_RELEASE:\?=.*/PKG_RELEASE:=$OTM_RELEASE/" "feeds/base/$MT76DIR/Makefile"
 
 # Nur bauen, was wir brauchen (SDK-Vorgabe waere "alles").
 cat > .config <<EOF
@@ -194,22 +209,28 @@ cat > .config <<EOF
 # CONFIG_ALL_KMODS is not set
 # CONFIG_ALL_NONSHARED is not set
 # CONFIG_SIGNED_PACKAGES is not set
-CONFIG_PACKAGE_kmod-ath9k=m
 CONFIG_PACKAGE_wireless-regdb=m
 CONFIG_PACKAGE_otm-bridge=m
 CONFIG_PACKAGE_otm-mgmt-vpn=m
 CONFIG_PACKAGE_otm-autoupdater=m
 EOF
 for k in $KMODS_OTM; do echo "CONFIG_PACKAGE_kmod-$k=m" >> .config; done
+if [ "$MT76" = 1 ]; then
+	echo "CONFIG_PACKAGE_kmod-mt7915e=m" >> .config
+else
+	echo "CONFIG_PACKAGE_kmod-ath9k=m" >> .config
+fi
 make defconfig >/dev/null
 
 log "baue mac80211, wireless-regdb, otm-bridge, otm-mgmt-vpn (-j$JOBS)"
-for p in mac80211 wireless-regdb otm-bridge otm-mgmt-vpn otm-autoupdater $KMODS_OTM; do
+MT76_PKG=""
+[ "$MT76" = 1 ] && MT76_PKG=mt76
+for p in mac80211 wireless-regdb otm-bridge otm-mgmt-vpn otm-autoupdater $KMODS_OTM $MT76_PKG; do
 	make "package/$p/clean" >/dev/null 2>&1 || true
 done
 make -j"$JOBS" package/mac80211/compile package/wireless-regdb/compile \
 	package/otm-bridge/compile package/otm-mgmt-vpn/compile \
-	package/otm-autoupdater/compile $(for k in $KMODS_OTM; do echo package/$k/compile; done) \
+	package/otm-autoupdater/compile $(for k in $KMODS_OTM $MT76_PKG; do echo package/$k/compile; done) \
 	> "$BUILD/sdk-build.log" 2>&1 ||
 	die "SDK-Build fehlgeschlagen, siehe $BUILD/sdk-build.log"
 
@@ -242,7 +263,7 @@ ls "$PKGDIR" | grep -E -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" >/dev/null 
 # Bis 24.10 stimmten die Versionen zwischen SDK und Release-Repo ueberein, dort
 # reicht die hoehere Revision 91; gepinnt wird deshalb nur fuer apk.
 case "$OWRT_VER" in 2[5-9].*)
-	for p in wireless-regdb kmod-ath9k; do
+	for p in wireless-regdb $PIN_KMODS; do
 		f=$(ls "$PKGDIR/$p"-[0-9]*.apk 2>/dev/null | head -n 1) || die "$p nicht in $PKGDIR"
 		f=${f##*/}; f=${f%.apk}
 		IMAGE_PACKAGES="$IMAGE_PACKAGES $p=${f#$p-}"
@@ -324,12 +345,14 @@ for prof in $PROFILES; do
 	cp bin/targets/$TARGET/$SUBTARGET/*"$prof"*sysupgrade.bin "$OUT/$prof/"
 	# factory-Image, wo es eins gibt: Umstieg von der Herstellerfirmware
 	cp bin/targets/$TARGET/$SUBTARGET/*"$prof"*factory.bin "$OUT/$prof/" 2>/dev/null || true
+	# initramfs, wo es eins gibt (z. B. Cudy: Erstinstallation ueber TFTP/U-Boot)
+	cp bin/targets/$TARGET/$SUBTARGET/*"$prof"*initramfs*.bin "$OUT/$prof/" 2>/dev/null || true
 	cp bin/targets/$TARGET/$SUBTARGET/*"$prof"*.manifest "$OUT/$prof/" 2>/dev/null || true
 	# Kontrolle: im Image muessen unsere gepatchten Pakete stecken, nicht die
 	# gleichnamigen aus dem Release-Repo
 	for m in "$OUT/$prof"/*.manifest; do
 		[ -f "$m" ] || continue
-		for p in wireless-regdb kmod-ath9k; do
+		for p in wireless-regdb $PIN_KMODS; do
 			grep -qE "^$p - .*-r?$OTM_RELEASE\$" "$m" ||
 				die "$prof: $p im Image ist nicht unseres (siehe $m)"
 		done

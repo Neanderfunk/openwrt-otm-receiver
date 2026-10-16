@@ -1,0 +1,61 @@
+From: OTM receiver <otm@ffnef.de>
+Subject: [PATCH] wifi: mt76: ITS-G5 receive experiment (10 MHz, 5.86-5.92 GHz)
+
+Experiment for passive ITS-G5 reception (opentrafficmap.org), mt7915 family
+(incl. MT7981/MT7986):
+
+- add the 10 MHz ITS channels 172-184 (5860-5920 MHz) to the 5 GHz band
+- mark the OFDM rates as usable at 5/10 MHz
+- mt7915: announce WIPHY_FLAG_SUPPORTS_5_10_MHZ
+
+The driver already maps NL80211_CHAN_WIDTH_5/10 to CMD_CBW_5MHZ/10MHZ in the
+channel switch command (mt76_connac_chan_bw). Whether the firmware really
+receives with half clock is unknown; this patch only lets mac80211 ask.
+Transmitting stays blocked by the regdb (NO-IR).
+
+diff --git a/mac80211.c b/mac80211.c
+index 084d9cc..9e6af87 100644
+--- a/mac80211.c
++++ b/mac80211.c
+@@ -74,8 +74,15 @@ static const struct ieee80211_channel mt76_channels_5ghz[] = {
+ 	CHAN5G(161, 5805),
+ 	CHAN5G(165, 5825),
+ 	CHAN5G(169, 5845),
++	CHAN5G(172, 5860),
+ 	CHAN5G(173, 5865),
++	CHAN5G(174, 5870),
++	CHAN5G(176, 5880),
+ 	CHAN5G(177, 5885),
++	CHAN5G(178, 5890),
++	CHAN5G(180, 5900),
++	CHAN5G(182, 5910),
++	CHAN5G(184, 5920),
+ };
+ 
+ static const struct ieee80211_channel mt76_channels_6ghz[] = {
+diff --git a/mt76.h b/mt76.h
+index 273f38e..a14732d 100644
+--- a/mt76.h
++++ b/mt76.h
+@@ -1183,6 +1183,8 @@ struct mt76_chanctx {
+ 
+ #define OFDM_RATE(_idx, _rate) {				\
+ 	.bitrate = _rate,					\
++	.flags = IEEE80211_RATE_SUPPORTS_5MHZ |			\
++		 IEEE80211_RATE_SUPPORTS_10MHZ,			\
+ 	.hw_value = (MT_PHY_TYPE_OFDM << 8) | (_idx),		\
+ 	.hw_value_short = (MT_PHY_TYPE_OFDM << 8) | (_idx),	\
+ }
+diff --git a/mt7915/init.c b/mt7915/init.c
+index 04788db..4bf440e 100644
+--- a/mt7915/init.c
++++ b/mt7915/init.c
+@@ -383,6 +383,8 @@ mt7915_init_wiphy(struct mt7915_phy *phy)
+ 	wiphy->n_iface_combinations = ARRAY_SIZE(if_comb);
+ 	wiphy->reg_notifier = mt7915_regd_notifier;
+ 	wiphy->flags |= WIPHY_FLAG_HAS_CHANNEL_SWITCH;
++	/* ITS-G5 experiment: the firmware interface knows CMD_CBW_10MHZ */
++	wiphy->flags |= WIPHY_FLAG_SUPPORTS_5_10_MHZ;
+ 	wiphy->mbssid_max_interfaces = 16;
+ 
+ 	wiphy_ext_feature_set(wiphy, NL80211_EXT_FEATURE_BSS_COLOR);
