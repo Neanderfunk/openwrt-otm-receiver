@@ -40,6 +40,8 @@ OTM_RELEASE="${OTM_RELEASE:-91}"
 # Image-Name, Ausgabeverzeichnis und build-info sie auseinanderhalten.
 SKIP_PATCHES="${SKIP_PATCHES:-}"
 OTM_VARIANT="${OTM_VARIANT:-}"
+# Nur fuer Versuche (mt76): nl80211-Testmodus und mt76-test ins Image
+OTM_TESTMODE="${OTM_TESTMODE:-0}"
 JOBS="${JOBS:-$(nproc)}"
 # Weg zum MQTT-Broker:
 #   proxy  (Vorgabe) MQTT ohne TLS durch das Management-VPN an den Proxy auf
@@ -102,7 +104,8 @@ fi
 # mediatek (filogic, z. B. Cudy WR3000): mt76/mt7915 mit dem 10-MHz-Experiment
 # (patches/.../mt76). PIN_KMODS: unsere Bauten im Image festnageln und pruefen.
 case "$TARGET" in
-mediatek) MT76=1; PIN_KMODS="kmod-mt76-core kmod-mt76-connac kmod-mt7915e" ;;
+mediatek) MT76=1; PIN_KMODS="kmod-mt76-core kmod-mt76-connac kmod-mt7915e"
+	[ "${OTM_TESTMODE:-0}" = 1 ] && IMAGE_PACKAGES="$IMAGE_PACKAGES mt76-test" ;;
 *)        MT76=0; PIN_KMODS="kmod-ath9k" ;;
 esac
 
@@ -218,6 +221,7 @@ EOF
 for k in $KMODS_OTM; do echo "CONFIG_PACKAGE_kmod-$k=m" >> .config; done
 if [ "$MT76" = 1 ]; then
 	echo "CONFIG_PACKAGE_kmod-mt7915e=m" >> .config
+	[ "$OTM_TESTMODE" = 1 ] && printf '%s\n' CONFIG_PACKAGE_CFG80211_TESTMODE=y CONFIG_PACKAGE_mt76-test=m >> .config
 else
 	echo "CONFIG_PACKAGE_kmod-ath9k=m" >> .config
 fi
@@ -252,7 +256,7 @@ case "$OWRT_VER" in
 esac
 mkdir -p "$PKGDIR"
 find "$SDK/bin" \( -name '*.ipk' -o -name '*.apk' \) \
-	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" -o -name "otm-mgmt-vpn*" -o -name "otm-autoupdater*" \) -exec cp {} "$PKGDIR/" \;
+	\( -name "kmod-*" -o -name "wireless-regdb*" -o -name "otm-bridge*" -o -name "otm-mgmt-vpn*" -o -name "otm-autoupdater*" -o -name "mt76-test*" \) -exec cp {} "$PKGDIR/" \;
 # kein grep -q: endet es beim ersten Treffer, bekommt ls SIGPIPE, und mit
 # pipefail scheitert die Pruefung trotz Treffer (lantiq 14.10.)
 ls "$PKGDIR" | grep -E -e "-${OTM_RELEASE}_|-r${OTM_RELEASE}\.apk\$" >/dev/null || die "keine Pakete mit Revision $OTM_RELEASE"
