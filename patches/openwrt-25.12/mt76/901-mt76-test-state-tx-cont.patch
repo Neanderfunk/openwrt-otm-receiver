@@ -1,0 +1,19 @@
+From: OTM receiver <otm@ffnef.de>
+Subject: [PATCH] mt76-test: allow state tx_cont
+
+The kernel accepts MT76_TM_STATE_TX_CONT (continuous waveform tx, mt7915
+passes the bandwidth incl. CMD_CBW_10MHZ to the RF test command), but the
+CLI had no name for it. Needed for the ITS-G5 10 MHz experiment.
+
+diff --git a/tools/fields.c b/tools/fields.c
+index e3f6908..4bb2d0c 100644
+--- a/tools/fields.c
++++ b/tools/fields.c
+@@ -10,6 +10,7 @@ static const char * const testmode_state[] = {
+ 	[MT76_TM_STATE_IDLE] = "idle",
+ 	[MT76_TM_STATE_TX_FRAMES] = "tx_frames",
+ 	[MT76_TM_STATE_RX_FRAMES] = "rx_frames",
++	[MT76_TM_STATE_TX_CONT] = "tx_cont",
+ };
+ 
+ static const char * const testmode_tx_mode[] = {
