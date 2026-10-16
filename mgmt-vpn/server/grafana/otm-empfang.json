@@ -386,7 +386,7 @@
     "overrides": []
    },
    "options": {},
-   "description": "Alle Rahmen, die die Bridge in der letzten Stunde gemeldet hat, auch solche ohne GeoNetworking (andere 802.11-Rahmen auf dem Kanal). Der Unterschied zu 'ITS-Frames je Empfänger' ist Beifang."
+   "description": "Alle Frames, die die Bridge in der letzten Stunde gemeldet hat, auch solche ohne GeoNetworking (andere 802.11-Frames auf dem Kanal). Der Unterschied zu 'ITS-Frames je Empfänger' ist Beifang."
   },
   {
    "id": 9,
@@ -529,7 +529,7 @@
    "id": 10,
    "title": "Empfangs-Health (6 h)",
    "type": "table",
-   "description": "Ab otm-bridge 0.16.0. Bewertung ueber die letzten 6 Stunden: 'empfaengt ITS' = mindestens ein ITS-Frame; 'nur Rauschen' = das Radio sieht Rahmen, CRC- oder PHY-Fehler, aber kein ITS (Standort ohne Verkehr?); 'taub?' = kein einziger Zaehler bewegt sich (so sah der NanoStation-Nachbau aus). CRC-Fehler: Praeambel erkannt, Inhalt kaputt. PHY-Fehler: Energie gesehen, nichts Dekodierbares.",
+   "description": "Ab otm-bridge 0.16.0. Bewertung ueber die letzten 6 Stunden: 'empfaengt ITS' = mindestens ein ITS-Frame; 'nur Rauschen' = das Radio sieht Frames, CRC- oder PHY-Fehler, aber kein ITS (Standort ohne Verkehr?); 'taub?' = kein einziger Zaehler bewegt sich (so sah der NanoStation-Nachbau aus). CRC-Fehler: Praeambel erkannt, Inhalt kaputt. PHY-Fehler: Energie gesehen, nichts Dekodierbares.",
    "datasource": {
     "type": "prometheus",
     "uid": "otm-vm"
@@ -654,7 +654,7 @@
        "node": "Empfaenger",
        "Value #A": "Bewertung",
        "Value #B": "ITS-Frames",
-       "Value #C": "Rahmen gesamt",
+       "Value #C": "Frames gesamt",
        "Value #D": "CRC-Fehler",
        "Value #E": "PHY-Fehler",
        "Value #F": "Rauschen (dBm)",
