@@ -938,7 +938,7 @@
       "type": "prometheus",
       "uid": "otm-vm"
      },
-     "expr": "sum by (lat, lon) (increase(otm_pos{node=\"$node\"}[$__range]))",
+     "expr": "sum by (lat, lon) (increase(otm_pos{node=\"$node\"}[$__range])) > 0",
      "instant": true,
      "range": false,
      "format": "table"
@@ -952,7 +952,7 @@
      "instant": true,
      "range": false,
      "format": "table",
-     "expr": "max by (node, lat, lon) (last_over_time(otm_node_location{node=\"$node\"}[7d]))"
+     "expr": "(max by (node, lat, lon) (last_over_time(otm_node_location{node=\"$node\"}[7d])) * on (node) sum by (node) (increase(otm_frames{node=\"$node\"}[$__range]))) or (max by (node, lat, lon) (last_over_time(otm_node_location{node=\"$node\"}[7d])) * 0)"
     }
    ],
    "transformations": [
@@ -971,16 +971,96 @@
        }
       ]
      }
+    },
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true
+      }
+     }
     }
    ],
    "fieldConfig": {
     "defaults": {
      "color": {
       "mode": "continuous-YlRd"
-     },
-     "displayName": "Frames"
+     }
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Value"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Frames"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "lat"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Breite"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "lon"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Länge"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "node"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Empfänger"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Value #A"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Frames"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Value #B"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Frames dieses Empfängers"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "view": {
@@ -1010,7 +1090,7 @@
     "layers": [
      {
       "type": "heatmap",
-      "name": "Frames",
+      "name": "Häufigkeit",
       "tooltip": true,
       "location": {
        "mode": "coords",
@@ -1036,7 +1116,7 @@
      {
       "type": "markers",
       "name": "Zellen",
-      "tooltip": true,
+      "tooltip": false,
       "location": {
        "mode": "coords",
        "latitude": "lat",
@@ -1065,7 +1145,7 @@
      },
      {
       "type": "markers",
-      "name": "Empfaenger",
+      "name": "Empfänger",
       "tooltip": true,
       "filterData": {
        "id": "byRefId",
@@ -1154,6 +1234,14 @@
        }
       ]
      }
+    },
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true
+      }
+     }
     }
    ],
    "fieldConfig": {
@@ -1164,7 +1252,6 @@
      "unit": "velocitykmh",
      "decimals": 0,
      "min": 0,
-     "displayName": "km/h",
      "thresholds": {
       "mode": "absolute",
       "steps": [
@@ -1203,7 +1290,80 @@
       ]
      }
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Value"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "km/h im Mittel"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "lat"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Breite"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "lon"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Länge"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "node"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Empfänger"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Value #A"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "km/h im Mittel"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Value #B"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Frames dieses Empfängers"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "view": {
@@ -1308,6 +1468,14 @@
        }
       ]
      }
+    },
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true
+      }
+     }
     }
    ],
    "fieldConfig": {
@@ -1318,7 +1486,6 @@
      "unit": "velocitykmh",
      "decimals": 0,
      "min": 0,
-     "displayName": "km/h",
      "thresholds": {
       "mode": "absolute",
       "steps": [
@@ -1357,7 +1524,80 @@
       ]
      }
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Value"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "km/h höchstens"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "lat"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Breite"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "lon"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Länge"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "node"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Empfänger"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Value #A"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "km/h höchstens"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Value #B"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "Frames dieses Empfängers"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "view": {
