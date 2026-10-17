@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=otm-bridge
-PKG_VERSION:=0.17.0
+PKG_VERSION:=0.18.0
 PKG_RELEASE:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -52,6 +52,15 @@ define Package/otm-bridge/install
 	$(INSTALL_DATA) ./files/otm-bridge.ntp-hotplug $(1)/etc/hotplug.d/ntp/25-otm-bridge
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files/uci-defaults/99-otm-setup $(1)/etc/uci-defaults/99-otm-setup
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) ./files/otm-configmode $(1)/usr/sbin/otm-configmode
+	$(INSTALL_BIN) ./files/otm-help $(1)/usr/sbin/otm-help
+	$(INSTALL_BIN) ./files/otm-configmode-early.init $(1)/etc/init.d/otm-configmode-early
+	$(INSTALL_BIN) ./files/otm-configmode.init $(1)/etc/init.d/otm-configmode
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/button
+	$(INSTALL_DATA) ./files/otm-configmode.button $(1)/etc/hotplug.d/button/50-otm-configmode
+	$(INSTALL_DIR) $(1)/etc/profile.d
+	$(INSTALL_DATA) ./files/otm-login.sh $(1)/etc/profile.d/otm.sh
 endef
 
 $(eval $(call BuildPackage,otm-bridge))

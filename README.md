@@ -244,6 +244,11 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   ohne Freischaltung; Adresse per DHCP, SSH dort unter `<knoten>.otm`. Die Standardroute
   bleibt am lokalen Uplink. Gegenstelle: [mgmt-vpn/server](mgmt-vpn/server). Protokoll,
   Versionen und Verhalten bei kaputtem IPv6: [docs/management-vpn.md](docs/management-vpn.md).
+- **Config-Mode** (ab otm-bridge 0.18.0): Reset-Taster etwa 10 Sekunden halten oder
+  `otm-configmode enter`; dann alle Ports fest `192.168.1.1/24` mit DHCP-Server und SSH für
+  root ohne Passwort, sonst nichts. Verlassen mit `otm-configmode exit` oder jedem Neustart.
+  `otm-help` zeigt die wichtigsten UCI-Schlüssel (Name, Position teilen, WLAN-Rückfall,
+  Autoupdater) mit ihren Werten. Einzelheiten: [docs/einstellungen.md](docs/einstellungen.md).
 - **Autoupdater**: einmal am Tag, siehe [Autoupdater](#autoupdater).
 - **Nur Empfang**: Die ITS-Regel in der regdb trägt `NO-IR`. Tunen im Monitor-Modus geht,
   OCB-Join und Injection sind gesperrt.
@@ -285,7 +290,7 @@ auf `its/<node>/status` am Proxy.
 | `files/common/`, `files/local/` | Dateien fürs Image; `local` ist gitignored (SSH-Keys) |
 | `mgmt-vpn/server/` | Gegenstelle: fastd, dnsmasq, nftables, MQTT-Proxy, Statistik, Grafana |
 | `werkzeug/` | Messwerkzeuge der Testreihen (z. B. `baseline-24h.sh`, schreibt nur nach `/tmp`) |
-| `docs/` | Architektur, Gerätekandidaten, Feldanleitung CPE510, LiteBeam-Flash-Schutz, WLAN-Rückfall, Management-VPN (fastd, Dual-Stack), mt76-Versuch (MediaTek), Testmatrix |
+| `docs/` | Architektur, Einstellungen und Config-Mode, Gerätekandidaten, Feldanleitung CPE510, LiteBeam-Flash-Schutz, WLAN-Rückfall, Management-VPN (fastd, Dual-Stack), mt76-Versuch (MediaTek), Testmatrix |
 | `geraete/` | Config-Backups und Messdaten einzelner Geräte (gitignored) |
 
 ## Geräte

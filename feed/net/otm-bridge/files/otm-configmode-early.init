@@ -1,0 +1,36 @@
+#!/bin/sh /etc/rc.common
+# Frueh im Start (vor network): Steht der Merker /etc/otm-configmode, startet
+# das Geraet im Config-Mode. Der Merker wird sofort geloescht (wie Gluons
+# S15gluon-setup-mode), ein weiterer Neustart fuehrt also in den Normalbetrieb.
+# Netz wie bei Gluon (S20network): alle Ports fest 192.168.1.1/24; die
+# Konfiguration liegt in tmpfs und wird ueber /etc/config/network gelegt.
+
+START=12
+
+SETUP_MODE_ADDR=192.168.1.1
+SETUP_MODE_NETMASK=255.255.255.0
+
+boot() {
+	local dir=/var/run/otm-configmode dev
+
+	[ -e /etc/otm-configmode ] || return 0
+	rm -f /etc/otm-configmode
+	sync
+
+	mkdir -p "$dir/config"
+	cp /etc/config/network "$dir/config/"
+	dev=$(uci -q get network.wan.device)
+	# uci -c: das Kommando beachtet UCI_CONFIG_DIR nicht (nur die uci_*-Helfer)
+	u() { uci -q -c "$dir/config" "$@"; }
+	for i in $(u show network | sed -n "s/^network\.\([^.=]*\)=interface$/\1/p"); do
+		[ "$i" = loopback ] || u delete network.$i
+	done
+	u set network.setup=interface
+	u set network.setup.device="${dev:-br-lan}"
+	u set network.setup.proto='static'
+	u set network.setup.ipaddr="$SETUP_MODE_ADDR"
+	u set network.setup.netmask="$SETUP_MODE_NETMASK"
+	u commit network
+	mount --bind "$dir/config/network" /etc/config/network
+	logger -t otm-configmode "Config-Mode: $SETUP_MODE_ADDR auf ${dev:-br-lan}, nur SSH"
+}

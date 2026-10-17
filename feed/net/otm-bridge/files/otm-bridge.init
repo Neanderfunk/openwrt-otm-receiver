@@ -11,6 +11,10 @@ STOP=10
 start_service() {
 	local enabled iface capture capture_dir capture_size capture_files tcpdump
 
+	# Config-Mode: keine Daten, nur SSH
+	. /lib/otm-bridge/functions.sh
+	otm_configmode && return 0
+
 	config_load otm-bridge
 	config_get_bool enabled main enabled 1
 	[ "$enabled" = "1" ] || return 0

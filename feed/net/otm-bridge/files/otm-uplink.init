@@ -10,6 +10,7 @@ STOP=10
 start_service() {
 	local enabled freq
 	. /lib/otm-bridge/functions.sh
+	otm_configmode && return 0
 	config_load otm-bridge
 	config_get_bool enabled uplink wlan_fallback 1
 	[ "$enabled" = 1 ] || return 0

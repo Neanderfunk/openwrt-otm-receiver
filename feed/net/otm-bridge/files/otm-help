@@ -1,0 +1,71 @@
+#!/bin/sh
+# otm-help - die wichtigsten Einstellungen des Empfaengers mit ihren Werten
+
+. /lib/otm-bridge/functions.sh
+
+w() {	# Schluessel, Erklaerung, Vorgabe (wenn leer)
+	local v
+	v=$(uci -q get "$1")
+	if [ -z "$v" ] && [ -n "$3" ]; then
+		printf '  %-36s %s\n' "$1" "(nicht gesetzt, Vorgabe $3)"
+	else
+		printf '  %-36s %s\n' "$1" "'$v'"
+	fi
+	[ -n "$2" ] && printf '  %-36s   %s\n' "" "$2"
+	return 0
+}
+
+if otm_configmode; then
+	echo "Config-Mode: an. Verlassen: otm-configmode exit (Neustart in den Normalbetrieb)"
+else
+	echo "Normalbetrieb. Config-Mode: otm-configmode enter, oder Reset-Taster ~10 s halten"
+fi
+cat <<EOF
+Empfaenger $(uci -q get system.@system[0].hostname), Build $(cat /lib/otm/version 2>/dev/null)
+
+Empfang (otm-bridge.main):
+EOF
+w otm-bridge.main.enabled	"0 = Empfaenger aus" 1
+w otm-bridge.main.node		"Name des Empfaengers (MQTT, Karten); leer = <Modell>-<MAC>"
+w otm-bridge.main.transport	"proxy (Tunnel) | direct (TLS) | auto"
+w otm-bridge.main.freq		"MHz, 5900 = ITS-Kanal 180" 5900
+cat <<EOF
+
+Position, nur fuer unsere Karte (otm-bridge.location):
+EOF
+w otm-bridge.location.share_location	"1 = Position teilen" 0
+w otm-bridge.location.latitude		"Dezimalgrad, z. B. 51.2345"
+w otm-bridge.location.longitude		"Dezimalgrad, z. B. 6.789"
+w otm-bridge.location.altitude		"Meter, freiwillig"
+cat <<EOF
+
+WLAN-Rueckfall ueber 2.4 GHz, nur Dualband-Geraete (otm-bridge.uplink):
+EOF
+w otm-bridge.uplink.wlan_fallback	"0 = aus" 1
+w otm-bridge.uplink.ssid_prefix		"SSID beginnt so (Gross/Klein egal)" Freifunk
+w otm-bridge.uplink.lan_timeout		"Sekunden ohne DHCP am LAN, dann WLAN" 90
+cat <<EOF
+
+Autoupdater:
+EOF
+w autoupdater.settings.enabled		"0 = aus" 0
+w autoupdater.settings.branch
+w autoupdater.stable.good_signatures	"Mindestzahl gueltiger Signaturen"
+cat <<EOF
+
+Aendern, z. B.:
+  uci set otm-bridge.location.share_location=1
+  uci set otm-bridge.location.latitude=51.2345
+  uci set otm-bridge.location.longitude=6.789
+  uci commit otm-bridge && reload_config
+
+SSH-Keys: /etc/dropbear/authorized_keys (ein Key je Zeile). Mit Key ist SSH
+im Normalbetrieb per Key offen, ohne Key zu; uebernommen beim Verlassen des
+Config-Mode.
+
+Weitere Befehle:
+  otm-configmode enter|exit   Config-Mode an/aus (Neustart)
+  otm-autoupdater -n          pruefen, ob es neue Firmware gibt
+  logread -e otm              Meldungen von otm-bridge, otm-uplink, ...
+  firstboot -y && reboot      Werkszustand (alle Einstellungen weg)
+EOF

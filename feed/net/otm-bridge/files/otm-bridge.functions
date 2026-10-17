@@ -69,3 +69,35 @@ otm_24_phy() {
 	done
 	return 1
 }
+
+# SSH nach Keys einrichten (99-otm-setup, otm-configmode exit): mit Key in
+# /etc/dropbear/authorized_keys laeuft dropbear, nur per Key, und die
+# wan-Zone laesst Port 22 zu; ohne Key bleibt SSH zu.
+otm_ssh_setup() {
+	local has_key=0 sec
+	grep -q '^ssh-\|^ecdsa-' /etc/dropbear/authorized_keys 2>/dev/null && has_key=1
+	uci set dropbear.@dropbear[0].PasswordAuth='off'
+	uci set dropbear.@dropbear[0].RootPasswordAuth='off'
+	uci commit dropbear
+	if [ $has_key = 1 ]; then
+		/etc/init.d/dropbear enable
+	else
+		/etc/init.d/dropbear disable
+		/etc/init.d/dropbear stop 2>/dev/null
+	fi
+	if [ $has_key = 1 ] && ! uci -q show firewall | grep -q "name='Allow-SSH-WAN'"; then
+		sec=$(uci add firewall rule)
+		uci set "firewall.${sec}.name=Allow-SSH-WAN"
+		uci set "firewall.${sec}.src=wan"
+		uci set "firewall.${sec}.proto=tcp"
+		uci set "firewall.${sec}.dest_port=22"
+		uci set "firewall.${sec}.target=ACCEPT"
+		uci commit firewall
+	fi
+	return 0
+}
+
+# Laeuft das Geraet gerade im Config-Mode? (Merker in tmpfs, gesetzt beim Start)
+otm_configmode() {
+	[ -e /var/run/otm-configmode ]
+}

@@ -1,0 +1,28 @@
+#!/bin/sh
+# /etc/hotplug.d/button/50-otm-configmode
+# Wie Gluon (gluon-setup-mode, 50-gluon-setup-mode): Taster wps, reset oder
+# phone 3 s gedrueckt halten -> Neustart in den Config-Mode. OpenWrts eigenes
+# /etc/rc.button/reset (Neustart/Werksreset) ist im Image stillgelegt.
+
+wait=3
+
+wait_setup_mode() {
+	sleep $wait
+	otm-configmode enter
+}
+
+if [ "$BUTTON" = wps ] || [ "$BUTTON" = reset ] || [ "$BUTTON" = phone ]; then
+	case "$ACTION" in
+		pressed)
+			wait_setup_mode &
+			PID=$!
+			echo $PID > /tmp/.wait_setup_mode
+			;;
+		released)
+			if [ -r /tmp/.wait_setup_mode ]; then
+				kill "$(cat /tmp/.wait_setup_mode)"
+				rm /tmp/.wait_setup_mode
+			fi
+			;;
+	esac
+fi

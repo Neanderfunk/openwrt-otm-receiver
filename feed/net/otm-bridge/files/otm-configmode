@@ -1,0 +1,45 @@
+#!/bin/sh
+# otm-configmode - Konfigurationsmodus wie bei Gluon, aber nur mit SSH.
+#
+#   otm-configmode enter   Neustart in den Config-Mode
+#   otm-configmode exit    Config-Mode verlassen: SSH nach Keys einrichten, Neustart
+#   otm-configmode         zeigt, ob das Geraet gerade im Config-Mode laeuft
+#
+# Im Config-Mode laufen alle Ports fest auf 192.168.1.1/24 mit DHCP-Server,
+# SSH laesst root ohne Passwort herein; keine Daten an den Broker, kein
+# Tunnel, kein Autoupdater. Der Merker gilt nur fuer einen Start (wie bei
+# Gluon): Neustart oder Stromausfall fuehren zurueck in den Normalbetrieb.
+
+. /lib/otm-bridge/functions.sh
+
+case "$1" in
+enter)
+	echo "Neustart in den Config-Mode ..."
+	logger -t otm-configmode "enter"
+	touch /etc/otm-configmode
+	sync
+	reboot
+	;;
+exit)
+	if ! otm_configmode; then
+		echo "Das Geraet laeuft nicht im Config-Mode." >&2
+		exit 1
+	fi
+	otm_ssh_setup
+	echo "Config-Mode wird verlassen, Neustart in den Normalbetrieb ..."
+	rm -f /etc/otm-configmode
+	sync
+	reboot
+	;;
+"")
+	if otm_configmode; then
+		echo "Config-Mode: an (verlassen mit: otm-configmode exit)"
+	else
+		echo "Config-Mode: aus (Normalbetrieb)"
+	fi
+	;;
+*)
+	echo "Aufruf: otm-configmode [enter|exit]" >&2
+	exit 2
+	;;
+esac

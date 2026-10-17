@@ -1,0 +1,6 @@
+#!/bin/sh
+# Wie bei Gluon (patches/openwrt/0002-base-files-disable-reset-button-handling):
+# OpenWrts Reset-Taster-Behandlung (kurz = Neustart, ab 5 s = Werksreset) ist
+# stillgelegt. Den Taster wertet /etc/hotplug.d/button/50-otm-configmode aus
+# (3 s halten = Config-Mode).
+return 0

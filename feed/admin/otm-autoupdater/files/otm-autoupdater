@@ -37,6 +37,7 @@ done
 config_load autoupdater
 config_get_bool enabled settings enabled 0
 [ "$enabled" = 1 ] || [ "$force" = 1 ] || { log "disabled"; exit 0; }
+[ -e /var/run/otm-configmode ] && [ "$force" = 0 ] && { log "config mode"; exit 0; }
 [ -n "$branch" ] || config_get branch settings branch stable
 config_get name "$branch" name "$branch"
 config_get good "$branch" good_signatures 1
