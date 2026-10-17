@@ -1,0 +1,124 @@
+#!/bin/sh
+# /usr/libexec/otm-uplink - WLAN-Rueckfall fuer Doppelband-Geraete.
+#
+# Bekommt das LAN (Interface wan) kein DHCP, sucht das 2.4-GHz-Radio als Client
+# das staerkste offene Netz, dessen SSID mit ssid_prefix beginnt (Gross-/Klein-
+# schreibung egal, Vorgabe "Freifunk"), und holt dort per DHCP eine Adresse
+# (Interface wwan). Im Normalzustand wird nichts geprueft: Das Skript wartet auf
+# Ereignisse von netifd (ubus). LAN weg -> Suche; WLAN weg oder LAN wieder da
+# (netifd versucht DHCP auf dem LAN ohnehin weiter) -> WLAN aus, Suche von
+# vorn, LAN zuerst.
+
+. /lib/functions.sh
+. /lib/otm-bridge/functions.sh
+
+log() { logger -t otm-uplink "$*"; }
+
+config_load otm-bridge
+config_get prefix    uplink ssid_prefix  Freifunk
+config_get lan_wait  uplink lan_timeout  90
+config_get wlan_wait uplink wlan_timeout 60
+config_get freq      main   freq         5900
+IF=wlan24
+FIFO=/var/run/otm-uplink.fifo
+
+phy=$(otm_24_phy "$freq") || { log "no separate 2.4 GHz radio, nothing to do"; exit 0; }
+
+ist_oben() { [ "$(ifstatus "$1" 2>/dev/null | jsonfilter -e '@.up' 2>/dev/null)" = true ]; }
+
+warte_auf() { # interface sekunden
+	local i=0
+	while ! ist_oben "$1"; do
+		[ $i -ge "$2" ] && return 1
+		sleep 2
+		i=$((i + 2))
+	done
+}
+
+# blockiert bis zum passenden netifd-Ereignis; $1 = lan|wlan
+warte_ereignis() {
+	local pid line act ifc
+	rm -f "$FIFO"; mkfifo "$FIFO"
+	ubus listen network.interface > "$FIFO" &
+	pid=$!; LPID=$pid
+	# Zustand nach dem Start des Lauschers noch einmal ansehen: nichts verpassen
+	case "$1" in
+	lan)  ist_oben wan  || { kill $pid; rm -f "$FIFO"; return; } ;;
+	wlan) ist_oben wwan || { kill $pid; rm -f "$FIFO"; return; }
+	      ist_oben wan  && { kill $pid; rm -f "$FIFO"; return; } ;;
+	esac
+	while read -r line; do
+		act=$(echo "$line" | jsonfilter -e '@["network.interface"].action' 2>/dev/null)
+		ifc=$(echo "$line" | jsonfilter -e '@["network.interface"].interface' 2>/dev/null)
+		case "$1:$act:$ifc" in
+		lan:ifdown:wan|wlan:ifdown:wwan|wlan:ifup:wan) break ;;
+		esac
+	done < "$FIFO"
+	kill $pid 2>/dev/null
+	rm -f "$FIFO"
+}
+
+wlan_runter() {
+	ifdown wwan 2>/dev/null
+	if iw dev "$IF" info >/dev/null 2>&1; then
+		iw dev "$IF" disconnect 2>/dev/null
+		ip link set "$IF" down
+		iw dev "$IF" del
+	fi
+}
+
+wlan_hoch() {
+	local ziel bssid f ssid
+	iw dev "$IF" info >/dev/null 2>&1 || iw phy "$phy" interface add "$IF" type managed || return 1
+	ip link set "$IF" up || return 1
+	# offene Netze, SSID beginnt mit $prefix (ohne Gross/Klein), staerkstes zuerst
+	ziel=$(iw dev "$IF" scan 2>/dev/null | awk -v p="$prefix" '
+		function fertig() {
+			if (bss != "" && !enc && tolower(substr(ssid, 1, length(p))) == tolower(p) && sig > best) {
+				best = sig; aus = bss " " f " " ssid
+			}
+		}
+		BEGIN { best = -999 }
+		/^BSS / { fertig(); bss = substr($2, 1, 17); enc = 0; ssid = ""; sig = -999; f = "" }
+		/^[ \t]+freq:/ { f = int($2) }
+		/^[ \t]+signal:/ { sig = $2 + 0 }
+		/^[ \t]+SSID:/ { s = $0; sub(/^[ \t]+SSID: /, "", s); ssid = s }
+		/^[ \t]+capability:.*Privacy/ { enc = 1 }
+		/^[ \t]+(RSN|WPA):/ { enc = 1 }
+		END { fertig(); print aus }')
+	[ -n "$ziel" ] || { log "no open network matching '$prefix*' found"; return 1; }
+	bssid=${ziel%% *}; ziel=${ziel#* }
+	f=${ziel%% *}; ssid=${ziel#* }
+	log "connecting to '$ssid' ($bssid, $f MHz)"
+	iw dev "$IF" connect -w "$ssid" "$f" "$bssid" >/dev/null 2>&1
+	iw dev "$IF" link 2>/dev/null | grep -q "^Connected" || { log "association with '$ssid' failed"; return 1; }
+	ifup wwan
+	warte_auf wwan "$wlan_wait" || { log "no DHCP on '$ssid' after ${wlan_wait} s"; return 1; }
+	log "uplink via WLAN '$ssid' ($bssid)"
+}
+
+# fastd haelt sonst an der alten Quelladresse fest und merkt den Wechsel spaet
+tunnel_neu() { [ -x /etc/init.d/fastd ] && /etc/init.d/fastd restart >/dev/null 2>&1; }
+
+LPID=
+trap 'kill $LPID 2>/dev/null; rm -f "$FIFO"; wlan_runter; exit 0' TERM INT
+wlan_runter
+log "start: 2.4 GHz radio $phy, SSID prefix '$prefix', LAN first"
+while :; do
+	if ist_oben wan || warte_auf wan "$lan_wait"; then
+		log "uplink via LAN"
+		warte_ereignis lan
+		log "LAN lost, searching"
+		continue
+	fi
+	log "no DHCP on LAN after ${lan_wait} s, trying WLAN"
+	if wlan_hoch; then
+		tunnel_neu
+		warte_ereignis wlan
+		if ist_oben wan; then log "LAN is back, leaving WLAN"; else log "WLAN lost, searching"; fi
+		wlan_runter
+		tunnel_neu
+	else
+		wlan_runter
+	fi
+done

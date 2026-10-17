@@ -156,6 +156,26 @@ if [ "$(uci -q get otm-bridge.main.broker)" = "mqtt://10.66.0.1" ]; then
 	uci commit otm-bridge
 fi
 
+# --- WLAN-Rueckfall: Interface wwan (2.4-GHz-Client, von otm-uplink gesteuert)
+if ! uci -q get otm-bridge.uplink >/dev/null; then
+	uci set otm-bridge.uplink=uplink
+	uci set otm-bridge.uplink.wlan_fallback=1
+	uci set otm-bridge.uplink.ssid_prefix='Freifunk'
+	uci set otm-bridge.uplink.lan_timeout=90
+	uci set otm-bridge.uplink.wlan_timeout=60
+	uci commit otm-bridge
+fi
+uci set network.wwan=interface
+uci set network.wwan.device='wlan24'
+uci set network.wwan.proto='dhcp'
+uci set network.wwan.auto='0'
+uci set network.wwan.metric='50'
+uci commit network
+for z in $(uci show firewall | sed -n "s/^firewall\.\([^.]*\)\.name='wan'\$/\1/p"); do
+	uci -q get firewall.$z.network | grep -qw wwan || uci add_list firewall.$z.network='wwan'
+done
+uci commit firewall
+
 # --- Position (wie Gluon), auch nach Update mit alter Konfiguration ---------
 if ! uci -q get otm-bridge.location >/dev/null; then
 	uci set otm-bridge.location=location

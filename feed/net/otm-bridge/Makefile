@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=otm-bridge
-PKG_VERSION:=0.16.0
+PKG_VERSION:=0.17.0
 PKG_RELEASE:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -46,6 +46,8 @@ define Package/otm-bridge/install
 	$(INSTALL_DATA) ./files/otm-bridge.functions $(1)/lib/otm-bridge/functions.sh
 	$(INSTALL_DIR) $(1)/usr/libexec
 	$(INSTALL_BIN) ./files/otm-bridge.run $(1)/usr/libexec/otm-bridge-run
+	$(INSTALL_BIN) ./files/otm-uplink.run $(1)/usr/libexec/otm-uplink
+	$(INSTALL_BIN) ./files/otm-uplink.init $(1)/etc/init.d/otm-uplink
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/ntp
 	$(INSTALL_DATA) ./files/otm-bridge.ntp-hotplug $(1)/etc/hotplug.d/ntp/25-otm-bridge
 	$(INSTALL_DIR) $(1)/etc/uci-defaults

@@ -57,3 +57,15 @@ otm_location() {
 		print s
 	}'
 }
+
+# Eigenes 2.4-GHz-Radio neben dem ITS-Radio (Doppelband-Geraete), sonst Status 1
+otm_24_phy() {
+	local p its
+	its=$(otm_its_phy "${1:-5900}")
+	for p in /sys/class/ieee80211/*; do
+		p=${p##*/}
+		[ "$p" = "$its" ] && continue
+		iw phy "$p" info 2>/dev/null | grep -q "Band 1:" && { echo "$p"; return 0; }
+	done
+	return 1
+}

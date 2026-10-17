@@ -191,6 +191,14 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   erscheint nur auf der Heatmap in unserem Grafana. Auf der Karte von OpenTrafficMap stehen
   Empfänger über deren Self-Service-Portal (dort pflegt OTM Position und Namen
   serverseitig), nicht über die Firmware.
+- **WLAN-Rückfall** (nur Geräte mit eigenem 2.4-GHz-Radio, z. B. WDR3600/4300): Bekommt das
+  LAN binnen 90 s kein DHCP, verbindet sich das 2.4-GHz-Radio als Client mit dem stärksten
+  offenen Netz, dessen SSID mit „Freifunk“ beginnt (Groß-/Kleinschreibung egal), und holt
+  dort per DHCP eine Adresse (Interface `wwan`). Das LAN hat Vorrang: Bekommt es wieder eine
+  Adresse, geht das WLAN aus; bricht das WLAN ab, beginnt die Suche von vorn, LAN zuerst.
+  Im Normalzustand wird nichts abgefragt, `otm-uplink` wartet auf Ereignisse von netifd.
+  Einstellungen in `otm-bridge.uplink` (`wlan_fallback`, `ssid_prefix`, `lan_timeout`,
+  `wlan_timeout`), Log unter `logread -e otm-uplink`.
 - **Management-VPN** (`OTM_VPN=1`): fastd zur Gegenstelle mit eigenem Schlüssel je Gerät,
   ohne Freischaltung; Adresse per DHCP, SSH dort unter `<knoten>.otm`. Die Standardroute
   bleibt am lokalen Uplink. Gegenstelle: [mgmt-vpn/server](mgmt-vpn/server).
@@ -218,7 +226,7 @@ auf `its/<node>/status` am Proxy.
 | Pfad | Inhalt |
 |---|---|
 | `build.sh`, `release.sh` | Bau eines Targets bzw. des ganzen Release |
-| `feed/net/otm-bridge/` | Fork von otm-bridge (inzwischen 0.16.0), als `src-link`-Feed eingebunden |
+| `feed/net/otm-bridge/` | Fork von otm-bridge (inzwischen 0.17.0, mit WLAN-Rückfall `otm-uplink`), als `src-link`-Feed eingebunden |
 | `feed/net/otm-mgmt-vpn/` | Management-VPN (fastd), uci-defaults |
 | `feed/admin/otm-autoupdater/` | Autoupdater nach Gluon-Art |
 | `feed/kernel/otm-spinor-unlock/` | Kernel-Modul gegen den Flash-Schreibschutz der Ubiquiti-XW-Boards |
