@@ -6,8 +6,10 @@ Nach dem Flashen läuft das Gerät ohne Handarbeit: Kabel an irgendeinen Port, f
 Daten gehen per MQTT durch einen fastd-Tunnel an einen Proxy, der sie per TLS an
 OpenTrafficMap weiterreicht; die alten Geräte mit wenig Flash brauchen so keinen TLS-Stack.
 
-Fertige Images: <http://firmware.ffnef.de/otm/stable/> (`factory/` für den Umstieg von der
-Herstellerfirmware, `sysupgrade/` für Geräte mit OpenWrt). Statistik: <https://otm.ffnef.de>.
+Fertige Images: <http://firmware.ffnef.de/otm/stable/> (`sysupgrade/` für Geräte, auf denen
+schon OpenWrt oder Gluon läuft; `factory/` liegt für Sonderfälle mit dabei, siehe
+[Flashen](#flashen)). Statistik: <https://otm.ffnef.de>.
+Wie die Teile zusammenhängen: [docs/architektur.md](docs/architektur.md).
 
 Vorbild und Basis: [MPW1412/openwrt-otm-bridge](https://github.com/MPW1412/openwrt-otm-bridge)
 und [MPW1412/avm-fritz3390-802.11p-otm](https://github.com/MPW1412/avm-fritz3390-802.11p-otm),
@@ -125,8 +127,12 @@ gluon/contrib/sign.sh <secret> build/out/otm/stable/sysupgrade/stable.manifest
 
 ## Flashen
 
-**Erstinstallation** (Herstellerfirmware: `factory`-Image über deren Weboberfläche bzw.
-TFTP; anderes OpenWrt, z. B. ein Image aus Münster: `sysupgrade` **ohne** alte Konfiguration):
+**Ausgangspunkt ist ein laufendes OpenWrt**, auch Gluon oder eine andere Freifunk-Firmware;
+die meisten Geräte werden vorher als Freifunk-Knoten gelaufen sein. Wie ein Gerät von der
+Herstellerfirmware zu OpenWrt kommt, steht im OpenWrt-Wiki auf der Seite des Geräts; diesen
+Schritt beschreiben wir hier nicht. Die `factory`-Images liegen trotzdem im Release.
+
+Umstieg per `sysupgrade` **ohne** alte Konfiguration:
 
 ```sh
 scp -O openwrt-*-sysupgrade.bin root@<gerät>:/tmp/
@@ -134,6 +140,14 @@ ssh root@<gerät> 'sysupgrade -T /tmp/openwrt-*-sysupgrade.bin && sysupgrade -n 
 ```
 
 Die Host-Keys werden dabei neu erzeugt. Den alten `known_hosts`-Eintrag vorher entfernen.
+Von Gluon aus geht die Gluon-Konfiguration (Domain, Mesh, VPN-Schlüssel) verloren; das Gerät
+ist danach kein Freifunk-Knoten mehr. Ob der Umstieg geklappt hat, zeigt die Online-Tabelle
+unter <https://otm.ffnef.de>.
+
+**Ubiquiti XW:** Der laufende Kernel hat das Entsperrmodul noch nicht. Ob der Umstieg von
+Gluon oder OpenWrt am Flash-Schreibschutz scheitern kann (sysupgrade meldet Erfolg, das alte
+System bootet wieder), ist nicht erprobt. Bootet das
+alte System wieder, siehe [docs/litebeam-flash-schutz.md](docs/litebeam-flash-schutz.md).
 
 **Updates** zwischen unseren Images macht der Autoupdater, mit erhaltener Konfiguration
 (SSH-Keys, fastd-Schlüssel, Position). Von Hand geht dasselbe mit `sysupgrade` ohne `-n`.
@@ -198,10 +212,12 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   Adresse, geht das WLAN aus; bricht das WLAN ab, beginnt die Suche von vorn, LAN zuerst.
   Im Normalzustand wird nichts abgefragt, `otm-uplink` wartet auf Ereignisse von netifd.
   Einstellungen in `otm-bridge.uplink` (`wlan_fallback`, `ssid_prefix`, `lan_timeout`,
-  `wlan_timeout`), Log unter `logread -e otm-uplink`.
+  `wlan_timeout`), Log unter `logread -e otm-uplink`. Einzelheiten und Testprotokoll:
+  [docs/wlan-rueckfall.md](docs/wlan-rueckfall.md).
 - **Management-VPN** (`OTM_VPN=1`): fastd zur Gegenstelle mit eigenem Schlüssel je Gerät,
   ohne Freischaltung; Adresse per DHCP, SSH dort unter `<knoten>.otm`. Die Standardroute
-  bleibt am lokalen Uplink. Gegenstelle: [mgmt-vpn/server](mgmt-vpn/server).
+  bleibt am lokalen Uplink. Gegenstelle: [mgmt-vpn/server](mgmt-vpn/server). Protokoll,
+  Versionen und Verhalten bei kaputtem IPv6: [docs/management-vpn.md](docs/management-vpn.md).
 - **Autoupdater**: einmal am Tag, siehe [Autoupdater](#autoupdater).
 - **Nur Empfang**: Die ITS-Regel in der regdb trägt `NO-IR`. Tunen im Monitor-Modus geht,
   OCB-Join und Injection sind gesperrt.
@@ -234,7 +250,7 @@ auf `its/<node>/status` am Proxy.
 | `files/common/`, `files/local/` | Dateien fürs Image; `local` ist gitignored (SSH-Keys) |
 | `mgmt-vpn/server/` | Gegenstelle: fastd, dnsmasq, nftables, MQTT-Proxy, Statistik, Grafana |
 | `werkzeug/` | Messwerkzeuge der Testreihen (z. B. `baseline-24h.sh`, schreibt nur nach `/tmp`) |
-| `docs/` | Gerätekandidaten, Feldanleitung CPE510, LiteBeam-Flash-Schutz, mt76-Versuch (MediaTek), Testmatrix |
+| `docs/` | Architektur, Gerätekandidaten, Feldanleitung CPE510, LiteBeam-Flash-Schutz, WLAN-Rückfall, Management-VPN (fastd, Dual-Stack), mt76-Versuch (MediaTek), Testmatrix |
 | `geraete/` | Config-Backups und Messdaten einzelner Geräte (gitignored) |
 
 ## Geräte
