@@ -144,10 +144,33 @@ Von Gluon aus geht die Gluon-Konfiguration (Domain, Mesh, VPN-Schlüssel) verlor
 ist danach kein Freifunk-Knoten mehr. Ob der Umstieg geklappt hat, zeigt die Online-Tabelle
 unter <https://otm.ffnef.de>.
 
-**Ubiquiti XW:** Der laufende Kernel hat das Entsperrmodul noch nicht. Ob der Umstieg von
-Gluon oder OpenWrt am Flash-Schreibschutz scheitern kann (sysupgrade meldet Erfolg, das alte
-System bootet wieder), ist nicht erprobt. Bootet das
-alte System wieder, siehe [docs/litebeam-flash-schutz.md](docs/litebeam-flash-schutz.md).
+**Ubiquiti XW:** Beim Umstieg schreibt noch das alte System den Flash, ohne unser
+Entsperrmodul. Nach OpenWrt-Issues und -PRs:
+
+| OpenWrt (Kernel) | XW-Flash |
+|---|---|
+| 19.07 ar71xx (4.14) | Board-Code steuert den Schreibschutz-Pin („SPI nWP“) selbst |
+| 21.02 (5.4), 22.03 (5.10) | Kernel nimmt die Schutzbits beim Booten weg |
+| 23.05.0-.2 (5.15) | Konfiguration wird nicht gespeichert ([#12882](https://github.com/openwrt/openwrt/issues/12882)), sysupgrade selbst klappt |
+| ab 23.05.3 | behoben (`CONFIG_MTD_SPI_NOR_SWP_DISABLE`, [PR #14237](https://github.com/openwrt/openwrt/pull/14237)) |
+| 24.10.0 (6.6) | Berichte über einen Rückfall, auch sysupgrade ([#17914](https://github.com/openwrt/openwrt/issues/17914)); betroffen dort AC-Geräte, keine XW |
+
+Entscheidend ist eher der Bootloader als die Version:
+
+- **Normaler Bootloader** (setzt nur die Schutzbits): `mtd` entsperrt beim sysupgrade selbst,
+  der Umstieg sollte von jeder Version aus klappen; am sichersten von 22.03 oder älter bzw.
+  23.05.3 oder neuer.
+- **Strenger Bootloader** wie bei unserem LiteBeam (Statusregister `0x9c`, SRWD und
+  Schreibschutz-Pin): Ein Kernel, der nur das Register beschreibt, kommt nicht durch; nachgestellt,
+  das Register bleibt `0x9c`. Laut OpenWrt-Wiki braucht ein LiteBeam für 23.05 und neuer ein
+  Bootloader-Downgrade. Ob 21.02/22.03 auf so einem Gerät schreiben, ist nicht belegt; ein
+  Umweg über eine ältere Version bringt also nichts Gesichertes.
+
+Vorgehen: erst `sysupgrade -n` vom laufenden System. Bootet danach das alte System wieder
+(Gerät erscheint nicht unter <https://otm.ffnef.de>), TFTP-Rescue mit dem OTM-`factory`-Image:
+Das schreibt der Bootloader selbst, der Schreibschutz spielt dabei keine Rolle (so beim
+LiteBeam erprobt). Ab dann entsperrt das Modul, Updates laufen über den Autoupdater.
+Einzelheiten: [docs/litebeam-flash-schutz.md](docs/litebeam-flash-schutz.md).
 
 **Updates** zwischen unseren Images macht der Autoupdater, mit erhaltener Konfiguration
 (SSH-Keys, fastd-Schlüssel, Position). Von Hand geht dasselbe mit `sysupgrade` ohne `-n`.
