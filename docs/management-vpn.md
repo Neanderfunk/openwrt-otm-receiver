@@ -19,7 +19,7 @@ Handshake und Methode sind in allen drei Versionen gleich, sie verstehen sich un
 | | |
 |---|---|
 | Transport | UDP, Port 10001 auf der Gegenstelle (`bind any:10001`, IPv4 und IPv6); Empfänger mit zufälligem Quellport |
-| Handshake | `ec25519-fhmqvc` (Curve25519-Schlüssel, Schlüsseltausch nach FHMQV-C); jedes Gerät hat einen eigenen Schlüssel, die Gegenstelle nimmt jeden an (`on verify "/bin/true"`), freigeschaltet wird niemand einzeln |
+| Handshake | `ec25519-fhmqvc` (Curve25519-Schlüssel, Schlüsseltausch nach FHMQV-C); jedes Gerät hat einen eigenen Schlüssel. Die Gegenstelle nimmt jeden an außer der Sperrliste (`on verify`, `/etc/fastd/otm/verify.sh`); eine Registrierung (nur freigegebene Schlüssel) ist vorbereitet, aber aus. Pflege mit `otm-fastd`, siehe [mgmt-vpn/server/README.md](../mgmt-vpn/server/README.md#betrieb) |
 | Methode | `salsa2012+umac`: Salsa20/12 zum Verschlüsseln, UMAC zur Authentisierung jedes Pakets. Kommt ohne AES-Hardware aus und ist auf den alten MIPS-SoCs schnell genug |
 | Sitzungsschlüssel | neu nach 55 min (plus bis zu 5 min Zufall), gültig 60 min |
 | Keepalive | alle 20 s; ohne Antwort gilt die Gegenstelle nach 90 s als weg |

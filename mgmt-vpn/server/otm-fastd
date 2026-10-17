@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""otm-fastd - Sperr- und Freigabeliste der fastd-Instanz otm pflegen.
+
+  otm-fastd liste                       Modus, Sperr- und Freigabeliste
+  otm-fastd verbunden                   verbundene Empfaenger: Name, Schluessel, Adresse
+  otm-fastd schluessel <wer>            Schluessel zu Knotenname, Tunnel-IP oder MAC
+  otm-fastd sperren <wer> [grund]       auf die Sperrliste (wirkt beim naechsten
+                                        Handshake, spaetestens nach ~1 h; sofort: --sofort)
+  otm-fastd entsperren <wer>            von der Sperrliste nehmen
+  otm-fastd freigeben <wer> [notiz]     auf die Freigabeliste
+  otm-fastd freigabe-aus-log            alle verbundenen und je gesehenen Schluessel
+                                        freigeben (vor dem Umschalten auf Registrierung)
+  otm-fastd modus [offen|nur-freigegebene]
+
+<wer> ist ein Schluessel (64 Hex), ein Knotenname (z. B. WR4300-902f), eine
+Tunnel-IP (10.66.x.y) oder die MAC des Tunnel-Interfaces. --sofort startet fastd
+neu: alle Empfaenger verbinden sich in ~20 s neu, der gesperrte nicht mehr.
+"""
+import json, os, re, socket, subprocess, sys, time
+
+D = '/etc/fastd/otm'
+SPERR, FREI, NUR = D + '/sperrliste', D + '/freigabeliste', D + '/nur-freigegebene'
+SOCK = '/run/fastd-otm.sock'
+LEASES = '/var/lib/misc/dnsmasq-otm.leases'
+PEERLOG = '/var/log/otm-mgmt-peers.log'
+KEY = re.compile(r'^[0-9a-f]{64}$')
+
+def status():
+    try:
+        s = socket.socket(socket.AF_UNIX); s.connect(SOCK)
+        data = b''
+        while True:
+            b = s.recv(65536)
+            if not b: break
+            data += b
+        return json.loads(data).get('peers', {})
+    except OSError:
+        return {}
+
+def leases():
+    out = []
+    try:
+        for l in open(LEASES):
+            f = l.split()
+            if len(f) >= 4: out.append({'mac': f[1].lower(), 'ip': f[2], 'name': f[3]})
+    except OSError:
+        pass
+    return out
+
+def fdb():
+    """MAC -> tap-Interface an br-otm"""
+    m = {}
+    r = subprocess.run(['bridge', 'fdb', 'show', 'br', 'br-otm'], capture_output=True, text=True)
+    for l in r.stdout.splitlines():
+        f = l.split()
+        if len(f) >= 3 and f[1] == 'dev' and f[2].startswith('tap'):
+            m[f[0].lower()] = f[2]
+    return m
+
+def verbunden():
+    peers, fd, ls = status(), fdb(), leases()
+    tap2key = {p.get('interface'): k for k, p in peers.items() if p.get('interface')}
+    rows = []
+    for k, p in peers.items():
+        tap = p.get('interface')
+        mac = next((m for m, t in fd.items() if t == tap), None)
+        le = next((x for x in ls if x['mac'] == mac), {})
+        rows.append({'key': k, 'tap': tap, 'mac': mac, 'name': le.get('name'), 'ip': le.get('ip'),
+                     'address': p.get('address')})
+    return rows
+
+def schluessel(wer):
+    w = wer.lower()
+    if KEY.match(w): return w
+    for r in verbunden():
+        if w in ((r['name'] or '').lower(), r['ip'], r['mac']): return r['key']
+    sys.exit(f'{wer}: kein verbundener Empfaenger mit diesem Namen/dieser Adresse (Schluessel direkt angeben)')
+
+def lies(f):
+    try: return [l.rstrip('\n') for l in open(f)]
+    except OSError: return []
+
+def in_liste(f, key):
+    return any(l.split('#')[0].strip().lower() == key for l in lies(f))
+
+def eintragen(f, key, notiz):
+    if in_liste(f, key): print('steht schon drin'); return
+    with open(f, 'a') as h:
+        h.write(f'{key}  # {time.strftime("%Y-%m-%d")} {notiz}'.rstrip() + '\n')
+    os.chmod(f, 0o644)
+
+def austragen(f, key):
+    alt = lies(f); neu = [l for l in alt if l.split('#')[0].strip().lower() != key]
+    if len(neu) == len(alt): print('stand nicht drin'); return
+    with open(f, 'w') as h: h.write(''.join(l + '\n' for l in neu))
+
+def name_zu(key):
+    return next((r['name'] for r in verbunden() if r['key'] == key), '') or ''
+
+def main(a):
+    sofort = '--sofort' in a; a = [x for x in a if x != '--sofort']
+    if not a or a[0] in ('-h', '--help', 'hilfe'): print(__doc__); return
+    c = a[0]
+    if c == 'liste':
+        print('Modus:', 'nur-freigegebene' if os.path.exists(NUR) else 'offen')
+        for t, f in (('Sperrliste', SPERR), ('Freigabeliste', FREI)):
+            z = [l for l in lies(f) if l.split('#')[0].strip()]
+            print(f'{t} ({len(z)}):'); [print('  ' + l) for l in z]
+    elif c == 'verbunden':
+        for r in sorted(verbunden(), key=lambda r: r['name'] or ''):
+            print(f"{r['name'] or '?':16} {r['ip'] or '?':12} {r['key']}  {r['address']}")
+    elif c == 'schluessel' and len(a) > 1:
+        print(schluessel(a[1]))
+    elif c == 'sperren' and len(a) > 1:
+        k = schluessel(a[1]); eintragen(SPERR, k, ' '.join([name_zu(k)] + a[2:]))
+        print(f'gesperrt: {k}')
+        if sofort: subprocess.run(['systemctl', 'restart', 'fastd@otm.service']); print('fastd neu gestartet')
+        else: print('wirkt beim naechsten Handshake (spaetestens ~1 h); sofort: --sofort')
+    elif c == 'entsperren' and len(a) > 1:
+        austragen(SPERR, schluessel(a[1]))
+    elif c == 'freigeben' and len(a) > 1:
+        k = schluessel(a[1]); eintragen(FREI, k, ' '.join([name_zu(k)] + a[2:]))
+    elif c == 'freigabe-aus-log':
+        # gerade verbundene (Statussocket) und je im Log gesehene; das Log
+        # verzeichnet nicht jeden Neuaufbau, deshalb beides
+        n = 0
+        for r in verbunden():
+            if not in_liste(FREI, r['key']):
+                eintragen(FREI, r['key'], f"{r['name'] or ''} verbunden"); n += 1
+        for l in lies(PEERLOG):
+            f = l.split()
+            if len(f) >= 2 and KEY.match(f[1].lower()) and not in_liste(FREI, f[1].lower()):
+                eintragen(FREI, f[1].lower(), f'aus Log, {f[0]}'); n += 1
+        print(f'{n} Schluessel neu freigegeben')
+    elif c == 'modus':
+        if len(a) == 1: print('nur-freigegebene' if os.path.exists(NUR) else 'offen')
+        elif a[1] == 'offen':
+            if os.path.exists(NUR): os.remove(NUR)
+            print('offen: jeder ausser der Sperrliste')
+        elif a[1] == 'nur-freigegebene':
+            if not [l for l in lies(FREI) if l.split('#')[0].strip()]:
+                sys.exit('Freigabeliste ist leer, dann kaeme niemand mehr herein (erst freigabe-aus-log)')
+            open(NUR, 'a').close()
+            print('nur freigegebene: wirkt fuer neue Handshakes; bestehende Tunnel spaetestens nach ~1 h')
+        else: sys.exit('modus offen|nur-freigegebene')
+    else:
+        print(__doc__); sys.exit(2)
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

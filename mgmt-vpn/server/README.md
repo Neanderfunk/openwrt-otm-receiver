@@ -14,7 +14,7 @@ Empfänger --fastd--> br-otm 10.66.0.1/22 --> mosquitto :1883 --TLS--> cits1.ope
 
 | Datei | Zweck |
 |---|---|
-| `fastd.conf`, `peer-up.sh`, `peer-log.sh` | fastd-Instanz `otm` (Multi-TAP), jeder Schlüssel darf sich verbinden; die TAPs hängen an `br-otm` |
+| `fastd.conf`, `peer-up.sh`, `peer-log.sh`, `fastd-verify.sh`, `otm-fastd` | fastd-Instanz `otm` (Multi-TAP), jeder Schlüssel darf sich verbinden außer der Sperrliste, wahlweise nur freigegebene (s. u.); die TAPs hängen an `br-otm` |
 | `otm-mgmt-net.service`, `nft.conf` | Bridge `br-otm`, Firewall (`table inet otm_mgmt`): aus dem Tunnel nur DHCP, DNS, MQTT und Ping zur Gegenstelle, keine Weiterleitung; Grafana-Port 3000 nur von localhost und dem Reverse-Proxy-Netz. `peer-up.sh` hängt jedes TAP als isolierten Bridge-Port an, die Empfänger sehen sich gegenseitig nicht |
 | `dnsmasq.conf`, `dnsmasq-otm.service` | DHCP im Tunnelnetz 10.66.0.0/22, Namen `<knoten>.otm`; verteilt weder Router noch DNS, die Standardroute der Empfänger bleibt lokal |
 | `mosquitto-otm.conf`, `mosquitto-otm.override`, `mosquitto-otm-tunnel.acl` | Listener auf 10.66.0.1 (mit ACL, s. u.) und 127.0.0.1, Bridge `its/#` **nur ausgehend** an `cits1.opentrafficmap.org:8883` |
@@ -69,5 +69,20 @@ sondern in `/etc/grafana/authentik-client-secret` (root:grafana, 640) und wird p
 - **Station abbauen:** leere retained Nachricht auf `its/<node>/status` am Proxy; otm-stats
   nimmt sie dann aus Online-, Firmware- und Health-Tabellen. Ihre bisherigen Messwerte
   bleiben.
+- **Station sperren** (z. B. flutet sie mit Unsinn): `otm-fastd sperren <knoten> <grund>`,
+  `<knoten>` als Name (`WR4300-902f`), Tunnel-IP oder Schlüssel; `otm-fastd verbunden` zeigt
+  Name, Tunnel-IP, Schlüssel und Absenderadresse aller Tunnel. Die Sperre wirkt beim nächsten
+  Handshake (spätestens nach etwa einer Stunde, wenn fastd den Sitzungsschlüssel erneuert),
+  mit `--sofort` sofort (fastd startet neu, alle anderen sind nach ~20 s wieder da).
+  Aufheben: `otm-fastd entsperren <schlüssel>`. Die Liste steht in `/etc/fastd/otm/sperrliste`,
+  Abweisungen im Journal (`journalctl -t fastd-otm-verify`, höchstens einmal je Stunde und
+  Schlüssel). Am 17.10.2026 mit einem Test-Client am Testplatz geprüft: gesperrt abgewiesen,
+  entsperrt sofort wieder verbunden.
+- **Registrierung** (vorbereitet, aus): Sollen nur noch bekannte Empfänger herein, erst
+  `otm-fastd freigabe-aus-log` (gibt alle verbundenen und je im Log gesehenen Schlüssel frei),
+  dann `otm-fastd modus nur-freigegebene`. Neue Empfänger dann mit `otm-fastd freigeben
+  <schlüssel> <notiz>`; den Schlüssel zeigt ein Empfänger mit
+  `/etc/init.d/fastd show_key mgmt` (z. B. im Config-Mode).
+  Zurück: `otm-fastd modus offen`. Die Sperrliste gilt in beiden Modi.
 - **Neue Dashboards oder Änderungen:** JSON unter `grafana/` ändern und neu installieren;
   Grafana liest die Dateien nach wenigen Sekunden neu.
