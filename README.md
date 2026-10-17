@@ -298,11 +298,41 @@ auf `its/<node>/status` am Proxy.
 | Gerät | Stand |
 |---|---|
 | TP-Link TL-WDR3600 v1, TL-WDR4300 v1, CPE510 v1, AVM FRITZ!Box 3390, Ubiquiti LiteBeam M5 XW | im Betrieb, empfangen ITS-G5, Autoupdater |
-| Ubiquiti NanoStation M5 (XM) | Image mit 21.02.7; beim einzigen getesteten Nachbau (AR9280) kam auf 5745 MHz Testverkehr an, ab 5825 MHz nichts mehr, siehe [docs](docs/geraete-kandidaten.md#taub-trotz-passendem-chip) |
 | TP-Link CPE610 v1/v2, WBS510 v1/v2, TL-WDR3500 v1, TL-WDR4310 v1 | Images gebaut, ungetestet (ath9k, 5 GHz) |
-| Ubiquiti NanoStation (Loco) M5 XW, PowerBeam M5 XW, Bullet M5 XW | Images gebaut, ungetestet; Flash-Entsperren wie beim LiteBeam |
+| Ubiquiti M5-Serie (NanoStation, Loco, NanoBeam, PowerBeam, Bullet, Rocket) | siehe die Tabelle unten |
 | LiteBeam 5AC, UniFi AC Mesh, CPE710 | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
-| CPE210/220, WBS210, PowerBeam M2 | ungeeignet: nur 2.4 GHz |
+| CPE210/220, WBS210, alle Ubiquiti M2 | ungeeignet: nur 2.4 GHz |
+
+### Ubiquiti: welches Image?
+
+Die Ubiquiti-M-Geräte gibt es mit zwei Platinen. **XW** ist die neuere (SoC AR9342, 64 MB RAM)
+und bekommt OpenWrt 25.12.4; **XM** ist die ältere (AR724x mit AR9280, meist 32 MB RAM), für die
+OpenWrt seit 22.03 keine Images mehr baut, deshalb 21.02.7. Von außen sehen beide gleich
+aus, auf dem Aufkleber steht nur „NanoStation Loco M5“ o. ä. Nur die **M5**-Geräte (5 GHz)
+taugen, M2 (2.4 GHz) nicht.
+
+So erkennt man die Platine:
+
+- **AirOS**: Die Firmware-Version beginnt mit `XW.` oder `XM.` (z. B. `XW.v6.3.11`), zu sehen
+  auf der Hauptseite der Weboberfläche bzw. im Dateinamen der Ubiquiti-Firmware.
+- **Gluon/OpenWrt**: `cat /tmp/sysinfo/board_name` zeigt `ubnt,nanostation-loco-m-xw` (XW)
+  oder `ubnt,nanostation-loco-m` (XM); das Modell auf der Statusseite endet auf XW bzw. XM.
+
+| Gerät | XW: Image (OpenWrt 25.12.4) | XM: Image (OpenWrt 21.02.7) |
+|---|---|---|
+| NanoStation M5 | `ubnt_nanostation-m-xw` | `ubnt_nanostation-m` |
+| NanoStation Loco M5 | `ubnt_nanostation-loco-m-xw` | `ubnt_nanostation-loco-m` |
+| NanoBeam M5, PowerBeam M5 300, AirGrid M5 HP | `ubnt_nanostation-loco-m-xw` (dasselbe Image) | – |
+| PowerBeam M5 (400) | `ubnt_powerbeam-m5-xw` | – |
+| LiteBeam M5 | `ubnt_litebeam-m5-xw`, **im Betrieb** | – |
+| Bullet M5, Rocket M5 | `ubnt_bullet-m-xw` (dasselbe Image) | Bullet: `ubnt_bullet-m-ar7240` bzw. `-ar7241`, Rocket: `ubnt_rocket-m` |
+
+Die Image-Dateien heißen `openwrt-…-<Profil>-squashfs-sysupgrade.bin` (bzw. `-factory.bin`).
+Außer dem LiteBeam ist keines davon getestet. Die XW-Images bringen das Entsperren des
+Flash-Schreibschutzes mit (siehe [Ubiquiti XW](#ubiquiti-xw-flash-schreibschutz)). Bei der
+einzigen getesteten NanoStation M5 XM (ein Nachbau) kam ab 5825 MHz nichts mehr an, siehe
+[docs/geraete-kandidaten.md](docs/geraete-kandidaten.md#taub-trotz-passendem-chip);
+`otm/<node>/health` zeigt, ob ein Gerät taub ist.
 
 Die vollständige Liste mit Verbreitung und Gebrauchtpreisen steht in
 [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md).
