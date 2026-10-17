@@ -17,7 +17,7 @@ Empfänger --fastd--> br-otm 10.66.0.1/22 --> mosquitto :1883 --TLS--> cits1.ope
 | `fastd.conf`, `peer-up.sh`, `peer-log.sh` | fastd-Instanz `otm` (Multi-TAP), jeder Schlüssel darf sich verbinden; die TAPs hängen an `br-otm` |
 | `otm-mgmt-net.service`, `nft.conf` | Bridge `br-otm`, Firewall (`table inet otm_mgmt`): aus dem Tunnel nur DHCP, DNS, MQTT und Ping zur Gegenstelle, keine Weiterleitung; Grafana-Port 3000 nur von localhost und dem Reverse-Proxy-Netz. `peer-up.sh` hängt jedes TAP als isolierten Bridge-Port an, die Empfänger sehen sich gegenseitig nicht |
 | `dnsmasq.conf`, `dnsmasq-otm.service` | DHCP im Tunnelnetz 10.66.0.0/22, Namen `<knoten>.otm`; verteilt weder Router noch DNS, die Standardroute der Empfänger bleibt lokal |
-| `mosquitto-otm.conf`, `mosquitto-otm.override` | Listener auf 10.66.0.1 und 127.0.0.1, Bridge `its/#` **nur ausgehend** an `cits1.opentrafficmap.org:8883` |
+| `mosquitto-otm.conf`, `mosquitto-otm.override`, `mosquitto-otm-tunnel.acl` | Listener auf 10.66.0.1 (mit ACL, s. u.) und 127.0.0.1, Bridge `its/#` **nur ausgehend** an `cits1.opentrafficmap.org:8883` |
 | `otm-stats.py`, `otm-stats.service` | liest `its/#` und `otm/+/{build,location,health}` mit, entdoppelt Frames über alle Empfänger, schreibt jede Minute ins Influx-Line-Protokoll von VictoriaMetrics; Metriken im Kopf der Datei |
 | `grafana/` | Umgebungsvariablen, Datenquelle, Dashboards `OTM Empfang`, `OTM Heatmap`, `OTM Heatmap je Empfaenger` und `OTM Knoten` (je Empfänger, verlinkt aus den Tabellen) (Provisioning aus Dateien) |
 
@@ -39,11 +39,24 @@ keiner da ist; dessen öffentlicher Teil gehört in
 `feed/net/otm-mgmt-vpn/files/98-otm-mgmt-vpn` (Peer `mgmt_wgiot`). Die Gegenstelle erreicht
 die Empfänger per SSH unter `<knoten>.otm`, sofern ein Key im Image ist.
 
-VictoriaMetrics nur lokal und mit 24 Monaten Aufbewahrung, in `/etc/default/victoria-metrics`:
+VictoriaMetrics nur lokal und mit 24 Monaten Aufbewahrung, in `/etc/default/victoria-metrics`
+(root, 600):
 
 ```
-ARGS="-storageDataPath=/var/lib/victoria-metrics -httpListenAddr=127.0.0.1:8428 -retentionPeriod=24"
+ARGS="-storageDataPath=/var/lib/victoria-metrics -httpListenAddr=127.0.0.1:8428 -retentionPeriod=24 \
+  -deleteAuthKey=<k> -snapshotAuthKey=<k> -forceMergeAuthKey=<k> -forceFlushAuthKey=<k> \
+  -flagsAuthKey=<k> -metricsAuthKey=<k> -pprofAuthKey=<k> -search.resetCacheAuthKey=<k> -configAuthKey=<k>"
 ```
+
+Die Schlüssel sind Pflicht: Grafana reicht als Datenquelle per Proxy auch GET-Anfragen an
+beliebige VictoriaMetrics-Pfade durch, und ohne Schlüssel könnte jeder anonyme Besucher von
+otm.ffnef.de per `/api/v1/admin/tsdb/delete_series` alle Zeitreihen löschen (so am 17.10.2026
+vorgefunden). `<k>` ist ein zufälliger Schlüssel, nicht im Repo.
+
+**MQTT im Tunnel:** Der Listener auf 10.66.0.1 hat eine ACL (`mosquitto-otm-tunnel.acl`):
+Ein Client darf nur schreiben, und nur unter seiner Client-ID (`its/<id>/#`, `otm/<id>/#`),
+lesen darf er nichts. Jeder kann einen Tunnel aufbauen, so liest niemand fremde Daten mit
+und schreibt niemand unter fremdem Namen (die Client-ID selbst ist nicht geprüft).
 
 Grafana ist ohne Anmeldung lesbar (Rolle Viewer). Bearbeiten geht nach Anmeldung über
 Authentik (OAuth, Gruppe `Freifunk` wird Admin). Das Client-Secret liegt nicht im Repo,

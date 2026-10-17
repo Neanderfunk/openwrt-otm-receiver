@@ -13,6 +13,7 @@ if [ ! -s /etc/fastd/otm/secret.conf ]; then
 	fastd --generate-key --machine-readable | sed 's/.*/secret "&";/' > /etc/fastd/otm/secret.conf
 fi
 install -m 644 mosquitto-otm.conf /etc/mosquitto/conf.d/otm.conf
+install -m 644 mosquitto-otm-tunnel.acl /etc/mosquitto/otm-tunnel.acl
 install -d /etc/systemd/system/mosquitto.service.d
 install -m 644 mosquitto-otm.override /etc/systemd/system/mosquitto.service.d/otm.conf
 install -d /usr/local/lib/otm

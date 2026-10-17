@@ -1,0 +1,7 @@
+# ACL fuer den Listener im Tunnelnetz (10.66.0.1): Jeder darf einen Tunnel
+# aufbauen (fastd nimmt jeden Schluessel an), also darf ein Client hier nur
+# schreiben, und nur unter seinem eigenen Namen (Client-ID = Knotenname,
+# so verbindet sich otm-bridge). Lesen geht ueber den Tunnel nicht; otm-stats
+# und Eingriffe von Hand laufen ueber den lokalen Listener 127.0.0.1.
+pattern write its/%c/#
+pattern write otm/%c/#
