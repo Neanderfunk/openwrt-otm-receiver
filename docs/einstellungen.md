@@ -92,3 +92,18 @@ Der Hostname des Geräts (DHCP) ändert sich dabei nicht.
 | `otm-autoupdater -n` | prüfen, ob es neue Firmware gibt, ohne einzuspielen |
 | `logread -e otm` | Meldungen von otm-bridge, otm-uplink, otm-configmode, Autoupdater |
 | `firstboot -y && reboot` | Werkszustand, alle Einstellungen und Keys weg |
+
+## Test (17.10.2026, WDR3600 am Testplatz)
+
+Testimage 202610171536 (Commit 94c05aa), WAN am NAT-Port, ein LAN-Port am Testplatz-PC
+(192.168.1.66).
+
+| Fall | Ergebnis |
+|---|---|
+| sysupgrade -n von Gluon | Normalbetrieb, Tunnel und otm-bridge 0.18.0 nach ~2 min |
+| `otm-configmode enter` | nach ~80 s unter 192.168.1.1; nur SSH (kein otm-bridge, fastd, otm-uplink, keine Firewall), DHCP-Server läuft, Login ohne Key und Passwort, Hinweis beim Login |
+| Reset-Taster gehalten (adorfer) | Config-Mode, SSH ohne Passwort |
+| Status-LED im Config-Mode | per Kamera gemessen: ~1,0 s an, ~0,3 s aus (Gluons `status_led_set_timer 1000 300`) |
+| `otm-configmode exit` | Normalbetrieb nach ~2 min |
+| `reboot` im Config-Mode | Normalbetrieb |
+| Strom 10 s aus (Tasmota-Dose) im Config-Mode | Normalbetrieb |
