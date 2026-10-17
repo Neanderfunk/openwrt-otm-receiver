@@ -168,8 +168,11 @@ Entscheidend ist eher der Bootloader als die Version:
 
 Vorgehen: erst `sysupgrade -n` vom laufenden System. Bootet danach das alte System wieder
 (Gerät erscheint nicht unter <https://otm.ffnef.de>), TFTP-Rescue mit dem OTM-`factory`-Image:
-Das schreibt der Bootloader selbst, der Schreibschutz spielt dabei keine Rolle (so beim
-LiteBeam erprobt). Ab dann entsperrt das Modul, Updates laufen über den Autoupdater.
+Das schreibt der Bootloader selbst, der Schreibschutz spielt dabei keine Rolle (beim
+LiteBeam dreimal so gemacht, darunter der erste Umstieg von 19.07 ar71xx). Fallen dabei: Der
+Rescue-Modus (U-Boot, `192.168.1.20`) beantwortet ARP oft nicht, dann hilft ein statischer
+ARP-Eintrag auf die eth0-MAC; erst Ping, dann TFTP. Danach ist das OTM-Image DHCP-Client,
+ohne feste `192.168.1.1`. Ab dann entsperrt das Modul, Updates laufen über den Autoupdater.
 Einzelheiten: [docs/litebeam-flash-schutz.md](docs/litebeam-flash-schutz.md).
 
 **Updates** zwischen unseren Images macht der Autoupdater, mit erhaltener Konfiguration
