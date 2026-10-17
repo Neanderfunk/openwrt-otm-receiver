@@ -14,6 +14,8 @@ otm_board_short() {
 	ubnt,litebeam-m5-xw)		echo LBEM5 ;;
 	ubnt,bullet-m*)			echo BM5 ;;
 	ubnt,rocket-m*)			echo RM5 ;;
+	ubnt,powerbridge-m)		echo PBRM5 ;;
+	ubnt,powerbeam-m5-xw)		echo PBM5XW ;;
 	tplink,cpe510-v*)		echo CPE510 ;;
 	*)	# fallback: first word of the model with a digit, vendor prefix off
 		awk '{ for (i = 1; i <= NF; i++) if ($i ~ /[0-9]/) { sub(/^TL-/, "", $i); print $i; exit } }' \

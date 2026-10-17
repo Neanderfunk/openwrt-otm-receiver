@@ -22,11 +22,13 @@ ATH79="tplink_tl-wdr3600-v1 tplink_tl-wdr4300-v1 tplink_tl-wdr4310-v1 tplink_tl-
 	tplink_cpe510-v1 tplink_cpe510-v2 tplink_cpe510-v3 tplink_cpe610-v1 tplink_cpe610-v2
 	tplink_wbs510-v1 tplink_wbs510-v2
 	ubnt_litebeam-m5-xw ubnt_nanostation-m-xw ubnt_nanostation-loco-m-xw
-	ubnt_powerbeam-m5-xw ubnt_bullet-m-xw"
+	ubnt_powerbeam-m5-xw ubnt_bullet-m-xw
+	ubnt_rocket-m ubnt_powerbridge-m"
 # OpenWrt 25.12.4, lantiq
 LANTIQ="avm_fritz3390"
-# OpenWrt 21.02.7: Ubiquiti-M-Serie mit XM-Board (32 MB RAM, ab 22.03 nicht mehr gebaut)
-ALT="ubnt_nanostation-m ubnt_nanostation-loco-m ubnt_bullet-m-ar7240 ubnt_bullet-m-ar7241 ubnt_rocket-m"
+# OpenWrt 21.02.7: Ubiquiti-M-Serie mit XM-Board und 32 MB RAM (ab 22.03 nicht mehr
+# gebaut; Rocket M und PowerBridge M haben 64 MB und laufen oben mit 25.12.4)
+ALT="ubnt_nanostation-m ubnt_nanostation-loco-m ubnt_bullet-m-ar7240 ubnt_bullet-m-ar7241"
 
 echo "Release $OTM_VERSION"
 mkdir -p build

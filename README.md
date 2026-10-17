@@ -306,8 +306,9 @@ auf `its/<node>/status` am Proxy.
 ### Ubiquiti: welches Image?
 
 Die Ubiquiti-M-Geräte gibt es mit zwei Platinen. **XW** ist die neuere (SoC AR9342, 64 MB RAM)
-und bekommt OpenWrt 25.12.4; **XM** ist die ältere (AR724x mit AR9280, meist 32 MB RAM), für die
-OpenWrt seit 22.03 keine Images mehr baut, deshalb 21.02.7. Von außen sehen beide gleich
+und bekommt OpenWrt 25.12.4. **XM** ist die ältere (AR724x mit AR9280); die meisten XM-Geräte
+haben 32 MB RAM, dafür baut OpenWrt seit 22.03 keine Images mehr, deshalb 21.02.7. Rocket M
+und PowerBridge M XM haben 64 MB und bekommen 25.12.4. Von außen sehen beide gleich
 aus, auf dem Aufkleber steht nur „NanoStation Loco M5“ o. ä. Nur die **M5**-Geräte (5 GHz)
 taugen, M2 (2.4 GHz) nicht.
 
@@ -318,14 +319,16 @@ So erkennt man die Platine:
 - **Gluon/OpenWrt**: `cat /tmp/sysinfo/board_name` zeigt `ubnt,nanostation-loco-m-xw` (XW)
   oder `ubnt,nanostation-loco-m` (XM); das Modell auf der Statusseite endet auf XW bzw. XM.
 
-| Gerät | XW: Image (OpenWrt 25.12.4) | XM: Image (OpenWrt 21.02.7) |
+| Gerät | XW: Image (OpenWrt 25.12.4) | XM: Image |
 |---|---|---|
-| NanoStation M5 | `ubnt_nanostation-m-xw` | `ubnt_nanostation-m` |
-| NanoStation Loco M5 | `ubnt_nanostation-loco-m-xw` | `ubnt_nanostation-loco-m` |
+| NanoStation M5 | `ubnt_nanostation-m-xw` | `ubnt_nanostation-m` (21.02.7) |
+| NanoStation Loco M5 | `ubnt_nanostation-loco-m-xw` | `ubnt_nanostation-loco-m` (21.02.7) |
 | NanoBeam M5, PowerBeam M5 300, AirGrid M5 HP | `ubnt_nanostation-loco-m-xw` (dasselbe Image) | – |
 | PowerBeam M5 (400) | `ubnt_powerbeam-m5-xw` | – |
 | LiteBeam M5 | `ubnt_litebeam-m5-xw`, **im Betrieb** | – |
-| Bullet M5, Rocket M5 | `ubnt_bullet-m-xw` (dasselbe Image) | Bullet: `ubnt_bullet-m-ar7240` bzw. `-ar7241`, Rocket: `ubnt_rocket-m` |
+| Bullet M5 | `ubnt_bullet-m-xw` | `ubnt_bullet-m-ar7240` bzw. `-ar7241` (21.02.7) |
+| Rocket M5 | `ubnt_bullet-m-xw` (dasselbe Image wie Bullet) | `ubnt_rocket-m` (25.12.4) |
+| PowerBridge M5 | – | `ubnt_powerbridge-m` (25.12.4) |
 
 Die Image-Dateien heißen `openwrt-…-<Profil>-squashfs-sysupgrade.bin` (bzw. `-factory.bin`).
 Außer dem LiteBeam ist keines davon getestet. Die XW-Images bringen das Entsperren des

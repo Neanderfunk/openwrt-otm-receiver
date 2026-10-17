@@ -53,7 +53,7 @@ spezifiziert. Wie viel bei 5.9 GHz verloren geht, muss man je Gerät messen
 | Ubiquiti NanoStation M5 / Loco M5 (XM) | AR9280 | 32/8 | ✔ | 7+* | (s. o.) | 32 MB reichen ohne Gluon (WDR3600 belegt 17 MB) |
 | **TP-Link CPE510 v1–v3**, CPE610 v1/v2, WBS510 v1/v2 | AR9344 | 64/8 | ✔ | ~65 | 30–40 €/Stück (3) | wird noch neu verkauft; auch Münster nennt ihn |
 | Ubiquiti Bullet M5 (XM/XW) | AR9280 / AR9342 | 32/8 / 64/8 | ✔ | 17* | 1 Angebot | Antenne frei wählbar (N-Buchse); XW: `ubnt_bullet-m-xw`, XM: `ubnt_bullet-m-ar7240`/`-ar7241` (21.02.7) |
-| Ubiquiti Rocket M5 (XM/XW) | AR9280 / AR9342 | 64/8 | ✔ | ~5 | keins | Antenne frei wählbar; XW: Image `ubnt_bullet-m-xw`, XM: `ubnt_rocket-m` (21.02.7) |
+| Ubiquiti Rocket M5 (XM/XW) | AR9280 / AR9342 | 64/8 | ✔ | ~5 | keins | Antenne frei wählbar; XW: Image `ubnt_bullet-m-xw`, XM: `ubnt_rocket-m` (25.12.4, 64 MB) |
 | Ubiquiti LiteBeam M5 (XW) | AR9342 | 64/8 | ✘ (25.12.4: ✔, im Betrieb) | 0 | 50–70 € (2) | Richtantenne 23 dBi; Flash-Schreibschutz, siehe [litebeam-flash-schutz.md](litebeam-flash-schutz.md) |
 | Ubiquiti NanoBeam M5 (XW) | AR9342 | 64/8 | ✘ (25.12.4: ✔, ungetestet) | 2 | keins | Image `ubnt_nanostation-loco-m-xw` (OpenWrt: dasselbe Gerät für NanoBeam M5, PowerBeam M5 300, AirGrid M5 HP) |
 | Ubiquiti PowerBeam M5 (XW) | AR9342 | 64/8 | ✘ (25.12.4: ✔, ungetestet) | 2 | keins | Image `ubnt_powerbeam-m5-xw` |
@@ -62,7 +62,15 @@ spezifiziert. Wie viel bei 5.9 GHz verloren geht, muss man je Gerät messen
 
 \* Die Gluon-Modellnamen der Ubiquiti-M-Serie („Nanostation M (XW)“, „Loco M (XW)“,
 „Bullet M“) unterscheiden **nicht zwischen M2 und M5**. M2 (2.4 GHz) ist ungeeignet und
-bei Freifunk häufiger. Die Zahlen sind deshalb Obergrenzen. Welches OTM-Image zu welchem Ubiquiti-Gerät gehört
+bei Freifunk häufiger. Die Zahlen sind deshalb Obergrenzen.
+
+Warum viele Ubiquiti-M-Geräte (Rocket, NanoStation u. a.) bei Gluon herausgefallen sind
+(adorfer, 17.10.2026): Ihre Sendeleistung war zu hoch und ließ sich nicht sinnvoll
+kalibrieren (externe Antennen als Vorgabe), und die Gluon-Maintainer wollten das Risiko nicht
+mehr tragen, dafür belangt zu werden. Für OTM gilt das nicht: Die Images senden auf diesen
+Geräten gar nicht (Radios in `/etc/config/wireless` aus, ITS-Band in der regdb mit `NO-IR`,
+nur ein Monitor-Interface). Gesendet wird nur beim WLAN-Rückfall auf 2.4 GHz, und den gibt es
+nur auf den TP-Link-Dualband-Routern. Welches OTM-Image zu welchem Ubiquiti-Gerät gehört
 (XM oder XW, und wie man das erkennt): Tabelle „Ubiquiti: welches Image?“ in der README.
 
 ## Antennen als Kaufkriterium
