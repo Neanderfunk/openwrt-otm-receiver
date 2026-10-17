@@ -23,11 +23,24 @@
 #                           sie teilt: otm/<node>/location retained, ab 0.15.0)
 #   otm_rx_{cap,pkts,crc,phy,active,busy,rxt}{node}  Zaehler aus
 #                           otm/<node>/health (ab 0.16.0), otm_rx_noise{node} dBm
+#   otm_speed_sum{lat,lon}  Summe der Geschwindigkeiten (km/h) je Rasterzelle,
+#   otm_speed_n{lat,lon}    und Zahl der Meldungen; nur Fahrzeuge (Stationstyp
+#                           1-11, keine RSU), jeder Frame einmal; Mittel = sum/n
+#   otm_speed_max{lat,lon}  hoechste Geschwindigkeit der Minute je Zelle (Gauge,
+#                           nur geschrieben, wenn es Meldungen gab)
+#   otm_traffic_fz{wd,h}    verschiedene Fahrzeuge je Minute, aufsummiert je
+#   otm_traffic_min{wd,h}   Wochentag/Stunde (Europe/Berlin), dazu die Zahl der
+#                           Minuten mit mindestens einem Empfaenger online;
+#                           Mittel = fz/min
+#   otm_traffic_speed_sum{wd,h}, otm_traffic_speed_n{wd,h}  Geschwindigkeit je
+#                           Wochentag/Stunde wie oben
 #
 # Absenderposition: Long Position Vector aus dem GeoNetworking-Header (bei
 # signierten Paketen im unsecuredData-Teil von IEEE 1609.2), gerundet auf
-# RASTER Nachkommastellen (3 = ~110 m Nord-Sued, ~70 m Ost-West).
-import json, struct, threading, time, urllib.request, collections
+# RASTER Nachkommastellen (3 = ~110 m Nord-Sued, ~70 m Ost-West). Aus
+# demselben Vektor: Stationstyp (aus der GN-Adresse) und Geschwindigkeit.
+import json, struct, threading, time, urllib.request, collections, datetime
+from zoneinfo import ZoneInfo
 import paho.mqtt.client as mqtt
 
 FENSTER = 5
@@ -43,6 +56,10 @@ gesundheit = {}                  # node -> (zeit, {feld: wert}) aus otm/<node>/h
 GESUND_MAX = 300                 # aeltere Health-Werte nicht weiterschreiben (offline != taub)
 offline_seit = {}                # node -> Zeitpunkt der Offline-Meldung (seit Start von otm-stats)
 OFFLINE_MAX = 86400              # laenger offline: nicht mehr fortschreiben (faellt aus den Tabellen)
+FAHRZEUG = range(1, 12)          # ETSI StationType: 1 Fussgaenger .. 11 Tram; 15 = RSU
+VMAX = 250                       # km/h, darueber unplausibel
+TZ = ZoneInfo('Europe/Berlin')
+TAGE = ('1-Mo', '2-Di', '3-Mi', '4-Do', '5-Fr', '6-Sa', '7-So')
 
 def key(f):
 	if len(f) < 40 or ((f[0] >> 2) & 3) != 2:
@@ -59,8 +76,8 @@ def coer_len(b, i):
 	k = n & 0x7f
 	return int.from_bytes(b[i + 1:i + 1 + k], 'big'), i + 1 + k
 
-def position(f):
-	"""Rasterzelle ('lat', 'lon') des Absenders oder None."""
+def lpv(f):
+	"""(Rasterzelle ('lat', 'lon'), Fahrzeug-km/h oder None) des Absenders, oder None."""
 	hl = 24 + (2 if f[0] >> 4 & 8 else 0)
 	g = f[hl + 8:]
 	if len(g) < 12:
@@ -84,13 +101,17 @@ def position(f):
 		pv = b[12:]
 	else:
 		return None
-	if len(pv) < 20:
+	if len(pv) < 24:
 		return None
 	lat, lon = struct.unpack('>ii', pv[12:20])
 	lat, lon = lat / 1e7, lon / 1e7
 	if not (-90 <= lat <= 90 and -180 <= lon <= 180) or (lat == 0 and lon == 0):
 		return None
-	return ('%.*f' % (RASTER, lat), '%.*f' % (RASTER, lon))
+    # GN_ADDR: M(1) ST(5) ..; danach PAI(1) Speed(15, Zweierkomplement, 0.01 m/s)
+	v = (pv[20] & 0x7f) << 8 | pv[21]
+	kmh = abs(v - 0x8000 if v & 0x4000 else v) * 0.036
+	fz = round(kmh, 1) if (pv[0] >> 2) & 0x1f in FAHRZEUG and kmh <= VMAX else None
+	return ('%.*f' % (RASTER, lat), '%.*f' % (RASTER, lon)), fz
 
 def on_message(c, u, m):
 	t = m.topic.split('/')
@@ -143,10 +164,10 @@ def on_message(c, u, m):
 			if k:
 				if k not in offen:
 					try:
-						pos = position(m.payload)
+						pos, fz = lpv(m.payload) or (None, None)
 					except Exception:
-						pos = None
-					offen[k] = [now, set(), pos]
+						pos, fz = None, None
+					offen[k] = [now, set(), pos, fz]
 				offen[k][1].add(node)
 		elif art == 'stats':
 			try:
@@ -177,15 +198,26 @@ def esc(v):
 def auswerten():
 	now = time.time()
 	stationen = set()
+	fahrzeuge = set()
+	vmax = {}                        # Zelle -> hoechste km/h dieser Minute
+	vsum, vn = 0.0, 0
 	with lock:
 		fertig = [k for k, v in offen.items() if now - v[0] > FENSTER]
 		for k in fertig:
-			_, nodes, pos = offen.pop(k)
+			_, nodes, pos, fz = offen.pop(k)
 			stationen.add(k[0])
 			zaehler[('union_frames', '')] += 1
 			zaehler[('receivers_n', str(len(nodes)))] += 1
 			if pos:
 				zaehler[('pos_union', ('', pos))] += 1
+			if fz is not None:
+				fahrzeuge.add(k[0])
+				vsum += fz
+				vn += 1
+				if pos:
+					zaehler[('speed_sum', ('', pos))] += fz
+					zaehler[('speed_n', ('', pos))] += 1
+					vmax[pos] = max(vmax.get(pos, 0), fz)
 			for n in nodes:
 				zaehler[('frames', n)] += 1
 				if len(nodes) == 1:
@@ -193,6 +225,13 @@ def auswerten():
 				if pos:
 					zaehler[('pos', (n, pos))] += 1
 		gauges[('union_stations', '')] = len(stationen)
+		if any(v == 1 for (m, _), v in gauges.items() if m == 'node_online'):
+			lt = datetime.datetime.fromtimestamp(now - 30, TZ)
+			slot = (TAGE[lt.weekday()], '%02d' % lt.hour)
+			zaehler[('traffic_min', slot)] += 1
+			zaehler[('traffic_fz', slot)] += len(fahrzeuge)
+			zaehler[('traffic_speed_sum', slot)] += vsum
+			zaehler[('traffic_speed_n', slot)] += vn
 		weg = {n for n, t in offline_seit.items() if now - t > OFFLINE_MAX}
 		werte = list(zaehler.items()) + [(k, v) for k, v in gauges.items()
 		                                 if not (k[0] in ('node_online', 'node_uptime') and k[1] in weg)]
@@ -204,14 +243,18 @@ def auswerten():
 	for (metrik, label), wert in werte:
 		if metrik == 'receivers_n':
 			tag = ',n=' + label
-		elif metrik in ('pos', 'pos_union'):
+		elif metrik.startswith('traffic_'):
+			tag = ',wd=%s,h=%s' % label
+		elif metrik in ('pos', 'pos_union', 'speed_sum', 'speed_n'):
 			n, (lat, lon) = label
 			tag = (',node=' + n.replace(' ', '_').replace(',', '_') if n else '') + ',lat=%s,lon=%s' % (lat, lon)
 		elif label:
 			tag = ',node=' + label.replace(' ', '_').replace(',', '_')
 		else:
 			tag = ''
-		zeilen.append('otm%s %s=%s %d' % (tag, metrik, wert, ts))
+		zeilen.append('otm%s %s=%s %d' % (tag, metrik, round(wert, 1) if isinstance(wert, float) else wert, ts))
+	for (lat, lon), v in vmax.items():
+		zeilen.append('otm,lat=%s,lon=%s speed_max=%s %d' % (lat, lon, v, ts))
 	for n, f in fw.items():
 		tags = ''.join(',%s=%s' % (k, esc(f.get(k) or '-')) for k in ('version', 'commit', 'bridge', 'model'))
 		zeilen.append('otm,node=%s%s node_build=1 %d' % (esc(n), tags, ts))

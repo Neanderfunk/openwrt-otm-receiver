@@ -1,0 +1,269 @@
+{
+ "uid": "otm-heatmap-knoten",
+ "title": "OTM Heatmap je Empfaenger",
+ "tags": [
+  "otm"
+ ],
+ "timezone": "browser",
+ "schemaVersion": 39,
+ "editable": true,
+ "refresh": "5m",
+ "time": {
+  "from": "now-7d",
+  "to": "now"
+ },
+ "description": "Absenderpositionen je Empfaenger nebeneinander (Raster ~100 m). Laedt eine Karte je Empfaenger, daher eigene Seite.",
+ "links": [
+  {
+   "title": "OTM Heatmap",
+   "type": "link",
+   "url": "/d/otm-heatmap",
+   "icon": "dashboard",
+   "keepTime": true
+  },
+  {
+   "title": "OTM Empfang",
+   "type": "link",
+   "url": "/d/otm-empfang",
+   "icon": "dashboard",
+   "keepTime": true
+  },
+  {
+   "title": "OTM Knoten",
+   "type": "link",
+   "url": "/d/otm-knoten",
+   "icon": "dashboard",
+   "keepTime": true
+  }
+ ],
+ "templating": {
+  "list": [
+   {
+    "name": "node",
+    "label": "Empfaenger",
+    "type": "query",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "otm-vm"
+    },
+    "query": {
+     "query": "label_values(otm_pos, node)",
+     "refId": "node"
+    },
+    "definition": "label_values(otm_pos, node)",
+    "refresh": 2,
+    "sort": 1,
+    "multi": true,
+    "includeAll": true,
+    "current": {
+     "selected": true,
+     "text": [
+      "All"
+     ],
+     "value": [
+      "$__all"
+     ]
+    }
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 3,
+   "title": "$node",
+   "description": "Frames, die dieser Empfaenger hatte, nach Absenderposition",
+   "type": "geomap",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum by (lat, lon) (increase(otm_pos{node=\"$node\"}[$__range]))",
+     "instant": true,
+     "range": false,
+     "format": "table"
+    },
+    {
+     "refId": "B",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "max by (node, lat, lon) (last_over_time(otm_node_location{node=\"$node\"}[15m]))"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "convertFieldType",
+     "options": {
+      "fields": {},
+      "conversions": [
+       {
+        "targetField": "lat",
+        "destinationType": "number"
+       },
+       {
+        "targetField": "lon",
+        "destinationType": "number"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "continuous-YlRd"
+     },
+     "displayName": "Frames"
+    },
+    "overrides": []
+   },
+   "options": {
+    "view": {
+     "id": "fit",
+     "allLayers": true,
+     "lat": 0,
+     "lon": 0,
+     "zoom": 14,
+     "maxZoom": 17
+    },
+    "controls": {
+     "showZoom": true,
+     "mouseWheelZoom": true,
+     "showAttribution": true,
+     "showScale": true,
+     "showMeasure": false,
+     "showDebug": false
+    },
+    "basemap": {
+     "type": "xyz",
+     "name": "CARTO hell (tiles.ffdus.de)",
+     "config": {
+      "url": "https://tiles.ffdus.de/carto/light_all/{z}/{x}/{y}.png",
+      "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap-Mitwirkende</a>, © <a href=\"https://carto.com/attributions\">CARTO</a>"
+     }
+    },
+    "layers": [
+     {
+      "type": "heatmap",
+      "name": "Frames",
+      "tooltip": true,
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "blur": 25,
+       "radius": 14,
+       "weight": {
+        "field": "Value",
+        "fixed": 1,
+        "min": 0,
+        "max": 1
+       }
+      },
+      "opacity": 0.8,
+      "filterData": {
+       "id": "byRefId",
+       "options": "A"
+      }
+     },
+     {
+      "type": "markers",
+      "name": "Zellen",
+      "tooltip": true,
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "showLegend": false,
+       "style": {
+        "size": {
+         "fixed": 3
+        },
+        "opacity": 0.35,
+        "symbol": {
+         "mode": "fixed",
+         "fixed": "img/icons/marker/circle.svg"
+        },
+        "color": {
+         "fixed": "dark-red"
+        }
+       }
+      },
+      "filterData": {
+       "id": "byRefId",
+       "options": "A"
+      }
+     },
+     {
+      "type": "markers",
+      "name": "Empfaenger",
+      "tooltip": true,
+      "filterData": {
+       "id": "byRefId",
+       "options": "B"
+      },
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "showLegend": false,
+       "style": {
+        "size": {
+         "fixed": 9
+        },
+        "opacity": 1,
+        "symbol": {
+         "mode": "fixed",
+         "fixed": "img/icons/marker/triangle.svg"
+        },
+        "color": {
+         "fixed": "blue"
+        },
+        "text": {
+         "mode": "field",
+         "field": "node",
+         "fixed": ""
+        },
+        "textConfig": {
+         "fontSize": 11,
+         "offsetY": -14,
+         "textAlign": "center",
+         "textBaseline": "bottom"
+        }
+       }
+      }
+     }
+    ],
+    "tooltip": {
+     "mode": "details"
+    }
+   },
+   "repeat": "node",
+   "repeatDirection": "h",
+   "maxPerRow": 2
+  }
+ ]
+}

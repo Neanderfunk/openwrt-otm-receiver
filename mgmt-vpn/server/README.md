@@ -19,7 +19,7 @@ Empfänger --fastd--> br-otm 10.66.0.1/22 --> mosquitto :1883 --TLS--> cits1.ope
 | `dnsmasq.conf`, `dnsmasq-otm.service` | DHCP im Tunnelnetz 10.66.0.0/22, Namen `<knoten>.otm`; verteilt weder Router noch DNS, die Standardroute der Empfänger bleibt lokal |
 | `mosquitto-otm.conf`, `mosquitto-otm.override` | Listener auf 10.66.0.1 und 127.0.0.1, Bridge `its/#` **nur ausgehend** an `cits1.opentrafficmap.org:8883` |
 | `otm-stats.py`, `otm-stats.service` | liest `its/#` und `otm/+/{build,location,health}` mit, entdoppelt Frames über alle Empfänger, schreibt jede Minute ins Influx-Line-Protokoll von VictoriaMetrics; Metriken im Kopf der Datei |
-| `grafana/` | Umgebungsvariablen, Datenquelle, Dashboards `OTM Empfang`, `OTM Heatmap` und `OTM Knoten` (je Empfänger, verlinkt aus den Tabellen) (Provisioning aus Dateien) |
+| `grafana/` | Umgebungsvariablen, Datenquelle, Dashboards `OTM Empfang`, `OTM Heatmap`, `OTM Heatmap je Empfaenger` und `OTM Knoten` (je Empfänger, verlinkt aus den Tabellen) (Provisioning aus Dateien) |
 
 Topics außerhalb von `its/#` (`otm/<node>/build`, `…/location`, `…/health`) bleiben beim
 Proxy; die Bridge reicht sie nicht an OpenTrafficMap weiter.
