@@ -1111,6 +1111,607 @@
    }
   },
   {
+   "id": 16,
+   "title": "Durchschnittsgeschwindigkeit",
+   "description": "Mittlere Geschwindigkeit der Fahrzeug-Meldungen dieses Empfaengers je Rasterzelle (~100 m) im Zeitraum, aus dem GeoNetworking-Header. Nur Fahrzeuge, keine Verkehrsinfrastruktur (RSU); stehende Fahrzeuge zaehlen mit 0 km/h, blau heisst also langsam oder Stau. Zellen mit weniger als 5 Meldungen bleiben weg. Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
+   "type": "geomap",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 44,
+    "w": 12,
+    "h": 12
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "(sum by (lat, lon) (increase(otm_speed_node_sum{node=\"$node\"}[$__range])) / sum by (lat, lon) (increase(otm_speed_node_n{node=\"$node\"}[$__range]))) and on (lat, lon) (sum by (lat, lon) (increase(otm_speed_node_n{node=\"$node\"}[$__range])) >= 5)",
+     "instant": true,
+     "range": false,
+     "format": "table"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "convertFieldType",
+     "options": {
+      "fields": {},
+      "conversions": [
+       {
+        "targetField": "lat",
+        "destinationType": "number"
+       },
+       {
+        "targetField": "lon",
+        "destinationType": "number"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "thresholds"
+     },
+     "unit": "velocitykmh",
+     "decimals": 0,
+     "min": 0,
+     "displayName": "km/h",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       },
+       {
+        "color": "light-blue",
+        "value": 10
+       },
+       {
+        "color": "green",
+        "value": 30
+       },
+       {
+        "color": "yellow",
+        "value": 50
+       },
+       {
+        "color": "orange",
+        "value": 70
+       },
+       {
+        "color": "red",
+        "value": 100
+       },
+       {
+        "color": "#e600e6",
+        "value": 130
+       },
+       {
+        "color": "#3d0066",
+        "value": 160
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "view": {
+     "id": "fit",
+     "allLayers": true,
+     "lat": 0,
+     "lon": 0,
+     "zoom": 14,
+     "maxZoom": 17
+    },
+    "controls": {
+     "showZoom": true,
+     "mouseWheelZoom": true,
+     "showAttribution": true,
+     "showScale": true,
+     "showMeasure": false,
+     "showDebug": false
+    },
+    "basemap": {
+     "type": "xyz",
+     "name": "CARTO hell (tiles.ffdus.de)",
+     "config": {
+      "url": "https://tiles.ffdus.de/carto/light_all/{z}/{x}/{y}.png",
+      "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap-Mitwirkende</a>, © <a href=\"https://carto.com/attributions\">CARTO</a>"
+     }
+    },
+    "layers": [
+     {
+      "type": "markers",
+      "name": "km/h",
+      "tooltip": true,
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "showLegend": true,
+       "style": {
+        "size": {
+         "fixed": 7
+        },
+        "opacity": 0.85,
+        "symbol": {
+         "mode": "fixed",
+         "fixed": "img/icons/marker/circle.svg"
+        },
+        "color": {
+         "field": "Value",
+         "fixed": "dark-green"
+        }
+       }
+      }
+     }
+    ],
+    "tooltip": {
+     "mode": "details"
+    }
+   }
+  },
+  {
+   "id": 17,
+   "title": "Hoechstgeschwindigkeit",
+   "description": "Hoechste gemeldete Geschwindigkeit je Rasterzelle im Zeitraum (nur Fahrzeuge, keine RSU). Einzelwerte; ein Fahrzeug mit Blaulicht reicht fuer Rot oder Magenta. Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
+   "type": "geomap",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 44,
+    "w": 12,
+    "h": 12
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "max by (lat, lon) (max_over_time(otm_speed_node_max{node=\"$node\"}[$__range]))",
+     "instant": true,
+     "range": false,
+     "format": "table"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "convertFieldType",
+     "options": {
+      "fields": {},
+      "conversions": [
+       {
+        "targetField": "lat",
+        "destinationType": "number"
+       },
+       {
+        "targetField": "lon",
+        "destinationType": "number"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "thresholds"
+     },
+     "unit": "velocitykmh",
+     "decimals": 0,
+     "min": 0,
+     "displayName": "km/h",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       },
+       {
+        "color": "light-blue",
+        "value": 10
+       },
+       {
+        "color": "green",
+        "value": 30
+       },
+       {
+        "color": "yellow",
+        "value": 50
+       },
+       {
+        "color": "orange",
+        "value": 70
+       },
+       {
+        "color": "red",
+        "value": 100
+       },
+       {
+        "color": "#e600e6",
+        "value": 130
+       },
+       {
+        "color": "#3d0066",
+        "value": 160
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "view": {
+     "id": "fit",
+     "allLayers": true,
+     "lat": 0,
+     "lon": 0,
+     "zoom": 14,
+     "maxZoom": 17
+    },
+    "controls": {
+     "showZoom": true,
+     "mouseWheelZoom": true,
+     "showAttribution": true,
+     "showScale": true,
+     "showMeasure": false,
+     "showDebug": false
+    },
+    "basemap": {
+     "type": "xyz",
+     "name": "CARTO hell (tiles.ffdus.de)",
+     "config": {
+      "url": "https://tiles.ffdus.de/carto/light_all/{z}/{x}/{y}.png",
+      "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap-Mitwirkende</a>, © <a href=\"https://carto.com/attributions\">CARTO</a>"
+     }
+    },
+    "layers": [
+     {
+      "type": "markers",
+      "name": "km/h",
+      "tooltip": true,
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "showLegend": true,
+       "style": {
+        "size": {
+         "fixed": 7
+        },
+        "opacity": 0.85,
+        "symbol": {
+         "mode": "fixed",
+         "fixed": "img/icons/marker/circle.svg"
+        },
+        "color": {
+         "field": "Value",
+         "fixed": "dark-green"
+        }
+       }
+      }
+     }
+    ],
+    "tooltip": {
+     "mode": "details"
+    }
+   }
+  },
+  {
+   "id": 18,
+   "title": "Verkehrsmuster: Fahrzeuge je Minute (letzte 28 Tage)",
+   "description": "Wie viele verschiedene Fahrzeuge dieser Empfaenger im Mittel pro Minute hoert, nach Wochentag und Stunde (Ortszeit). Gemittelt ueber alle Minuten, in denen er online war. Fahrzeug = Absender mit Stationstyp Fahrzeug; wechselt ein Fahrzeug seine Kennung (Pseudonym), zaehlt es kurz doppelt. Feste Zeitspanne 28 Tage, Daten ab 17.10.2026.",
+   "type": "table",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "timeFrom": "28d",
+   "gridPos": {
+    "x": 0,
+    "y": 56,
+    "w": 24,
+    "h": 9
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum by (wd, h) (increase(otm_traffic_node_fz{node=\"$node\"}[$__range])) / sum by (wd, h) (increase(otm_traffic_node_min{node=\"$node\"}[$__range]))",
+     "instant": true,
+     "range": false,
+     "format": "table"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "groupingToMatrix",
+     "options": {
+      "columnField": "h",
+      "rowField": "wd",
+      "valueField": "Value",
+      "emptyValue": "null"
+     }
+    },
+    {
+     "id": "organize",
+     "options": {
+      "renameByName": {
+       "wd\\h": "Tag"
+      },
+      "indexByName": {
+       "wd\\h": 0,
+       "00": 1,
+       "01": 2,
+       "02": 3,
+       "03": 4,
+       "04": 5,
+       "05": 6,
+       "06": 7,
+       "07": 8,
+       "08": 9,
+       "09": 10,
+       "10": 11,
+       "11": 12,
+       "12": 13,
+       "13": 14,
+       "14": 15,
+       "15": 16,
+       "16": 17,
+       "17": 18,
+       "18": 19,
+       "19": 20,
+       "20": 21,
+       "21": 22,
+       "22": 23,
+       "23": 24
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "Tag"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "decimals": 1,
+     "color": {
+      "mode": "continuous-GrYlRd"
+     },
+     "custom": {
+      "align": "center",
+      "cellOptions": {
+       "type": "color-background",
+       "mode": "gradient"
+      },
+      "width": 52
+     },
+     "min": 0
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Tag"
+      },
+      "properties": [
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "auto"
+        }
+       },
+       {
+        "id": "custom.width",
+        "value": 70
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   }
+  },
+  {
+   "id": 19,
+   "title": "Verkehrsmuster: Geschwindigkeit im Mittel in km/h (letzte 28 Tage)",
+   "description": "Mittlere Geschwindigkeit der Fahrzeug-Meldungen dieses Empfaengers nach Wochentag und Stunde (Ortszeit). Blau = langsam. Feste Zeitspanne 28 Tage, Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
+   "type": "table",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "timeFrom": "28d",
+   "gridPos": {
+    "x": 0,
+    "y": 65,
+    "w": 24,
+    "h": 9
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum by (wd, h) (increase(otm_traffic_node_speed_sum{node=\"$node\"}[$__range])) / sum by (wd, h) (increase(otm_traffic_node_speed_n{node=\"$node\"}[$__range]))",
+     "instant": true,
+     "range": false,
+     "format": "table"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "groupingToMatrix",
+     "options": {
+      "columnField": "h",
+      "rowField": "wd",
+      "valueField": "Value",
+      "emptyValue": "null"
+     }
+    },
+    {
+     "id": "organize",
+     "options": {
+      "renameByName": {
+       "wd\\h": "Tag"
+      },
+      "indexByName": {
+       "wd\\h": 0,
+       "00": 1,
+       "01": 2,
+       "02": 3,
+       "03": 4,
+       "04": 5,
+       "05": 6,
+       "06": 7,
+       "07": 8,
+       "08": 9,
+       "09": 10,
+       "10": 11,
+       "11": 12,
+       "12": 13,
+       "13": 14,
+       "14": 15,
+       "15": 16,
+       "16": 17,
+       "17": 18,
+       "18": 19,
+       "19": 20,
+       "20": 21,
+       "21": 22,
+       "22": 23,
+       "23": 24
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "Tag"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "custom": {
+      "align": "center",
+      "cellOptions": {
+       "type": "color-background",
+       "mode": "gradient"
+      },
+      "width": 52
+     },
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       },
+       {
+        "color": "light-blue",
+        "value": 10
+       },
+       {
+        "color": "green",
+        "value": 30
+       },
+       {
+        "color": "yellow",
+        "value": 50
+       },
+       {
+        "color": "orange",
+        "value": 70
+       },
+       {
+        "color": "red",
+        "value": 100
+       },
+       {
+        "color": "#e600e6",
+        "value": 130
+       },
+       {
+        "color": "#3d0066",
+        "value": 160
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Tag"
+      },
+      "properties": [
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "auto"
+        }
+       },
+       {
+        "id": "custom.width",
+        "value": 70
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   }
+  },
+  {
    "id": 15,
    "title": "MQTT-Nachrichten pro Stunde (auch Nicht-ITS)",
    "description": "Alles, was der Empfaenger als packet gemeldet hat, auch Frames ohne GeoNetworking.",
@@ -1121,7 +1722,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 44,
+    "y": 74,
     "w": 24,
     "h": 6
    },

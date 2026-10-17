@@ -265,8 +265,9 @@ VictoriaMetrics) und Grafana unter <https://otm.ffnef.de>, ohne Anmeldung lesbar
   **OTM Heatmap je Empfaenger**.
 - **OTM Knoten**: alles zu einem Empfänger, mit Auswahl oben oder per Klick auf den Namen
   in den Tabellen von OTM Empfang: Firmware-Stände (höchster oben), Status, Uptime, Frames,
-  „nur hier gesehen“, Anteil, Health, Funk-Zähler, Rauschen, Kanalbelegung und die Heatmap
-  seiner Absender. Direkt: `https://otm.ffnef.de/d/otm-knoten?var-node=<name>`
+  „nur hier gesehen“, Anteil, Health, Funk-Zähler, Rauschen, Kanalbelegung, die Heatmap
+  seiner Absender und, nur aus seinen Frames, Durchschnitts- und Höchstgeschwindigkeit je
+  Zelle sowie das Verkehrsmuster nach Wochentag und Stunde. Direkt: `https://otm.ffnef.de/d/otm-knoten?var-node=<name>`
 
 Eine abgebaute Station verschwindet aus den Tabellen mit einer leeren retained Nachricht
 auf `its/<node>/status` am Proxy.

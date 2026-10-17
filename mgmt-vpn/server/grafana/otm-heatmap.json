@@ -236,7 +236,7 @@
   {
    "id": 4,
    "title": "Durchschnittsgeschwindigkeit",
-   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen je Rasterzelle (~100 m) im Zeitraum, aus dem GeoNetworking-Header (jeder Frame einmal, auch wenn ihn mehrere Empfaenger hatten). Nur Fahrzeuge, keine Verkehrsinfrastruktur (RSU); stehende Fahrzeuge zaehlen mit 0 km/h, rot heisst also langsam oder Stau. Zellen mit weniger als 5 Meldungen bleiben weg. Daten ab 17.10.2026.",
+   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen je Rasterzelle (~100 m) im Zeitraum, aus dem GeoNetworking-Header (jeder Frame einmal, auch wenn ihn mehrere Empfaenger hatten). Nur Fahrzeuge, keine Verkehrsinfrastruktur (RSU); stehende Fahrzeuge zaehlen mit 0 km/h, blau heisst also langsam oder Stau. Zellen mit weniger als 5 Meldungen bleiben weg. Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
    "type": "geomap",
    "datasource": {
     "type": "prometheus",
@@ -282,13 +282,49 @@
    "fieldConfig": {
     "defaults": {
      "color": {
-      "mode": "continuous-RdYlGr"
+      "mode": "thresholds"
      },
      "unit": "velocitykmh",
      "decimals": 0,
      "min": 0,
-     "max": 100,
-     "displayName": "km/h"
+     "displayName": "km/h",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       },
+       {
+        "color": "light-blue",
+        "value": 10
+       },
+       {
+        "color": "green",
+        "value": 30
+       },
+       {
+        "color": "yellow",
+        "value": 50
+       },
+       {
+        "color": "orange",
+        "value": 70
+       },
+       {
+        "color": "red",
+        "value": 100
+       },
+       {
+        "color": "#e600e6",
+        "value": 130
+       },
+       {
+        "color": "#3d0066",
+        "value": 160
+       }
+      ]
+     }
     },
     "overrides": []
    },
@@ -354,7 +390,7 @@
   {
    "id": 5,
    "title": "Hoechstgeschwindigkeit",
-   "description": "Hoechste gemeldete Geschwindigkeit je Rasterzelle im Zeitraum (nur Fahrzeuge, keine RSU). Einzelwerte; ein Fahrzeug mit Blaulicht reicht fuer Rot. Daten ab 17.10.2026.",
+   "description": "Hoechste gemeldete Geschwindigkeit je Rasterzelle im Zeitraum (nur Fahrzeuge, keine RSU). Einzelwerte; ein Fahrzeug mit Blaulicht reicht fuer Rot oder Magenta. Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
    "type": "geomap",
    "datasource": {
     "type": "prometheus",
@@ -400,13 +436,49 @@
    "fieldConfig": {
     "defaults": {
      "color": {
-      "mode": "continuous-GrYlRd"
+      "mode": "thresholds"
      },
      "unit": "velocitykmh",
      "decimals": 0,
      "min": 0,
-     "max": 130,
-     "displayName": "km/h"
+     "displayName": "km/h",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       },
+       {
+        "color": "light-blue",
+        "value": 10
+       },
+       {
+        "color": "green",
+        "value": 30
+       },
+       {
+        "color": "yellow",
+        "value": 50
+       },
+       {
+        "color": "orange",
+        "value": 70
+       },
+       {
+        "color": "red",
+        "value": 100
+       },
+       {
+        "color": "#e600e6",
+        "value": 130
+       },
+       {
+        "color": "#3d0066",
+        "value": 160
+       }
+      ]
+     }
     },
     "overrides": []
    },
@@ -600,7 +672,7 @@
   {
    "id": 7,
    "title": "Verkehrsmuster: Geschwindigkeit im Mittel in km/h (letzte 28 Tage)",
-   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen nach Wochentag und Stunde (Ortszeit), ueber alle Empfaenger. Rot = langsam. Feste Zeitspanne 28 Tage, Daten ab 17.10.2026.",
+   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen nach Wochentag und Stunde (Ortszeit), ueber alle Empfaenger. Blau = langsam. Feste Zeitspanne 28 Tage, Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
    "type": "table",
    "datasource": {
     "type": "prometheus",
@@ -687,7 +759,7 @@
      "unit": "none",
      "decimals": 0,
      "color": {
-      "mode": "continuous-RdYlGr"
+      "mode": "thresholds"
      },
      "custom": {
       "align": "center",
@@ -698,7 +770,43 @@
       "width": 52
      },
      "min": 0,
-     "max": 100
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       },
+       {
+        "color": "light-blue",
+        "value": 10
+       },
+       {
+        "color": "green",
+        "value": 30
+       },
+       {
+        "color": "yellow",
+        "value": 50
+       },
+       {
+        "color": "orange",
+        "value": 70
+       },
+       {
+        "color": "red",
+        "value": 100
+       },
+       {
+        "color": "#e600e6",
+        "value": 130
+       },
+       {
+        "color": "#3d0066",
+        "value": 160
+       }
+      ]
+     }
     },
     "overrides": [
      {

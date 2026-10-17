@@ -34,6 +34,11 @@
 #                           Mittel = fz/min
 #   otm_traffic_speed_sum{wd,h}, otm_traffic_speed_n{wd,h}  Geschwindigkeit je
 #                           Wochentag/Stunde wie oben
+#   otm_speed_node_{sum,n,max}{node,lat,lon}, otm_traffic_node_{fz,min,speed_sum,
+#                           speed_n}{node,wd,h}  dasselbe je Empfaenger (was er
+#                           gehoert hat; min = Minuten, in denen er online war).
+#                           Eigene Namen, damit Summen ueber die Gesamtwerte
+#                           nicht doppelt zaehlen
 #
 # Absenderposition: Long Position Vector aus dem GeoNetworking-Header (bei
 # signierten Paketen im unsecuredData-Teil von IEEE 1609.2), gerundet auf
@@ -201,6 +206,8 @@ def auswerten():
 	fahrzeuge = set()
 	vmax = {}                        # Zelle -> hoechste km/h dieser Minute
 	vsum, vn = 0.0, 0
+	nfz = collections.defaultdict(set)    # node -> Fahrzeuge dieser Minute
+	nv = collections.defaultdict(lambda: [0.0, 0])
 	with lock:
 		fertig = [k for k, v in offen.items() if now - v[0] > FENSTER]
 		for k in fertig:
@@ -217,17 +224,31 @@ def auswerten():
 				if pos:
 					zaehler[('speed_sum', ('', pos))] += fz
 					zaehler[('speed_n', ('', pos))] += 1
-					vmax[pos] = max(vmax.get(pos, 0), fz)
+					vmax[('', pos)] = max(vmax.get(('', pos), 0), fz)
 			for n in nodes:
 				zaehler[('frames', n)] += 1
+				if fz is not None:
+					nfz[n].add(k[0])
+					nv[n][0] += fz
+					nv[n][1] += 1
+					if pos:
+						zaehler[('speed_node_sum', (n, pos))] += fz
+						zaehler[('speed_node_n', (n, pos))] += 1
+						vmax[(n, pos)] = max(vmax.get((n, pos), 0), fz)
 				if len(nodes) == 1:
 					zaehler[('exclusive', n)] += 1
 				if pos:
 					zaehler[('pos', (n, pos))] += 1
 		gauges[('union_stations', '')] = len(stationen)
+		lt = datetime.datetime.fromtimestamp(now - 30, TZ)
+		slot = (TAGE[lt.weekday()], '%02d' % lt.hour)
+		for (m, n), v in list(gauges.items()):
+			if m == 'node_online' and v == 1:
+				zaehler[('traffic_node_min', (n,) + slot)] += 1
+				zaehler[('traffic_node_fz', (n,) + slot)] += len(nfz.get(n, ()))
+				zaehler[('traffic_node_speed_sum', (n,) + slot)] += nv[n][0] if n in nv else 0.0
+				zaehler[('traffic_node_speed_n', (n,) + slot)] += nv[n][1] if n in nv else 0
 		if any(v == 1 for (m, _), v in gauges.items() if m == 'node_online'):
-			lt = datetime.datetime.fromtimestamp(now - 30, TZ)
-			slot = (TAGE[lt.weekday()], '%02d' % lt.hour)
 			zaehler[('traffic_min', slot)] += 1
 			zaehler[('traffic_fz', slot)] += len(fahrzeuge)
 			zaehler[('traffic_speed_sum', slot)] += vsum
@@ -243,9 +264,11 @@ def auswerten():
 	for (metrik, label), wert in werte:
 		if metrik == 'receivers_n':
 			tag = ',n=' + label
+		elif metrik.startswith('traffic_node_'):
+			tag = ',node=%s,wd=%s,h=%s' % ((esc(label[0]),) + label[1:])
 		elif metrik.startswith('traffic_'):
 			tag = ',wd=%s,h=%s' % label
-		elif metrik in ('pos', 'pos_union', 'speed_sum', 'speed_n'):
+		elif metrik in ('pos', 'pos_union', 'speed_sum', 'speed_n', 'speed_node_sum', 'speed_node_n'):
 			n, (lat, lon) = label
 			tag = (',node=' + n.replace(' ', '_').replace(',', '_') if n else '') + ',lat=%s,lon=%s' % (lat, lon)
 		elif label:
@@ -253,8 +276,11 @@ def auswerten():
 		else:
 			tag = ''
 		zeilen.append('otm%s %s=%s %d' % (tag, metrik, round(wert, 1) if isinstance(wert, float) else wert, ts))
-	for (lat, lon), v in vmax.items():
-		zeilen.append('otm,lat=%s,lon=%s speed_max=%s %d' % (lat, lon, v, ts))
+	for (n, (lat, lon)), v in vmax.items():
+		if n:
+			zeilen.append('otm,node=%s,lat=%s,lon=%s speed_node_max=%s %d' % (esc(n), lat, lon, v, ts))
+		else:
+			zeilen.append('otm,lat=%s,lon=%s speed_max=%s %d' % (lat, lon, v, ts))
 	for n, f in fw.items():
 		tags = ''.join(',%s=%s' % (k, esc(f.get(k) or '-')) for k in ('version', 'commit', 'bridge', 'model'))
 		zeilen.append('otm,node=%s%s node_build=1 %d' % (esc(n), tags, ts))
