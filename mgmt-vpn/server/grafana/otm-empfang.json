@@ -392,7 +392,7 @@
    "id": 9,
    "title": "Firmware je Empfaenger",
    "type": "table",
-   "description": "Build-Nummer und Commit des Images ab otm-bridge 0.14.0; aeltere Staende melden nur Bridge-Version und Modell, und das nur beim Verbinden",
+   "description": "Build-Nummer und Commit des Images ab otm-bridge 0.14.0; aeltere Staende melden nur Bridge-Version und Modell, und das nur beim Verbinden Klick auf den Namen: Graphen zu diesem Empfaenger (OTM Knoten).",
    "datasource": {
     "type": "prometheus",
     "uid": "otm-vm"
@@ -517,6 +517,23 @@
         "value": 90
        }
       ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Empfaenger"
+      },
+      "properties": [
+       {
+        "id": "links",
+        "value": [
+         {
+          "title": "Graphen zu ${__value.text}",
+          "url": "/d/otm-knoten/otm-knoten?var-node=${__value.raw}&${__url_time_range}"
+         }
+        ]
+       }
+      ]
      }
     ]
    },
@@ -529,7 +546,7 @@
    "id": 10,
    "title": "Empfangs-Health (6 h)",
    "type": "table",
-   "description": "Ab otm-bridge 0.16.0. Bewertung ueber die letzten 6 Stunden: 'empfaengt ITS' = mindestens ein ITS-Frame; 'nur Rauschen' = das Radio sieht Frames, CRC- oder PHY-Fehler, aber kein ITS (Standort ohne Verkehr?); 'taub?' = kein einziger Zaehler bewegt sich (so sah der NanoStation-Nachbau aus). CRC-Fehler: Praeambel erkannt, Inhalt kaputt. PHY-Fehler: Energie gesehen, nichts Dekodierbares.",
+   "description": "Ab otm-bridge 0.16.0. Bewertung ueber die letzten 6 Stunden: 'empfaengt ITS' = mindestens ein ITS-Frame; 'nur Rauschen' = das Radio sieht Frames, CRC- oder PHY-Fehler, aber kein ITS (Standort ohne Verkehr?); 'taub?' = kein einziger Zaehler bewegt sich (so sah der NanoStation-Nachbau aus). CRC-Fehler: Praeambel erkannt, Inhalt kaputt. PHY-Fehler: Energie gesehen, nichts Dekodierbares. Klick auf den Namen: Graphen zu diesem Empfaenger (OTM Knoten).",
    "datasource": {
     "type": "prometheus",
     "uid": "otm-vm"
@@ -731,6 +748,23 @@
         "value": 1
        }
       ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Empfaenger"
+      },
+      "properties": [
+       {
+        "id": "links",
+        "value": [
+         {
+          "title": "Graphen zu ${__value.text}",
+          "url": "/d/otm-knoten/otm-knoten?var-node=${__value.raw}&${__url_time_range}"
+         }
+        ]
+       }
+      ]
      }
     ]
    },
@@ -750,6 +784,13 @@
    "type": "link",
    "url": "/d/otm-heatmap",
    "icon": "dashboard"
+  },
+  {
+   "title": "OTM Knoten",
+   "type": "link",
+   "url": "/d/otm-knoten",
+   "icon": "dashboard",
+   "keepTime": true
   }
  ]
 }

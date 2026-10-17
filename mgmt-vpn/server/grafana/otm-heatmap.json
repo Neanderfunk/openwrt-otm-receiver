@@ -19,6 +19,13 @@
    "type": "link",
    "url": "/d/otm-empfang",
    "icon": "dashboard"
+  },
+  {
+   "title": "OTM Knoten",
+   "type": "link",
+   "url": "/d/otm-knoten",
+   "icon": "dashboard",
+   "keepTime": true
   }
  ],
  "templating": {

@@ -1,0 +1,1168 @@
+{
+ "uid": "otm-knoten",
+ "title": "OTM Knoten",
+ "tags": [
+  "otm"
+ ],
+ "timezone": "browser",
+ "schemaVersion": 39,
+ "editable": true,
+ "refresh": "5m",
+ "time": {
+  "from": "now-7d",
+  "to": "now"
+ },
+ "graphTooltip": 1,
+ "description": "Graphen zu einem einzelnen Empfaenger. Aufruf aus den Tabellen in OTM Empfang (Klick auf den Namen) oder mit ?var-node=<name>.",
+ "links": [
+  {
+   "title": "OTM Empfang",
+   "type": "link",
+   "url": "/d/otm-empfang",
+   "icon": "dashboard",
+   "keepTime": true
+  },
+  {
+   "title": "OTM Heatmap",
+   "type": "link",
+   "url": "/d/otm-heatmap",
+   "icon": "dashboard",
+   "keepTime": true
+  }
+ ],
+ "templating": {
+  "list": [
+   {
+    "name": "node",
+    "label": "Empfaenger",
+    "type": "query",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "otm-vm"
+    },
+    "query": {
+     "query": "label_values(otm_node_online, node)",
+     "refId": "node"
+    },
+    "definition": "label_values(otm_node_online, node)",
+    "refresh": 2,
+    "sort": 1,
+    "multi": false,
+    "includeAll": false,
+    "current": {},
+    "options": []
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1,
+   "title": "Firmware",
+   "type": "table",
+   "description": "Build-Nummer, Commit, otm-bridge und Modell, wie der Empfaenger sie zuletzt gemeldet hat (otm/<node>/build); alle Staende im gewaehlten Zeitraum, der hoechste oben.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "1000 * max by (version, commit, bridge, model) (tlast_over_time(otm_node_build{node=\"$node\"}[$__range]))",
+     "instant": true,
+     "range": false,
+     "format": "table"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true,
+       "node": true,
+       "__name__": true
+      },
+      "indexByName": {
+       "version": 0,
+       "commit": 1,
+       "bridge": 2,
+       "model": 3,
+       "Value": 4
+      },
+      "renameByName": {
+       "version": "Build",
+       "commit": "Commit",
+       "bridge": "otm-bridge",
+       "model": "Modell",
+       "Value": "zuletzt gemeldet"
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "Build",
+        "desc": true
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "align": "left"
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "zuletzt gemeldet"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "dateTimeAsLocal"
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   }
+  },
+  {
+   "id": 2,
+   "title": "Status",
+   "description": "Zuletzt gemeldeter Zustand (retained Statusmeldung am Proxy, Last Will bei Verbindungsabbruch).",
+   "type": "stat",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 14,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "last_over_time(otm_node_online{node=\"$node\"}[7d])",
+     "instant": true,
+     "range": false
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "text",
+        "value": null
+       }
+      ]
+     },
+     "mappings": [
+      {
+       "type": "value",
+       "options": {
+        "1": {
+         "text": "online",
+         "color": "green",
+         "index": 0
+        },
+        "0": {
+         "text": "offline",
+         "color": "red",
+         "index": 1
+        }
+       }
+      }
+     ]
+    },
+    "overrides": []
+   },
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   }
+  },
+  {
+   "id": 3,
+   "title": "Uptime",
+   "description": "Zeit seit dem letzten Start des Empfaengers (its/<node>/stats, jede Minute).",
+   "type": "stat",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 18,
+    "y": 0,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "last_over_time(otm_node_uptime{node=\"$node\"}[15m])",
+     "instant": true,
+     "range": false
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "text",
+        "value": null
+       }
+      ]
+     },
+     "unit": "dtdurations"
+    },
+    "overrides": []
+   },
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   }
+  },
+  {
+   "id": 4,
+   "title": "ITS-Frames im Zeitraum",
+   "description": "ITS-G5-Frames (GeoNetworking), die dieser Empfaenger im oben gewaehlten Zeitraum gemeldet hat.",
+   "type": "stat",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 4,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_frames{node=\"$node\"}[$__range]))",
+     "instant": true,
+     "range": false
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "text",
+        "value": null
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   }
+  },
+  {
+   "id": 5,
+   "title": "Nur hier gesehen",
+   "description": "Frames im Zeitraum, die kein anderer unserer Empfaenger hatte. Zeigt, was dieser Standort zur Abdeckung beitraegt.",
+   "type": "stat",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 6,
+    "y": 4,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_exclusive{node=\"$node\"}[$__range]))",
+     "instant": true,
+     "range": false
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "text",
+        "value": null
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   }
+  },
+  {
+   "id": 6,
+   "title": "Anteil an allen Frames",
+   "description": "Anteil dieses Empfaengers an allen verschiedenen Frames aller Empfaenger im Zeitraum.",
+   "type": "stat",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 4,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_frames{node=\"$node\"}[$__range])) / sum(increase(otm_union_frames[$__range]))",
+     "instant": true,
+     "range": false
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "decimals": 1,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "text",
+        "value": null
+       }
+      ]
+     },
+     "unit": "percentunit"
+    },
+    "overrides": []
+   },
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   }
+  },
+  {
+   "id": 7,
+   "title": "Empfangs-Health (6 h)",
+   "description": "Ab otm-bridge 0.16.0. 'empfaengt ITS' = mindestens ein ITS-Frame in 6 Stunden; 'nur Rauschen' = das Radio sieht Frames oder Fehler, aber kein ITS; 'taub?' = kein Zaehler bewegt sich.",
+   "type": "stat",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 18,
+    "y": 4,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "clamp_max(sum((increase(otm_rx_pkts{node=\"$node\"}[6h]) + increase(otm_rx_crc{node=\"$node\"}[6h]) + increase(otm_rx_phy{node=\"$node\"}[6h]))), 1) + (clamp_max(sum(increase(otm_frames{node=\"$node\"}[6h])), 1) or sum((increase(otm_rx_pkts{node=\"$node\"}[6h]) + increase(otm_rx_crc{node=\"$node\"}[6h]) + increase(otm_rx_phy{node=\"$node\"}[6h]))) * 0)",
+     "instant": true,
+     "range": false
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "text",
+        "value": null
+       }
+      ]
+     },
+     "mappings": [
+      {
+       "type": "value",
+       "options": {
+        "2": {
+         "text": "empfaengt ITS",
+         "color": "green",
+         "index": 0
+        },
+        "1": {
+         "text": "nur Rauschen",
+         "color": "orange",
+         "index": 1
+        },
+        "0": {
+         "text": "taub?",
+         "color": "red",
+         "index": 2
+        }
+       }
+      }
+     ]
+    },
+    "overrides": []
+   },
+   "options": {
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   }
+  },
+  {
+   "id": 8,
+   "title": "ITS-Frames pro Stunde",
+   "description": "Frames dieses Empfaengers und davon die, die nur er hatte; zum Vergleich alle Empfaenger zusammen (jeder Frame einmal).",
+   "type": "timeseries",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 24,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_frames{node=\"$node\"}[1h]))",
+     "legendFormat": "$node"
+    },
+    {
+     "refId": "B",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_exclusive{node=\"$node\"}[1h]))",
+     "legendFormat": "nur $node"
+    },
+    {
+     "refId": "C",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_union_frames[1h]))",
+     "legendFormat": "alle Empfaenger zusammen"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "fillOpacity": 8,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 9,
+   "title": "Funk-Zaehler pro Stunde",
+   "description": "ath9k-Zaehler aus debugfs (otm/<node>/health): alle Frames, CRC-Fehler (Praeambel erkannt, Inhalt kaputt), PHY-Fehler (Energie gesehen, nichts Dekodierbares).",
+   "type": "timeseries",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 16,
+    "w": 8,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_rx_pkts{node=\"$node\"}[1h]))",
+     "legendFormat": "Frames gesamt"
+    },
+    {
+     "refId": "B",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_rx_crc{node=\"$node\"}[1h]))",
+     "legendFormat": "CRC-Fehler"
+    },
+    {
+     "refId": "C",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_rx_phy{node=\"$node\"}[1h]))",
+     "legendFormat": "PHY-Fehler"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "fillOpacity": 8,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 10,
+   "title": "Rauschen",
+   "description": "Grundrauschen des Kanals laut Survey des Treibers.",
+   "type": "timeseries",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 16,
+    "w": 8,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "max(otm_rx_noise{node=\"$node\"} < 0)",
+     "legendFormat": "Rauschen"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "fillOpacity": 0,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      },
+      "axisSoftMin": -110,
+      "axisSoftMax": -80
+     },
+     "unit": "suffix: dBm",
+     "decimals": 0
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 11,
+   "title": "Kanal belegt",
+   "description": "Anteil der Zeit, in der der Kanal belegt war (Survey: busy/active), je Stunde.",
+   "type": "timeseries",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 16,
+    "w": 8,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "100 * sum(increase(otm_rx_busy{node=\"$node\"}[1h])) / sum(increase(otm_rx_active{node=\"$node\"}[1h]))",
+     "legendFormat": "belegt"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "fillOpacity": 8,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "unit": "percent",
+     "decimals": 1
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 12,
+   "title": "Online",
+   "type": "state-timeline",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 24,
+    "w": 12,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "otm_node_online{node=\"$node\"}",
+     "legendFormat": "$node"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "mappings": [
+      {
+       "type": "value",
+       "options": {
+        "1": {
+         "text": "online",
+         "color": "green",
+         "index": 0
+        },
+        "0": {
+         "text": "offline",
+         "color": "red",
+         "index": 1
+        }
+       }
+      }
+     ],
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "green"
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "showValue": "auto",
+    "mergeValues": true,
+    "legend": {
+     "showLegend": false
+    }
+   },
+   "description": "Gruen = online, rot = offline (retained Statusmeldung am Proxy, Last Will bei Verbindungsabbruch)."
+  },
+  {
+   "id": 13,
+   "title": "Uptime",
+   "description": "Sekunden seit dem Start; ein Sprung nach unten ist ein Neustart (Update, Stromausfall, procd).",
+   "type": "timeseries",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 24,
+    "w": 12,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "otm_node_uptime{node=\"$node\"}",
+     "legendFormat": "Uptime"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "fillOpacity": 8,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "unit": "dtdurations"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 14,
+   "title": "Heatmap: Absenderpositionen",
+   "description": "Wo die Sender standen, deren Frames dieser Empfaenger im Zeitraum hatte (Position aus dem GeoNetworking-Header, Raster ~100 m). Blaues Dreieck: der Empfaenger selbst, wenn er seine Position teilt.",
+   "type": "geomap",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 30,
+    "w": 24,
+    "h": 14
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum by (lat, lon) (increase(otm_pos{node=\"$node\"}[$__range]))",
+     "instant": true,
+     "range": false,
+     "format": "table"
+    },
+    {
+     "refId": "B",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "max by (node, lat, lon) (last_over_time(otm_node_location{node=\"$node\"}[7d]))"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "convertFieldType",
+     "options": {
+      "fields": {},
+      "conversions": [
+       {
+        "targetField": "lat",
+        "destinationType": "number"
+       },
+       {
+        "targetField": "lon",
+        "destinationType": "number"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "continuous-YlRd"
+     },
+     "displayName": "Frames"
+    },
+    "overrides": []
+   },
+   "options": {
+    "view": {
+     "id": "fit",
+     "allLayers": true,
+     "lat": 0,
+     "lon": 0,
+     "zoom": 14,
+     "maxZoom": 17
+    },
+    "controls": {
+     "showZoom": true,
+     "mouseWheelZoom": true,
+     "showAttribution": true,
+     "showScale": true,
+     "showMeasure": false,
+     "showDebug": false
+    },
+    "basemap": {
+     "type": "xyz",
+     "name": "CARTO hell (tiles.ffdus.de)",
+     "config": {
+      "url": "https://tiles.ffdus.de/carto/light_all/{z}/{x}/{y}.png",
+      "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap-Mitwirkende</a>, © <a href=\"https://carto.com/attributions\">CARTO</a>"
+     }
+    },
+    "layers": [
+     {
+      "type": "heatmap",
+      "name": "Frames",
+      "tooltip": true,
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "blur": 25,
+       "radius": 14,
+       "weight": {
+        "field": "Value",
+        "fixed": 1,
+        "min": 0,
+        "max": 1
+       }
+      },
+      "opacity": 0.8,
+      "filterData": {
+       "id": "byRefId",
+       "options": "A"
+      }
+     },
+     {
+      "type": "markers",
+      "name": "Zellen",
+      "tooltip": true,
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "showLegend": false,
+       "style": {
+        "size": {
+         "fixed": 3
+        },
+        "opacity": 0.35,
+        "symbol": {
+         "mode": "fixed",
+         "fixed": "img/icons/marker/circle.svg"
+        },
+        "color": {
+         "fixed": "dark-red"
+        }
+       }
+      },
+      "filterData": {
+       "id": "byRefId",
+       "options": "A"
+      }
+     },
+     {
+      "type": "markers",
+      "name": "Empfaenger",
+      "tooltip": true,
+      "filterData": {
+       "id": "byRefId",
+       "options": "B"
+      },
+      "location": {
+       "mode": "coords",
+       "latitude": "lat",
+       "longitude": "lon"
+      },
+      "config": {
+       "showLegend": false,
+       "style": {
+        "size": {
+         "fixed": 9
+        },
+        "opacity": 1,
+        "symbol": {
+         "mode": "fixed",
+         "fixed": "img/icons/marker/triangle.svg"
+        },
+        "color": {
+         "fixed": "blue"
+        },
+        "text": {
+         "mode": "field",
+         "field": "node",
+         "fixed": ""
+        },
+        "textConfig": {
+         "fontSize": 11,
+         "offsetY": -14,
+         "textAlign": "center",
+         "textBaseline": "bottom"
+        }
+       }
+      }
+     }
+    ],
+    "tooltip": {
+     "mode": "details"
+    }
+   }
+  },
+  {
+   "id": 15,
+   "title": "MQTT-Nachrichten pro Stunde (auch Nicht-ITS)",
+   "description": "Alles, was der Empfaenger als packet gemeldet hat, auch Frames ohne GeoNetworking.",
+   "type": "timeseries",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 44,
+    "w": 24,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "sum(increase(otm_mqtt{node=\"$node\"}[1h]))",
+     "legendFormat": "$node"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "fillOpacity": 8,
+      "lineWidth": 1,
+      "lineInterpolation": "linear",
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  }
+ ]
+}

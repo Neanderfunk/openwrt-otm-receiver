@@ -9,7 +9,7 @@ cat grafana-server.env >> "$f"
 install -m 644 -o root -g grafana datasource.yaml /etc/grafana/provisioning/datasources/otm.yaml
 install -m 644 -o root -g grafana dashboards.yaml /etc/grafana/provisioning/dashboards/otm.yaml
 install -d -o grafana -g grafana /var/lib/grafana/dashboards/otm
-install -m 644 -o grafana -g grafana otm-empfang.json otm-heatmap.json /var/lib/grafana/dashboards/otm/
+install -m 644 -o grafana -g grafana otm-empfang.json otm-heatmap.json otm-knoten.json /var/lib/grafana/dashboards/otm/
 systemctl daemon-reload
 systemctl enable grafana-server
 systemctl restart grafana-server

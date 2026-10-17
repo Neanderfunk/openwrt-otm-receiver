@@ -56,7 +56,8 @@ Wie die Teile ineinandergreifen: vom Funkrahmen auf 5.9 GHz bis zu OpenTrafficMa
 5. **Statistik.** `otm-stats.py` liest am Proxy mit, entdoppelt Frames über alle Empfänger,
    wertet Positionen aus dem GeoNetworking-Header aus und schreibt jede Minute ins
    Influx-Line-Protokoll von VictoriaMetrics. Grafana zeigt daraus die Dashboards
-   „OTM Empfang“ und „OTM Heatmap“.
+   „OTM Empfang“, „OTM Heatmap“ und „OTM Knoten“ (je Empfänger,
+   aus den Tabellen von „OTM Empfang“ verlinkt).
 6. **Betrieb.** Über den Tunnel ist jedes Gerät per SSH als `<knoten>.otm` erreichbar, sofern ein
    Key im Image ist. Der Autoupdater holt einmal am Tag das signierte Manifest von
    `firmware.ffnef.de`.
