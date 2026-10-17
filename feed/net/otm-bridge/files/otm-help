@@ -16,7 +16,8 @@ w() {	# Schluessel, Erklaerung, Vorgabe (wenn leer)
 }
 
 if otm_configmode; then
-	echo "Config-Mode: an. Verlassen: otm-configmode exit (Neustart in den Normalbetrieb)"
+	echo "Config-Mode: an. Verlassen: otm-configmode exit (Neustart in den Normalbetrieb);"
+	echo "endet von selbst 120 Minuten nach dem Start in den Config-Mode."
 else
 	echo "Normalbetrieb. Config-Mode: otm-configmode enter, oder Reset-Taster ~10 s halten"
 fi

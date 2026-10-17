@@ -9,7 +9,8 @@ if otm_configmode; then
 
   Einstellungen und Befehle:  otm-help
   Config-Mode verlassen:      otm-configmode exit   (Neustart)
-  Auch ein Neustart oder Strom aus/an fuehrt in den Normalbetrieb.
+  Auch ein Neustart oder Strom aus/an fuehrt in den Normalbetrieb;
+  von selbst geschieht das 120 Minuten nach dem Start in den Config-Mode.
  ===================================================================
 
 EOF

@@ -246,7 +246,7 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   Versionen und Verhalten bei kaputtem IPv6: [docs/management-vpn.md](docs/management-vpn.md).
 - **Config-Mode** (ab otm-bridge 0.18.0): Reset-Taster etwa 10 Sekunden halten oder
   `otm-configmode enter`; dann alle Ports fest `192.168.1.1/24` mit DHCP-Server und SSH für
-  root ohne Passwort, sonst nichts. Verlassen mit `otm-configmode exit` oder jedem Neustart.
+  root ohne Passwort, sonst nichts. Verlassen mit `otm-configmode exit`, jedem Neustart oder von selbst nach 120 Minuten.
   `otm-help` zeigt die wichtigsten UCI-Schlüssel (Name, Position teilen, WLAN-Rückfall,
   Autoupdater) mit ihren Werten. Einzelheiten: [docs/einstellungen.md](docs/einstellungen.md).
 - **Autoupdater**: einmal am Tag, siehe [Autoupdater](#autoupdater).

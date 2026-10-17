@@ -29,6 +29,8 @@ Reset-Tasters (kurz = Neustart, ab 5 s = Werksreset) ist stillgelegt, auch das w
 - `otm-configmode exit`: richtet SSH nach den hinterlegten Keys ein und startet neu.
 - Jeder andere Neustart, auch Strom aus und wieder an, führt ebenfalls in den Normalbetrieb.
   Der Config-Mode gilt immer nur für einen Start.
+- Von selbst nach **120 Minuten**: Dann startet das Gerät neu in den Normalbetrieb, falls der
+  Config-Mode versehentlich ausgelöst wurde.
 
 `otm-configmode` ohne Argument sagt, in welchem Modus das Gerät läuft.
 

@@ -8,7 +8,8 @@
 # Im Config-Mode laufen alle Ports fest auf 192.168.1.1/24 mit DHCP-Server,
 # SSH laesst root ohne Passwort herein; keine Daten an den Broker, kein
 # Tunnel, kein Autoupdater. Der Merker gilt nur fuer einen Start (wie bei
-# Gluon): Neustart oder Stromausfall fuehren zurueck in den Normalbetrieb.
+# Gluon): Neustart oder Stromausfall fuehren zurueck in den Normalbetrieb, nach
+# 120 Minuten startet das Geraet von selbst neu (otm-configmode.init).
 
 . /lib/otm-bridge/functions.sh
 
