@@ -1160,7 +1160,7 @@
        "showLegend": false,
        "style": {
         "size": {
-         "fixed": 22
+         "fixed": 13
         },
         "opacity": 1,
         "symbol": {
@@ -1177,7 +1177,7 @@
         },
         "textConfig": {
          "fontSize": 11,
-         "offsetY": -20,
+         "offsetY": -13,
          "textAlign": "center",
          "textBaseline": "bottom"
         }
