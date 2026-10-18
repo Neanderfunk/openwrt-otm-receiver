@@ -919,7 +919,7 @@
   {
    "id": 14,
    "title": "Heatmap: Absenderpositionen",
-   "description": "Wo die Sender standen, deren Frames dieser Empfaenger im Zeitraum hatte (Position aus dem GeoNetworking-Header, Raster ~100 m). Blaues Dreieck: der Empfaenger selbst, wenn er seine Position teilt.",
+   "description": "Wo die Sender standen, deren Frames dieser Empfaenger im Zeitraum hatte (Position aus dem GeoNetworking-Header, Raster ~100 m). Blauer Funkmast: der Empfaenger selbst, wenn er seine Position teilt.",
    "type": "geomap",
    "datasource": {
     "type": "prometheus",
@@ -1160,12 +1160,12 @@
        "showLegend": false,
        "style": {
         "size": {
-         "fixed": 9
+         "fixed": 22
         },
         "opacity": 1,
         "symbol": {
          "mode": "fixed",
-         "fixed": "img/icons/marker/triangle.svg"
+         "fixed": "img/icons/marker/otm-funkmast.svg"
         },
         "color": {
          "fixed": "blue"
@@ -1177,7 +1177,7 @@
         },
         "textConfig": {
          "fontSize": 11,
-         "offsetY": -14,
+         "offsetY": -20,
          "textAlign": "center",
          "textBaseline": "bottom"
         }

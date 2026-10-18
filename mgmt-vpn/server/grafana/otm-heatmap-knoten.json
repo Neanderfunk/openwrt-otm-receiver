@@ -312,12 +312,12 @@
        "showLegend": false,
        "style": {
         "size": {
-         "fixed": 9
+         "fixed": 22
         },
         "opacity": 1,
         "symbol": {
          "mode": "fixed",
-         "fixed": "img/icons/marker/triangle.svg"
+         "fixed": "img/icons/marker/otm-funkmast.svg"
         },
         "color": {
          "fixed": "blue"
@@ -329,7 +329,7 @@
         },
         "textConfig": {
          "fontSize": 11,
-         "offsetY": -14,
+         "offsetY": -20,
          "textAlign": "center",
          "textBaseline": "bottom"
         }

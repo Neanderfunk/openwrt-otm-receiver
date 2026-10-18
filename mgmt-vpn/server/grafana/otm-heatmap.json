@@ -12,7 +12,7 @@
   "from": "now-7d",
   "to": "now"
  },
- "description": "Wo die empfangenen ITS-G5-Sender standen (Absenderposition aus dem GeoNetworking-Header, Raster ~100 m). Blaue Dreiecke: Empfaenger, die ihre Position teilen (share_location).",
+ "description": "Wo die empfangenen ITS-G5-Sender standen (Absenderposition aus dem GeoNetworking-Header, Raster ~100 m). Blaue Funkmasten: Empfaenger, die ihre Position teilen (share_location).",
  "links": [
   {
    "title": "OTM Empfang",
@@ -283,12 +283,12 @@
        "showLegend": false,
        "style": {
         "size": {
-         "fixed": 9
+         "fixed": 22
         },
         "opacity": 1,
         "symbol": {
          "mode": "fixed",
-         "fixed": "img/icons/marker/triangle.svg"
+         "fixed": "img/icons/marker/otm-funkmast.svg"
         },
         "color": {
          "fixed": "blue"
@@ -300,7 +300,7 @@
         },
         "textConfig": {
          "fontSize": 11,
-         "offsetY": -14,
+         "offsetY": -20,
          "textAlign": "center",
          "textBaseline": "bottom"
         }
