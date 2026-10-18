@@ -54,11 +54,17 @@ w autoupdater.settings.branch
 w autoupdater.stable.good_signatures	"Mindestzahl gueltiger Signaturen"
 cat <<EOF
 
-Aendern, z. B.:
+Aendern, z. B. Position teilen:
   uci set otm-bridge.location.share_location=1
   uci set otm-bridge.location.latitude=51.2345
   uci set otm-bridge.location.longitude=6.789
   uci commit otm-bridge && reload_config
+
+Name auf den Karten aendern (nicht der Hostname, der gilt nur fuer DHCP/SSH):
+  uci set otm-bridge.main.node='Hilden-Bahnhof'
+  uci commit otm-bridge && reload_config
+  Ein neuer Name ist fuer OpenTrafficMap und das Grafana ein neuer Empfaenger;
+  der alte bleibt dort mit seinem Verlauf und faellt nach 24 h offline heraus.
 
 SSH-Keys: /etc/dropbear/authorized_keys (ein Key je Zeile). Mit Key ist SSH
 im Normalbetrieb per Key offen, ohne Key zu; uebernommen beim Verlassen des

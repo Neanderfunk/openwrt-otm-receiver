@@ -83,7 +83,8 @@ reload_config
 Ein neuer Name ist für OpenTrafficMap und unser Grafana ein neuer Empfänger. Der alte Name
 bleibt im Grafana mit seinem Verlauf stehen und fällt aus den Tabellen, wenn er 24 Stunden
 offline ist; ganz entfernen: leere retained Nachricht auf `its/<alter name>/status` am Proxy.
-Der Hostname des Geräts (DHCP) ändert sich dabei nicht.
+Der Hostname des Geräts (DHCP, SSH, `<hostname>.otm` im Tunnel) ändert sich dabei nicht, und
+umgekehrt ändert ein neuer Hostname den Namen auf den Karten nicht.
 
 ## Weitere Befehle
 
