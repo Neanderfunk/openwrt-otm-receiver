@@ -162,4 +162,13 @@ if ! uci -q get otm-bridge.location >/dev/null; then
 	uci commit otm-bridge
 fi
 
+# --- /etc/profile.d: unsere Dateien aus dem neuen Image ------------------
+# sysupgrade nimmt das ganze Verzeichnis mit (keep.d/base-files), die alten
+# Kopien ueberdeckten sonst bei jedem Update die neuen aus dem Image
+# (Login-Hinweis otm.sh, stillgelegte root-Passwort-Warnung).
+for f in otm.sh 00-passwordless-root.sh; do
+	[ -f /rom/etc/profile.d/$f ] || continue
+	cmp -s /rom/etc/profile.d/$f /etc/profile.d/$f || cp /rom/etc/profile.d/$f /etc/profile.d/$f
+done
+
 exit 0
