@@ -952,7 +952,7 @@
      "instant": true,
      "range": false,
      "format": "table",
-     "expr": "(max by (node, lat, lon) (last_over_time(otm_node_location{node=\"$node\"}[7d])) * on (node) sum by (node) (increase(otm_frames{node=\"$node\"}[$__range]))) or (max by (node, lat, lon) (last_over_time(otm_node_location{node=\"$node\"}[7d])) * 0)"
+     "expr": "(max by (node, lat, lon) (last_over_time(otm_node_location{node=\"$node\"}[15m])) * on (node) sum by (node) (increase(otm_frames{node=\"$node\"}[$__range]))) or (max by (node, lat, lon) (last_over_time(otm_node_location{node=\"$node\"}[15m])) * 0)"
     }
    ],
    "transformations": [
