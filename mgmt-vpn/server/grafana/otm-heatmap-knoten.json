@@ -12,7 +12,7 @@
   "from": "now-7d",
   "to": "now"
  },
- "description": "Absenderpositionen je Empfaenger nebeneinander (Raster ~100 m). Laedt eine Karte je Empfaenger, daher eigene Seite.",
+ "description": "Absenderpositionen je Empfaenger nebeneinander (Raster ~50 m). Laedt eine Karte je Empfaenger, daher eigene Seite.",
  "links": [
   {
    "title": "OTM Heatmap",

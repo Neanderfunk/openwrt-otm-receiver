@@ -262,7 +262,7 @@ VictoriaMetrics) und Grafana unter <https://otm.ffnef.de>, ohne Anmeldung lesbar
 
 - **OTM Empfang**: Frames je Empfänger, nur von einem Empfänger gesehene Frames, Anteil,
   verschiedene Absender, Online/Uptime, Firmware je Empfänger, Empfangs-Health (6 h)
-- **OTM Heatmap**: Absenderpositionen (aus dem GeoNetworking-Header, Raster ~100 m) über alle
+- **OTM Heatmap**: Absenderpositionen (aus dem GeoNetworking-Header, Raster ~50 m) über alle
   Empfänger, dazu geteilte Empfängerpositionen; Durchschnitts- und Höchstgeschwindigkeit je
   Rasterzelle (nur Fahrzeuge, keine RSU); Verkehrsmuster nach Wochentag und Stunde
   (Fahrzeuge je Minute, mittlere Geschwindigkeit, letzte 28 Tage). Kacheln von tiles.ffdus.de.

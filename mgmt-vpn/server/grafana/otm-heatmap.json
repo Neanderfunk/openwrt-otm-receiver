@@ -12,7 +12,7 @@
   "from": "now-7d",
   "to": "now"
  },
- "description": "Wo die empfangenen ITS-G5-Sender standen (Absenderposition aus dem GeoNetworking-Header, Raster ~100 m). Blaue Funkmasten: Empfaenger, die ihre Position teilen (share_location).",
+ "description": "Wo die empfangenen ITS-G5-Sender standen (Absenderposition aus dem GeoNetworking-Header, Raster ~50 m). Blaue Funkmasten: Empfaenger, die ihre Position teilen (share_location).",
  "links": [
   {
    "title": "OTM Empfang",
@@ -316,7 +316,7 @@
   {
    "id": 4,
    "title": "Durchschnittsgeschwindigkeit",
-   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen je Rasterzelle (~100 m) im Zeitraum, aus dem GeoNetworking-Header (jeder Frame einmal, auch wenn ihn mehrere Empfaenger hatten). Nur Fahrzeuge, keine Verkehrsinfrastruktur (RSU); stehende Fahrzeuge zaehlen mit 0 km/h, blau heisst also langsam oder Stau. Zellen mit weniger als 5 Meldungen bleiben weg. Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
+   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen je Rasterzelle (~50 m) im Zeitraum, aus dem GeoNetworking-Header (jeder Frame einmal, auch wenn ihn mehrere Empfaenger hatten). Nur Fahrzeuge, keine Verkehrsinfrastruktur (RSU); stehende Fahrzeuge (unter 1 km/h) zaehlen nicht mit, blau heisst also langsam fahrend (zaeher Verkehr). Zellen mit weniger als 5 Meldungen bleiben weg. Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
    "type": "geomap",
    "datasource": {
     "type": "prometheus",
@@ -912,7 +912,7 @@
   {
    "id": 7,
    "title": "Verkehrsmuster: Geschwindigkeit im Mittel in km/h (letzte 28 Tage)",
-   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen nach Wochentag und Stunde (Ortszeit), ueber alle Empfaenger. Blau = langsam. Feste Zeitspanne 28 Tage, Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
+   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen nach Wochentag und Stunde (Ortszeit), ueber alle Empfaenger. Blau = langsam. Stehende Fahrzeuge (unter 1 km/h) zaehlen nicht mit. Feste Zeitspanne 28 Tage, Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
    "type": "table",
    "datasource": {
     "type": "prometheus",

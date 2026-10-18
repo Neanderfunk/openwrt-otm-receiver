@@ -24,8 +24,9 @@
 #   otm_rx_{cap,pkts,crc,phy,active,busy,rxt}{node}  Zaehler aus
 #                           otm/<node>/health (ab 0.16.0), otm_rx_noise{node} dBm
 #   otm_speed_sum{lat,lon}  Summe der Geschwindigkeiten (km/h) je Rasterzelle,
-#   otm_speed_n{lat,lon}    und Zahl der Meldungen; nur Fahrzeuge (Stationstyp
-#                           1-11, keine RSU), jeder Frame einmal; Mittel = sum/n
+#   otm_speed_n{lat,lon}    und Zahl der Meldungen; nur fahrende Fahrzeuge (Stationstyp
+#                           1-11, keine RSU, ab VSTEHT km/h), jeder Frame einmal;
+#                           Mittel = sum/n
 #   otm_speed_max{lat,lon}  hoechste Geschwindigkeit der Minute je Zelle (Gauge,
 #                           nur geschrieben, wenn es Meldungen gab)
 #   otm_traffic_fz{wd,h}    verschiedene Fahrzeuge je Minute, aufsummiert je
@@ -47,14 +48,16 @@
 #
 # Absenderposition: Long Position Vector aus dem GeoNetworking-Header (bei
 # signierten Paketen im unsecuredData-Teil von IEEE 1609.2), gerundet auf
-# RASTER Nachkommastellen (3 = ~110 m Nord-Sued, ~70 m Ost-West). Aus
+# Raster RASTER_LAT x RASTER_LON Grad (seit 19.10.2026 ~50 x 50 m um 50 Grad Nord;
+# vorher 3 Nachkommastellen, ~110 x 70 m). Aus
 # demselben Vektor: Stationstyp (aus der GN-Adresse) und Geschwindigkeit.
 import json, struct, threading, time, urllib.request, collections, datetime
 from zoneinfo import ZoneInfo
 import paho.mqtt.client as mqtt
 
 FENSTER = 5
-RASTER = 3
+RASTER_LAT = 0.00045                 # ~50 m Nord-Sued
+RASTER_LON = 0.0007                  # ~50 m Ost-West bei 50 Grad Nord
 VM = 'http://127.0.0.1:8428/write'
 lock = threading.Lock()
 offen = {}                       # key -> [erste_zeit, set(nodes)]
@@ -69,6 +72,7 @@ OFFLINE_MAX = 86400              # laenger offline: nicht mehr fortschreiben (fa
 stunde = {'id': None}             # laufende Stunde: Fahrzeuge gesamt und je Empfaenger
 FAHRZEUG = range(1, 12)          # ETSI StationType: 1 Fussgaenger .. 11 Tram; 15 = RSU
 VMAX = 250                       # km/h, darueber unplausibel
+VSTEHT = 1                       # km/h, darunter steht es: zaehlt nicht in Mittelwerte
 TZ = ZoneInfo('Europe/Berlin')
 TAGE = ('1-Mo', '2-Di', '3-Mi', '4-Do', '5-Fr', '6-Sa', '7-So')
 
@@ -122,7 +126,7 @@ def lpv(f):
 	v = (pv[20] & 0x7f) << 8 | pv[21]
 	kmh = abs(v - 0x8000 if v & 0x4000 else v) * 0.036
 	fz = round(kmh, 1) if (pv[0] >> 2) & 0x1f in FAHRZEUG and kmh <= VMAX else None
-	return ('%.*f' % (RASTER, lat), '%.*f' % (RASTER, lon)), fz
+	return ('%.5f' % (round(lat / RASTER_LAT) * RASTER_LAT), '%.5f' % (round(lon / RASTER_LON) * RASTER_LON)), fz
 
 def on_message(c, u, m):
 	t = m.topic.split('/')
@@ -225,21 +229,25 @@ def auswerten():
 				zaehler[('pos_union', ('', pos))] += 1
 			if fz is not None:
 				fahrzeuge.add(k[0])
-				vsum += fz
-				vn += 1
+				if fz >= VSTEHT:
+					vsum += fz
+					vn += 1
 				if pos:
-					zaehler[('speed_sum', ('', pos))] += fz
-					zaehler[('speed_n', ('', pos))] += 1
+					if fz >= VSTEHT:
+						zaehler[('speed_sum', ('', pos))] += fz
+						zaehler[('speed_n', ('', pos))] += 1
 					vmax[('', pos)] = max(vmax.get(('', pos), 0), fz)
 			for n in nodes:
 				zaehler[('frames', n)] += 1
 				if fz is not None:
 					nfz[n].add(k[0])
-					nv[n][0] += fz
-					nv[n][1] += 1
+					if fz >= VSTEHT:
+						nv[n][0] += fz
+						nv[n][1] += 1
 					if pos:
-						zaehler[('speed_node_sum', (n, pos))] += fz
-						zaehler[('speed_node_n', (n, pos))] += 1
+						if fz >= VSTEHT:
+							zaehler[('speed_node_sum', (n, pos))] += fz
+							zaehler[('speed_node_n', (n, pos))] += 1
 						vmax[(n, pos)] = max(vmax.get((n, pos), 0), fz)
 				if len(nodes) == 1:
 					zaehler[('exclusive', n)] += 1
