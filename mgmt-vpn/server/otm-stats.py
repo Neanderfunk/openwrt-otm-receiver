@@ -34,8 +34,13 @@
 #                           Mittel = fz/min
 #   otm_traffic_speed_sum{wd,h}, otm_traffic_speed_n{wd,h}  Geschwindigkeit je
 #                           Wochentag/Stunde wie oben
-#   otm_speed_node_{sum,n,max}{node,lat,lon}, otm_traffic_node_{fz,min,speed_sum,
-#                           speed_n}{node,wd,h}  dasselbe je Empfaenger (was er
+#   otm_traffic_fzh{wd,h}   verschiedene Fahrzeuge je ganzer Stunde, aufsummiert je
+#   otm_traffic_hours{wd,h} Wochentag/Stunde, dazu die Zahl dieser Stunden (mit
+#                           mindestens einem Empfaenger online); Mittel = fzh/hours.
+#                           Gezaehlt beim Stundenwechsel; die Stunde, in der
+#                           otm-stats startet, zaehlt unvollstaendig
+#   otm_speed_node_{sum,n,max}{node,lat,lon}, otm_traffic_node_{fz,min,fzh,hours,
+#                           speed_sum,speed_n}{node,wd,h}  dasselbe je Empfaenger (was er
 #                           gehoert hat; min = Minuten, in denen er online war).
 #                           Eigene Namen, damit Summen ueber die Gesamtwerte
 #                           nicht doppelt zaehlen
@@ -61,6 +66,7 @@ gesundheit = {}                  # node -> (zeit, {feld: wert}) aus otm/<node>/h
 GESUND_MAX = 300                 # aeltere Health-Werte nicht weiterschreiben (offline != taub)
 offline_seit = {}                # node -> Zeitpunkt der Offline-Meldung (seit Start von otm-stats)
 OFFLINE_MAX = 86400              # laenger offline: nicht mehr fortschreiben (faellt aus den Tabellen)
+stunde = {'id': None}             # laufende Stunde: Fahrzeuge gesamt und je Empfaenger
 FAHRZEUG = range(1, 12)          # ETSI StationType: 1 Fussgaenger .. 11 Tram; 15 = RSU
 VMAX = 250                       # km/h, darueber unplausibel
 TZ = ZoneInfo('Europe/Berlin')
@@ -242,8 +248,23 @@ def auswerten():
 		gauges[('union_stations', '')] = len(stationen)
 		lt = datetime.datetime.fromtimestamp(now - 30, TZ)
 		slot = (TAGE[lt.weekday()], '%02d' % lt.hour)
+		sid = lt.strftime('%Y%m%d%H')
+		if stunde['id'] != sid:
+			if stunde['id'] is not None:     # vorige Stunde abschliessen
+				if stunde['online']:
+					zaehler[('traffic_fzh', stunde['slot'])] += len(stunde['fz'])
+					zaehler[('traffic_hours', stunde['slot'])] += 1
+				for n in stunde['knoten']:
+					zaehler[('traffic_node_fzh', (n,) + stunde['slot'])] += len(stunde['nfz'].get(n, ()))
+					zaehler[('traffic_node_hours', (n,) + stunde['slot'])] += 1
+			stunde.update(id=sid, slot=slot, fz=set(), nfz=collections.defaultdict(set), knoten=set(), online=False)
+		stunde['fz'] |= fahrzeuge
+		for n, f in nfz.items():
+			stunde['nfz'][n] |= f
 		for (m, n), v in list(gauges.items()):
 			if m == 'node_online' and v == 1:
+				stunde['knoten'].add(n)
+				stunde['online'] = True
 				zaehler[('traffic_node_min', (n,) + slot)] += 1
 				zaehler[('traffic_node_fz', (n,) + slot)] += len(nfz.get(n, ()))
 				zaehler[('traffic_node_speed_sum', (n,) + slot)] += nv[n][0] if n in nv else 0.0

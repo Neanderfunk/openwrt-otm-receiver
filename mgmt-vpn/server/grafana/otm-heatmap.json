@@ -783,8 +783,8 @@
   },
   {
    "id": 6,
-   "title": "Verkehrsmuster: Fahrzeuge je Minute (letzte 28 Tage)",
-   "description": "Wie viele verschiedene Fahrzeuge die Empfaenger zusammen im Mittel pro Minute hoeren, nach Wochentag und Stunde (Ortszeit). Gemittelt ueber alle Minuten, in denen mindestens ein Empfaenger online war. Fahrzeug = Absender mit Stationstyp Fahrzeug; wechselt ein Fahrzeug seine Kennung (Pseudonym), zaehlt es kurz doppelt. Feste Zeitspanne 28 Tage, Daten ab 17.10.2026.",
+   "title": "Verkehrsmuster: Fahrzeuge pro Stunde (letzte 28 Tage)",
+   "description": "Wie viele verschiedene Fahrzeuge die Empfaenger zusammen im Mittel pro Stunde hoeren, nach Wochentag und Stunde (Ortszeit). Jedes Fahrzeug zaehlt je Stunde einmal, auch wenn es laenger in Reichweite ist; gemittelt ueber die Stunden, in denen mindestens ein Empfaenger online war. Fahrzeug = Absender mit Stationstyp Fahrzeug; wechselt ein Fahrzeug seine Kennung (Pseudonym), zaehlt es doppelt. Feste Zeitspanne 28 Tage, Daten ab 18.10.2026.",
    "type": "table",
    "datasource": {
     "type": "prometheus",
@@ -804,7 +804,7 @@
       "type": "prometheus",
       "uid": "otm-vm"
      },
-     "expr": "sum by (wd, h) (increase(otm_traffic_fz[$__range])) / sum by (wd, h) (increase(otm_traffic_min[$__range]))",
+     "expr": "sum by (wd, h) (increase(otm_traffic_fzh[$__range])) / sum by (wd, h) (increase(otm_traffic_hours[$__range]))",
      "instant": true,
      "range": false,
      "format": "table"
@@ -869,7 +869,7 @@
    "fieldConfig": {
     "defaults": {
      "unit": "short",
-     "decimals": 1,
+     "decimals": 0,
      "color": {
       "mode": "continuous-GrYlRd"
      },
