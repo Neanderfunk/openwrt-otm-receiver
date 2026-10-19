@@ -30,7 +30,8 @@ spezifiziert. Wie viel bei 5.9 GHz verloren geht, muss man je Gerät messen
 | **TP-Link TL-WDR4300 v1** | AR9580, 3x3 | 128/8 | ✔ | 644 | 15–25 € (7) | Referenz (lief 90 Tage unter 25.12), Image gebaut |
 | **AVM FRITZ!Box 3370** (Rev. 2) | AR9380, wahlweise 2.4/5 | 128/NAND | ✔ | 19 | meist 10 €, 4–25 € (25) | am billigsten und am leichtesten zu bekommen; nur Rev. 2 (Hynix/Micron); AVM-Kalibrierdaten prüfen |
 | **AVM FRITZ!WLAN Repeater 300E** | AR9382, wahlweise 2.4/5 | 64/16 | ✔ | 21 | 15–30 € (12) | Steckdosengerät, gut fürs Fenster zur Straße; Kalibrierdaten prüfen |
-| TP-Link TL-WDR4900 v1 | AR9580 | 128/16 | ✔ (mpc85xx) | 165 | ~30 € (1) | PowerPC, eigenes Target |
+| TP-Link TL-WDR4900 v1 | AR9580 | 128/16 | ✔ (mpc85xx) | 165 | ~30 € (1) | PowerPC, eigenes Target; im Release ab 20.10.2026 |
+| TP-Link TL-WDR4900 v2 | AR9580 | ?/8 | ✔ (ath79) | | | QCA9558-Platine, 5 GHz ebenfalls AR9580 (PCI 168c:0033); im Release ab 20.10.2026 |
 | TP-Link TL-WDR4310 v1, Mercury MW4530R v1 | AR9580 | 128/8 | ✔ | ~0 | nicht abgefragt | Schwester bzw. Klon des WDR4300 |
 | Enterasys WS-AP3710i | AR9590, 3x3 | 256/32 | ✔ (mpc85xx) | 75 | 29 €/Stück (Posten mit 30+) | Enterprise-AP, PoE; WS-AP3705i ✔ (6 Knoten), WS-AP3715i nur snapshot |
 | Aerohive HiveAP-330 | AR9390 (mPCIe) | 256/64 | ✔ (mpc85xx) | 49 | keins | HiveAP-121: AR9382, ✔ (ath79-nand), 12 Knoten |

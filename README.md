@@ -306,6 +306,7 @@ auf `its/<node>/status` am Proxy.
 |---|---|
 | TP-Link TL-WDR3600 v1, TL-WDR4300 v1, CPE510 v1, AVM FRITZ!Box 3390, Ubiquiti LiteBeam M5 XW | im Betrieb, empfangen ITS-G5, Autoupdater |
 | TP-Link CPE610 v1/v2, WBS510 v1/v2, TL-WDR3500 v1, TL-WDR4310 v1 | Images gebaut, ungetestet (ath9k, 5 GHz) |
+| TP-Link TL-WDR4900 v1 und v2 | Images gebaut, ungetestet; 5 GHz bei beiden über AR9580 (ath9k). v1 ist PowerPC (Target mpc85xx), v2 eine QCA9558-Platine (ath79) |
 | Ubiquiti M5-Serie (NanoStation, Loco, NanoBeam, PowerBeam, Bullet, Rocket) | siehe die Tabelle unten |
 | LiteBeam 5AC, UniFi AC Mesh, CPE710 | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
 | CPE210/220, WBS210, alle Ubiquiti M2 | ungeeignet: nur 2.4 GHz |
