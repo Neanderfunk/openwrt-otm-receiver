@@ -9,7 +9,8 @@
  *   its/<node>/info     {"emac":"aa:bb:..","ver":"...","hwv":"..."}  (on connect)
  *   its/<node>/packet   raw 802.11 frame (radiotap stripped), QoS 0
  *   its/<node>/stats    {"rbt":<seconds since boot>}  (on connect, every 60 s)
- *   otm/<node>/build    {"version":"..","commit":"..","bridge":"..","model":".."}
+ *   otm/<node>/build    {"version":"..","commit":"..","bridge":"..","model":"..",
+ *                        "mac":".."}  (mac = emac, stable id across renames)
  *                       (on connect, retained; only with -V, i.e. via our proxy:
  *                       outside its/# so it is not forwarded to opentrafficmap)
  *   otm/<node>/location {"lat":..,"lon":..[,"alt":..]}  (on connect, retained;
@@ -45,7 +46,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.18.3"
+#define OTM_BRIDGE_VERSION "0.18.4"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
@@ -346,14 +347,14 @@ static void *mqtt_thread(void *arg)
 	return NULL;
 }
 
-static void publish_build(struct mosquitto *m, const char *model)
+static void publish_build(struct mosquitto *m, const char *model, const char *mac)
 {
 	if (!build_version)
 		return;
-	char build[320];
+	char build[352];
 	int n = snprintf(build, sizeof(build),
-		 "{\"version\":\"%s\",\"commit\":\"%s\",\"bridge\":\"%s\",\"model\":\"%s\"}",
-		 build_version, build_commit ? build_commit : "", OTM_BRIDGE_VERSION, model);
+		 "{\"version\":\"%s\",\"commit\":\"%s\",\"bridge\":\"%s\",\"model\":\"%s\",\"mac\":\"%s\"}",
+		 build_version, build_commit ? build_commit : "", OTM_BRIDGE_VERSION, model, mac);
 	if (n > 0 && n < (int)sizeof(build))
 		mosquitto_publish(m, NULL, topic_build, n, build, 0, true);
 }
@@ -371,7 +372,7 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 		 * Geraet soll bei OpenTrafficMap nicht als Empfaenger auftauchen */
 		char model[96], buf[256];
 		read_model(model, sizeof(model));
-		publish_build(m, model);
+		publish_build(m, model, "");
 		int n = snprintf(buf, sizeof(buf), "{\"problem\":\"%s\",\"bridge\":\"%s\"}",
 				 problem, OTM_BRIDGE_VERSION);
 		if (n > 0 && n < (int)sizeof(buf)
@@ -392,7 +393,7 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 		 "{\"emac\":\"%s\",\"ver\":\"otm-bridge-%s\",\"hwv\":\"%s\"}",
 		 mac_colon, OTM_BRIDGE_VERSION, model);
 	mosquitto_publish(m, NULL, topic_info, n, info, 0, false);
-	publish_build(m, model);
+	publish_build(m, model, mac_colon);
 	/* Geraet empfaengt wieder: eine fruehere Problem-Meldung loeschen */
 	if (health)
 		mosquitto_publish(m, NULL, topic_problem, 0, "", 0, true);
