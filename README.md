@@ -227,8 +227,10 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   ```
 
   Komma oder Punkt gehen beide, `altitude` (Meter) ist freiwillig. Nach `reload_config`
-  startet die Bridge neu und meldet die Position; `share_location=0` löscht sie wieder. Sie
-  erscheint nur auf der Heatmap in unserem Grafana. Auf der Karte von OpenTrafficMap stehen
+  startet die Bridge neu und meldet die Position; `share_location=0` löscht sie wieder (nach
+  spätestens 15 Minuten weg). Sie erscheint nur in unserem Grafana (<https://otm.ffnef.de>, ohne
+  Anmeldung lesbar) als blauer Funkmast mit dem Empfängernamen auf den Karten von OTM Heatmap,
+  OTM Heatmap je Empfaenger und OTM Knoten, so genau wie eingetragen. Auf der Karte von OpenTrafficMap stehen
   Empfänger über deren Self-Service-Portal (dort pflegt OTM Position und Namen
   serverseitig), nicht über die Firmware.
 - **WLAN-Rückfall** (nur Geräte mit eigenem 2.4-GHz-Radio, z. B. WDR3600/4300): Bekommt das
@@ -264,8 +266,9 @@ VictoriaMetrics) und Grafana unter <https://otm.ffnef.de>, ohne Anmeldung lesbar
   verschiedene Absender, Online/Uptime, Firmware je Empfänger, Empfangs-Health (6 h)
 - **OTM Heatmap**: Absenderpositionen (aus dem GeoNetworking-Header, Raster ~50 m) über alle
   Empfänger, dazu geteilte Empfängerpositionen; Durchschnitts- und Höchstgeschwindigkeit je
-  Rasterzelle (nur Fahrzeuge, keine RSU); Verkehrsmuster nach Wochentag und Stunde
-  (Fahrzeuge je Minute, mittlere Geschwindigkeit, letzte 28 Tage). Kacheln von tiles.ffdus.de.
+  Rasterzelle (nur Fahrzeuge, keine RSU; im Durchschnitt ohne stehende unter 1 km/h);
+  Verkehrsmuster nach Wochentag und Stunde (verschiedene Fahrzeuge pro Stunde, mittlere
+  Geschwindigkeit, letzte 28 Tage). Empfänger, die ihre Position teilen, als Funkmast. Kacheln von tiles.ffdus.de.
   Die Karten je Empfänger liegen wegen der Ladezeit auf einer eigenen Seite,
   **OTM Heatmap je Empfaenger**.
 - **OTM Knoten**: alles zu einem Empfänger, mit Auswahl oben oder per Klick auf den Namen

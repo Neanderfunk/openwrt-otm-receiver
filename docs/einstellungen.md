@@ -52,7 +52,7 @@ Login steht ein Hinweis darauf.
 | `otm-bridge.main.enabled` | `1` | `0` schaltet den Empfang ab |
 | `otm-bridge.main.transport` | aus dem Bau (`proxy`) | `proxy` (MQTT durch den Tunnel), `direct` (TLS direkt zu OpenTrafficMap, braucht TLS im Image), `auto` |
 | `otm-bridge.main.freq` | `5900` | Kanal in MHz (ITS-Kanal 180) |
-| `otm-bridge.location.share_location` | `0` | `1` = Position an unseren Proxy melden (Grafana-Karte), nicht an OpenTrafficMap |
+| `otm-bridge.location.share_location` | `0` | `1` = Position an unseren Proxy melden: Funkmast mit Namen auf den Karten in <https://otm.ffnef.de> (öffentlich, so genau wie eingetragen), nicht an OpenTrafficMap; nach `0` spätestens 15 min später weg |
 | `otm-bridge.location.latitude` / `longitude` | leer | Dezimalgrad, Punkt oder Komma |
 | `otm-bridge.location.altitude` | leer | Meter, freiwillig |
 | `otm-bridge.uplink.wlan_fallback` | `1` | WLAN-Rückfall über 2.4 GHz, nur Dualband-Geräte, siehe [wlan-rueckfall.md](wlan-rueckfall.md) |
