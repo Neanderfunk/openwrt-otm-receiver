@@ -132,6 +132,14 @@
        {
         "id": "displayName",
         "value": "Breite"
+       },
+       {
+        "id": "unit",
+        "value": "none"
+       },
+       {
+        "id": "decimals",
+        "value": 5
        }
       ]
      },
@@ -144,6 +152,14 @@
        {
         "id": "displayName",
         "value": "Länge"
+       },
+       {
+        "id": "unit",
+        "value": "none"
+       },
+       {
+        "id": "decimals",
+        "value": 5
        }
       ]
      },
@@ -435,6 +451,14 @@
        {
         "id": "displayName",
         "value": "Breite"
+       },
+       {
+        "id": "unit",
+        "value": "none"
+       },
+       {
+        "id": "decimals",
+        "value": 5
        }
       ]
      },
@@ -447,6 +471,14 @@
        {
         "id": "displayName",
         "value": "Länge"
+       },
+       {
+        "id": "unit",
+        "value": "none"
+       },
+       {
+        "id": "decimals",
+        "value": 5
        }
       ]
      },
@@ -669,6 +701,14 @@
        {
         "id": "displayName",
         "value": "Breite"
+       },
+       {
+        "id": "unit",
+        "value": "none"
+       },
+       {
+        "id": "decimals",
+        "value": 5
        }
       ]
      },
@@ -681,6 +721,14 @@
        {
         "id": "displayName",
         "value": "Länge"
+       },
+       {
+        "id": "unit",
+        "value": "none"
+       },
+       {
+        "id": "decimals",
+        "value": 5
        }
       ]
      },
