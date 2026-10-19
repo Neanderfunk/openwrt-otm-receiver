@@ -53,7 +53,10 @@ def fdb():
     r = subprocess.run(['bridge', 'fdb', 'show', 'br', 'br-otm'], capture_output=True, text=True)
     for l in r.stdout.splitlines():
         f = l.split()
-        if len(f) >= 3 and f[1] == 'dev' and f[2].startswith('tap'):
+        # nur gelernte Eintraege: permanent/self sind die eigene tap-MAC
+        # und Multicast, die auf jedem tap stehen
+        if len(f) >= 3 and f[1] == 'dev' and f[2].startswith('tap') \
+                and 'permanent' not in f and 'self' not in f:
             m[f[0].lower()] = f[2]
     return m
 
@@ -77,8 +80,9 @@ def verbunden():
     rows = []
     for k, p in peers.items():
         tap = p.get('interface')
-        mac = next((m for m, t in fd.items() if t == tap), None)
-        le = next((x for x in ls if x['mac'] == mac), {})
+        macs = [m for m, t in fd.items() if t == tap]
+        le = next((x for x in ls if x['mac'] in macs), {})
+        mac = le.get('mac') or (macs[0] if macs else None)
         rows.append({'key': k, 'tap': tap, 'mac': mac, 'name': le.get('name'), 'ip': le.get('ip'),
                      'address': p.get('address')})
     return rows
