@@ -772,6 +772,76 @@
     "showHeader": true,
     "cellHeight": "sm"
    }
+  },
+  {
+   "id": 11,
+   "title": "Geraete ohne Empfang",
+   "type": "table",
+   "description": "Ab otm-bridge 0.18.3. Geraete mit Tunnel, die gar nicht empfangen koennen und deshalb in den anderen Tabellen fehlen. 'no_its_radio' = kein Funkteil fuer 5.9 GHz; dahinter, was an Funkteilen da ist: 'phy0:2.4GHz' = nur 2.4 GHz (z. B. NanoStation M2 mit dem M5-Image, das fuer beide passt), 'none' = gar kein Funkteil erkannt (defekt?). Das Geraet meldet sich stuendlich; nach 3 h ohne Meldung faellt es heraus.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 56,
+    "w": 24,
+    "h": 5
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "instant": true,
+     "range": false,
+     "format": "table",
+     "expr": "max by (node, problem) (last_over_time(otm_node_problem[15m]))"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true,
+       "Value": true
+      },
+      "indexByName": {
+       "node": 0,
+       "problem": 1
+      },
+      "renameByName": {
+       "node": "Geraet",
+       "problem": "Problem"
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "Geraet"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "align": "left"
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   }
   }
  ],
  "tags": [

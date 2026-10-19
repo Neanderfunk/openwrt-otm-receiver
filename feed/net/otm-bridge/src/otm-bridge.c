@@ -14,6 +14,10 @@
  *                       outside its/# so it is not forwarded to opentrafficmap)
  *   otm/<node>/location {"lat":..,"lon":..[,"alt":..]}  (on connect, retained;
  *                       only with -L; -L "" clears a previously shared one)
+ *   otm/<node>/problem  {"problem":"..","bridge":".."} (retained; only with -E,
+ *                       i.e. the device cannot receive at all, e.g. no radio
+ *                       for 5.9 GHz; with -H an empty retained message clears
+ *                       an earlier one)
  *   otm/<node>/health   receiver health every 60 s, only with -H:
  *                       {"cap":..,"pkts":..,"crc":..,"phy":..,"noise":..,
  *                        "active":..,"busy":..,"rxt":..}
@@ -41,7 +45,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define OTM_BRIDGE_VERSION "0.18.1"
+#define OTM_BRIDGE_VERSION "0.18.3"
 
 static struct mosquitto *mosq;
 static pcap_t *pc;
@@ -60,6 +64,7 @@ static char topic_stats[160];
 static char topic_build[160];
 static char topic_location[160];
 static char topic_health[160];
+static char topic_problem[160];
 static int health;                    /* -H */
 static unsigned long pkt_captured;
 
@@ -68,6 +73,9 @@ static const char *build_version;
 static const char *build_commit;
 /* -L "lat,lon[,alt]" oder "" (Position nicht teilen, alte loeschen) */
 static const char *location;
+/* -E: Grund, warum das Geraet nicht empfangen kann; nur melden, kein pcap */
+static const char *problem;
+static volatile sig_atomic_t problem_sent;
 
 static const char *cap_iface = "mon0";
 static int verbose;
@@ -338,6 +346,18 @@ static void *mqtt_thread(void *arg)
 	return NULL;
 }
 
+static void publish_build(struct mosquitto *m, const char *model)
+{
+	if (!build_version)
+		return;
+	char build[320];
+	int n = snprintf(build, sizeof(build),
+		 "{\"version\":\"%s\",\"commit\":\"%s\",\"bridge\":\"%s\",\"model\":\"%s\"}",
+		 build_version, build_commit ? build_commit : "", OTM_BRIDGE_VERSION, model);
+	if (n > 0 && n < (int)sizeof(build))
+		mosquitto_publish(m, NULL, topic_build, n, build, 0, true);
+}
+
 static void on_connect(struct mosquitto *m, void *ud, int rc)
 {
 	(void)ud;
@@ -346,6 +366,19 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 		return;
 	}
 	mqtt_up = 1;
+	if (problem) {
+		/* nur otm/<node>/build und /problem, nichts unter its/: das
+		 * Geraet soll bei OpenTrafficMap nicht als Empfaenger auftauchen */
+		char model[96], buf[256];
+		read_model(model, sizeof(model));
+		publish_build(m, model);
+		int n = snprintf(buf, sizeof(buf), "{\"problem\":\"%s\",\"bridge\":\"%s\"}",
+				 problem, OTM_BRIDGE_VERSION);
+		if (n > 0 && n < (int)sizeof(buf)
+		    && mosquitto_publish(m, NULL, topic_problem, n, buf, 1, true) == MOSQ_ERR_SUCCESS)
+			syslog(LOG_INFO, "reported problem: %s", problem);
+		return;
+	}
 	syslog(LOG_INFO, "mqtt connected, topic=its/<node>/packet");
 
 	mosquitto_publish(m, NULL, topic_status,
@@ -359,14 +392,10 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 		 "{\"emac\":\"%s\",\"ver\":\"otm-bridge-%s\",\"hwv\":\"%s\"}",
 		 mac_colon, OTM_BRIDGE_VERSION, model);
 	mosquitto_publish(m, NULL, topic_info, n, info, 0, false);
-	if (build_version) {
-		char build[320];
-		n = snprintf(build, sizeof(build),
-			 "{\"version\":\"%s\",\"commit\":\"%s\",\"bridge\":\"%s\",\"model\":\"%s\"}",
-			 build_version, build_commit ? build_commit : "", OTM_BRIDGE_VERSION, model);
-		if (n > 0 && n < (int)sizeof(build))
-			mosquitto_publish(m, NULL, topic_build, n, build, 0, true);
-	}
+	publish_build(m, model);
+	/* Geraet empfaengt wieder: eine fruehere Problem-Meldung loeschen */
+	if (health)
+		mosquitto_publish(m, NULL, topic_problem, 0, "", 0, true);
 	if (location) {
 		char loc[128] = "";
 		double lat, lon, alt;
@@ -381,6 +410,13 @@ static void on_connect(struct mosquitto *m, void *ud, int rc)
 	publish_stats(m);
 }
 
+static void on_publish(struct mosquitto *m, void *ud, int mid)
+{
+	(void)m; (void)ud; (void)mid;
+	if (problem)
+		problem_sent = 1;
+}
+
 static void on_disconnect(struct mosquitto *m, void *ud, int rc)
 {
 	(void)m; (void)ud;
@@ -393,6 +429,28 @@ static void on_log(struct mosquitto *m, void *ud, int level, const char *str)
 	(void)m; (void)ud;
 	if (level <= MOSQ_LOG_WARNING || verbose >= 2)
 		syslog(LOG_DEBUG, "mosq: %s", str);
+}
+
+/* -E: einmal melden und beenden. Ohne Verbindung nach 30 s aufgeben; der
+ * Aufrufer versucht es spaeter wieder. */
+static int report_problem(const char *host, int port, const char *node_id)
+{
+	mosquitto_lib_init();
+	/* Client-ID = Knotenname: die ACL am Proxy erlaubt nur otm/<Client-ID>/# */
+	mosq = mosquitto_new(node_id, true, NULL);
+	if (!mosq) { syslog(LOG_ERR, "mosquitto_new failed"); return 1; }
+	mosquitto_connect_callback_set(mosq, on_connect);
+	mosquitto_publish_callback_set(mosq, on_publish);
+	mosquitto_log_callback_set(mosq, on_log);
+	int rc = mosquitto_connect(mosq, host, port, 60);
+	for (int i = 0; rc == MOSQ_ERR_SUCCESS && !problem_sent && i < 300; i++)
+		rc = mosquitto_loop(mosq, 100, 1);
+	if (!problem_sent)
+		syslog(LOG_WARNING, "problem not reported (%s)", mosquitto_strerror(rc));
+	mosquitto_disconnect(mosq);
+	mosquitto_destroy(mosq);
+	mosquitto_lib_cleanup();
+	return problem_sent ? 0 : 1;
 }
 
 /* opentrafficmap.org's ingest (cits-wireshark-bridge) decodes the MQTT
@@ -450,6 +508,8 @@ static void usage(void)
 	    "  -G COMMIT  image commit for otm/<node>/build\n"
 	    "  -L LOC     \"lat,lon[,alt]\" retained to otm/<node>/location, \"\" clears it\n"
 	    "  -H         receiver health to otm/<node>/health every 60 s\n"
+	    "  -E REASON  no capture: report REASON retained to otm/<node>/problem\n"
+	    "             (plain mqtt:// only, needs -n) and exit\n"
 	    "  -f         stay in foreground\n");
 }
 
@@ -462,7 +522,7 @@ int main(int argc, char **argv)
 	int foreground          = 0;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "i:b:n:c:s:x:V:G:L:Hvfh")) != -1) {
+	while ((opt = getopt(argc, argv, "i:b:n:c:s:x:V:G:L:E:Hvfh")) != -1) {
 		switch (opt) {
 		case 'i': cap_iface   = optarg; break;
 		case 'b': broker_uri  = optarg; break;
@@ -475,6 +535,7 @@ int main(int argc, char **argv)
 		case 'G': build_commit  = optarg; break;
 		case 'L': location      = optarg; break;
 		case 'H': health        = 1;      break;
+		case 'E': problem       = optarg; break;
 		case 'f': foreground  = 1;      break;
 		case 'h':
 		default:  usage(); return opt == 'h' ? 0 : 1;
@@ -500,6 +561,7 @@ int main(int argc, char **argv)
 	snprintf(topic_build,  sizeof(topic_build),  "otm/%s/build",  node_id);
 	snprintf(topic_location, sizeof(topic_location), "otm/%s/location", node_id);
 	snprintf(topic_health, sizeof(topic_health), "otm/%s/health", node_id);
+	snprintf(topic_problem, sizeof(topic_problem), "otm/%s/problem", node_id);
 
 	/* Under procd stderr already ends up in syslog; LOG_PERROR would log
 	 * every line twice. Only mirror to stderr on an interactive terminal. */
@@ -507,6 +569,15 @@ int main(int argc, char **argv)
 	syslog(LOG_INFO, "starting v%s iface=%s broker=%s://%s:%d node=%s",
 	       OTM_BRIDGE_VERSION, cap_iface, tls ? "mqtts" : "mqtt",
 	       host, port, node_id);
+
+	if (problem) {
+		/* otm/ gehoert nur an unseren Proxy, nie direkt an OpenTrafficMap */
+		if (tls) {
+			syslog(LOG_ERR, "-E only with mqtt:// (our proxy)");
+			return 1;
+		}
+		return report_problem(host, port, node_id);
+	}
 
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pc = pcap_open_live(cap_iface, snaplen, 1, 100, errbuf);

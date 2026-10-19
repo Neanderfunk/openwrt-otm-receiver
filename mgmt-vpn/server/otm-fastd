@@ -57,8 +57,22 @@ def fdb():
             m[f[0].lower()] = f[2]
     return m
 
+def anstossen(ls, fd):
+    """Die Bridge vergisst die MAC eines Knotens, der 5 min nichts schickt
+    (z. B. ohne ITS-Radio, nur Tunnel). Unbekannte Lease-Adressen einmal
+    anpingen, die Antwort traegt die MAC wieder ein."""
+    ps = [subprocess.Popen(['ping', '-c', '1', '-W', '1', x['ip']],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+          for x in ls if x['mac'] not in fd]
+    for p in ps:
+        p.wait()
+    return fdb() if ps else fd
+
 def verbunden():
     peers, fd, ls = status(), fdb(), leases()
+    taps = {p.get('interface') for p in peers.values() if p.get('interface')}
+    if taps - set(fd.values()):
+        fd = anstossen(ls, fd)
     tap2key = {p.get('interface'): k for k, p in peers.items() if p.get('interface')}
     rows = []
     for k, p in peers.items():

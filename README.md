@@ -216,6 +216,10 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   jede Station: empfängt ITS, nur Rauschen (Radio lebt, kein Verkehr) oder taub (kein
   Zähler bewegt sich). Hintergrund: Es gibt Geräte, die 5.9 GHz trotz passendem Chip nicht
   empfangen, siehe [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md).
+  Findet der Wrapper gar kein Funkteil für 5900 MHz, meldet er das stündlich retained an
+  `otm/<node>/problem` (ab 0.18.3), samt der vorhandenen Funkteile (`phy0:2.4GHz` oder
+  `none`); im Grafana steht das Gerät dann unter „Geraete ohne Empfang“. Solche Geräte
+  heißen schon ab der Ersteinrichtung `opentrafficmap` statt `<Modell>-xxxx`.
 - **Position** (wie bei Gluon, `gluon-node-info.@location[0]`): standardmäßig nicht geteilt.
 
   ```
@@ -339,6 +343,10 @@ Flash-Schreibschutzes mit (siehe [Ubiquiti XW](#ubiquiti-xw-flash-schreibschutz)
 einzigen getesteten NanoStation M5 XM (ein Nachbau) kam ab 5825 MHz nichts mehr an, siehe
 [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md#taub-trotz-passendem-chip);
 `otm/<node>/health` zeigt, ob ein Gerät taub ist.
+
+Vorsicht bei Ubiquiti XM: NanoStation M2 und M5, Bullet M2 und M5 usw. melden denselben
+Board-Namen, das M5-Image lässt sich also ohne Fehlermeldung auch auf das 2.4-GHz-Gerät
+spielen. Es läuft dann mit Tunnel, empfängt aber nichts (siehe `otm/<node>/problem` oben).
 
 Die vollständige Liste mit Verbreitung und Gebrauchtpreisen steht in
 [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md).

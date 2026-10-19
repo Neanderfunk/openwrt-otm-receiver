@@ -21,6 +21,9 @@
 #                           bridge/model aus its/<node>/info beim Verbinden)
 #   otm_node_location{node,lat,lon}  1 (Empfaengerposition, nur wenn der Knoten
 #                           sie teilt: otm/<node>/location retained, ab 0.15.0)
+#   otm_node_problem{node,problem}  1 (Geraet kann nicht empfangen, z. B.
+#                           "no_its_radio phy0:2.4GHz"; aus otm/<node>/problem
+#                           retained, ab 0.18.3; nur solange in PROBLEM_MAX gemeldet)
 #   otm_rx_{cap,pkts,crc,phy,active,busy,rxt}{node}  Zaehler aus
 #                           otm/<node>/health (ab 0.16.0), otm_rx_noise{node} dBm
 #   otm_speed_sum{lat,lon}  Summe der Geschwindigkeiten (km/h) je Rasterzelle,
@@ -66,6 +69,8 @@ gauges = {}                      # (metrik, label) -> Wert
 firmware = {}                    # node -> {version, commit, bridge, model}
 standorte = {}                   # node -> (lat, lon)
 gesundheit = {}                  # node -> (zeit, {feld: wert}) aus otm/<node>/health
+probleme = {}                    # node -> (zeit, text) aus otm/<node>/problem
+PROBLEM_MAX = 3 * 3600           # Knoten meldet stuendlich; laenger still: nicht mehr zeigen
 GESUND_MAX = 300                 # aeltere Health-Werte nicht weiterschreiben (offline != taub)
 offline_seit = {}                # node -> Zeitpunkt der Offline-Meldung (seit Start von otm-stats)
 OFFLINE_MAX = 86400              # laenger offline: nicht mehr fortschreiben (faellt aus den Tabellen)
@@ -137,6 +142,13 @@ def on_message(c, u, m):
 				standorte[t[1]] = ('%.6f' % float(l['lat']), '%.6f' % float(l['lon']))
 			except Exception:
 				standorte.pop(t[1], None)   # leer = nicht (mehr) geteilt
+		return
+	if len(t) == 3 and t[0] == 'otm' and t[2] == 'problem':
+		with lock:
+			try:
+				probleme[t[1]] = (time.time(), str(json.loads(m.payload)['problem'])[:120])
+			except Exception:
+				probleme.pop(t[1], None)    # leer = Geraet empfaengt wieder
 		return
 	if len(t) == 3 and t[0] == 'otm' and t[2] == 'health':
 		try:
@@ -288,6 +300,7 @@ def auswerten():
 		fw = {n: dict(f) for n, f in firmware.items() if n not in weg}
 		orte = {n: o for n, o in standorte.items() if n not in weg}
 		gesund = {n: dict(w) for n, (z, w) in gesundheit.items() if now - z < GESUND_MAX}
+		probl = {n: p for n, (z, p) in probleme.items() if now - z < PROBLEM_MAX}
 	ts = int(now) * 10**9
 	zeilen = []
 	for (metrik, label), wert in werte:
@@ -319,6 +332,8 @@ def auswerten():
 			zeilen.append('otm,node=%s %s %d' % (esc(n), felder, ts))
 	for n, (lat, lon) in orte.items():
 		zeilen.append('otm,node=%s,lat=%s,lon=%s node_location=1 %d' % (esc(n), lat, lon, ts))
+	for n, p in probl.items():
+		zeilen.append('otm,node=%s,problem=%s node_problem=1 %d' % (esc(n), esc(p) or '-', ts))
 	if zeilen:
 		try:
 			urllib.request.urlopen(VM, '\n'.join(zeilen).encode(), timeout=10)
@@ -328,7 +343,7 @@ def auswerten():
 def main():
 	c = mqtt.Client(client_id='otm-stats')
 	c.on_message = on_message
-	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0), ('otm/+/location', 0), ('otm/+/health', 0)])
+	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0), ('otm/+/location', 0), ('otm/+/health', 0), ('otm/+/problem', 0)])
 	c.connect_async('127.0.0.1', 1883, 60)
 	c.loop_start()
 	while True:

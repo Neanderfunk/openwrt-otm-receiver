@@ -46,6 +46,58 @@ config_get latitude  location latitude  ''
 config_get longitude location longitude ''
 config_get altitude  location altitude  ''
 
+# Broker erreichbar ohne Umweg ueber das Standard-Gateway, d. h. der Tunnel
+# steht (vorher ginge der erste Verbindungsaufbau ueber die Default-Route
+# ins Leere und haengt minutenlang)
+direkt_erreichbar() {
+	local h=${1#*://}
+	h=${h%%/*}; h=${h%%:*}
+	case "$(ip route get "$h" 2>/dev/null)" in
+	""|*" via "*) return 1 ;;
+	esac
+}
+warte_tunnel() {
+	local i=0
+	while ! direkt_erreichbar "$broker_proxy"; do
+		[ $i -ge "$1" ] && return 1
+		sleep 2
+		i=$((i + 2))
+	done
+}
+# Kein Funkteil fuer $freq (z. B. NanoStation M2 mit dem M5-Image, das fuer
+# beide passt): einmal an unseren Proxy melden (otm/<node>/problem, retained),
+# damit das Geraet im Grafana auffaellt und nicht nur als Tunnel ohne Daten.
+# Nichts unter its/, nichts direkt an OpenTrafficMap. Danach eine Stunde
+# warten; procd startet den Wrapper neu, der es wieder versucht.
+# Was an Funkteilen da ist, z. B. "phy0:2.4GHz" (M2) oder "none" (Funkteil
+# defekt oder nicht erkannt)
+radios() {
+	local p b out=""
+	for p in /sys/class/ieee80211/*; do
+		[ -e "$p" ] || continue
+		p=${p##*/}
+		b=$(iw phy "$p" info 2>/dev/null | awk '/Band 1:/ { b = b "2.4+" } /Band 2:/ { b = b "5+" } END { sub(/\+$/, "", b); print b }')
+		out="$out $p:${b:-?}GHz"
+	done
+	echo "${out# }" | grep . || echo none
+}
+kein_radio() {
+	local n=$node mac v c
+	if [ -z "$n" ]; then
+		mac=$(cat /sys/class/ieee80211/*/macaddress 2>/dev/null | head -n 1)
+		[ -n "$mac" ] || mac=$(cat /sys/class/net/eth0/address 2>/dev/null)
+		n=$(otm_node_name "$mac")
+	fi
+	if [ "$transport" != direct ] && warte_tunnel 120; then
+		v=$(sed -n 's/^version=//p' /etc/otm-build-info 2>/dev/null)
+		c=$(sed -n 's/^otm_commit=//p' /etc/otm-build-info 2>/dev/null)
+		/usr/bin/otm-bridge -f -n "$n" -b "$broker_proxy" ${v:+-V "$v" -G "$c"} -E "$1" &&
+			log "reported to $broker_proxy as $n: $1"
+	fi
+	sleep 3600
+	exit 1
+}
+
 # 5850-5925 MHz only exist in the patched regdb entry for $country; after
 # boot the global domain is 00. The change is applied asynchronously, so
 # poll, and repeat the request now and then in case something reset it.
@@ -55,6 +107,9 @@ until p=$(find_phy "$phy" "$freq"); do
 	i=$((i + 1))
 	if [ $i -ge 30 ]; then
 		log "no radio offers $freq MHz (wanted country $country, have $(iw reg get | awk '/^country/ { print $2; exit }'))"
+		# kennt gar kein phy die Frequenz, fehlt das Funkteil; sonst ist es
+		# nur die Regdomain (gleich noch einmal versuchen, wie bisher)
+		otm_its_phy "$freq" >/dev/null || kein_radio "no_its_radio $(radios)"
 		exit 1
 	fi
 	[ $((i % 10)) -eq 0 ] && iw reg set "$country"
@@ -80,24 +135,6 @@ done
 # monitor interface MAC>, e.g. WR4300-902f. Same as the hostname.
 [ -n "$node" ] || node=$(otm_node_name "$(cat "/sys/class/net/$iface/address")")
 
-# Broker erreichbar ohne Umweg ueber das Standard-Gateway, d. h. der Tunnel
-# steht (vorher ginge der erste Verbindungsaufbau ueber die Default-Route
-# ins Leere und haengt minutenlang)
-direkt_erreichbar() {
-	local h=${1#*://}
-	h=${h%%/*}; h=${h%%:*}
-	case "$(ip route get "$h" 2>/dev/null)" in
-	""|*" via "*) return 1 ;;
-	esac
-}
-warte_tunnel() {
-	local i=0
-	while ! direkt_erreichbar "$broker_proxy"; do
-		[ $i -ge "$1" ] && return 1
-		sleep 2
-		i=$((i + 2))
-	done
-}
 # TLS braucht eine gestellte Uhr. Der ntp-Hotplug legt $timefile an, sobald
 # ntpd synchron ist. Hoechstens 120 s warten, dann trotzdem starten; direkt
 # nach dem Sync kann der Uhrsprung noch laufen, daher die Nachfrist (5 s
