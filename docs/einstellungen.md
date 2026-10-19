@@ -26,7 +26,7 @@ Reset-Tasters (kurz = Neustart, ab 5 s = Werksreset) ist stillgelegt, auch das w
 
 **Heraus:**
 
-- `otm-configmode exit`: richtet SSH nach den hinterlegten Keys ein und startet neu.
+- `otm-configmode exit`: startet neu in den Normalbetrieb.
 - Jeder andere Neustart, auch Strom aus und wieder an, führt ebenfalls in den Normalbetrieb.
   Der Config-Mode gilt immer nur für einen Start.
 - Von selbst nach **120 Minuten**: Dann startet das Gerät neu in den Normalbetrieb, falls der
@@ -37,8 +37,9 @@ Reset-Tasters (kurz = Neustart, ab 5 s = Werksreset) ist stillgelegt, auch das w
 ## SSH-Keys
 
 Keys stehen in `/etc/dropbear/authorized_keys`, einer je Zeile. Mit Key ist SSH im
-Normalbetrieb offen, nur per Key; ohne Key ist SSH im Normalbetrieb zu. Ein im Config-Mode
-eingetragener Key gilt nach `otm-configmode exit` auch im Normalbetrieb, auch auf Geräten,
+Normalbetrieb offen, nur per Key; ohne Key ist SSH im Normalbetrieb zu. Das prüft das Gerät bei
+jedem Start (ab otm-bridge 0.18.2; vorher nur bei `otm-configmode exit`). Ein im Config-Mode
+eingetragener Key gilt deshalb nach jedem Weg hinaus auch im Normalbetrieb, auch auf Geräten,
 deren Image ohne Key gebaut wurde. Keys bleiben bei Updates erhalten.
 
 ## Einstellungen (UCI)

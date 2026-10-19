@@ -72,19 +72,27 @@ otm_24_phy() {
 	return 1
 }
 
-# SSH nach Keys einrichten (99-otm-setup, otm-configmode exit): mit Key in
+# SSH nach Keys einrichten (99-otm-setup, jeder Start im Normalbetrieb ueber
+# otm-configmode-early, otm-configmode exit): mit Key in
 # /etc/dropbear/authorized_keys laeuft dropbear, nur per Key, und die
-# wan-Zone laesst Port 22 zu; ohne Key bleibt SSH zu.
+# wan-Zone laesst Port 22 zu; ohne Key bleibt SSH zu. Schreibt nur, was sich
+# aendert (laeuft bei jedem Start, kein Flash-Schreiben im Normalfall).
 otm_ssh_setup() {
-	local has_key=0 sec
+	local has_key=0 sec o
 	grep -q '^ssh-\|^ecdsa-' /etc/dropbear/authorized_keys 2>/dev/null && has_key=1
-	uci set dropbear.@dropbear[0].PasswordAuth='off'
-	uci set dropbear.@dropbear[0].RootPasswordAuth='off'
-	uci commit dropbear
+	for o in PasswordAuth RootPasswordAuth; do
+		[ "$(uci -q get dropbear.@dropbear[0].$o)" = off ] || uci set dropbear.@dropbear[0].$o='off'
+	done
+	[ -n "$(uci -q changes dropbear)" ] && uci commit dropbear
 	if [ $has_key = 1 ]; then
-		/etc/init.d/dropbear enable
+		# rcS hat die Liste der Start-Skripte schon gelesen: neu
+		# eingeschaltet also gleich starten, sonst erst beim naechsten Start
+		/etc/init.d/dropbear enabled || {
+			/etc/init.d/dropbear enable
+			/etc/init.d/dropbear start
+		}
 	else
-		/etc/init.d/dropbear disable
+		/etc/init.d/dropbear enabled && /etc/init.d/dropbear disable
 		/etc/init.d/dropbear stop 2>/dev/null
 	fi
 	if [ $has_key = 1 ] && ! uci -q show firewall | grep -q "name='Allow-SSH-WAN'"; then

@@ -4,6 +4,9 @@
 # S15gluon-setup-mode), ein weiterer Neustart fuehrt also in den Normalbetrieb.
 # Netz wie bei Gluon (S20network): alle Ports fest 192.168.1.1/24; die
 # Konfiguration liegt in tmpfs und wird ueber /etc/config/network gelegt.
+# Im Normalbetrieb richtet es SSH nach den Keys ein (vor dropbear und
+# firewall), damit ein im Config-Mode eingetragener Key auch nach einem
+# Neustart ohne "otm-configmode exit" gilt.
 
 START=12
 
@@ -13,7 +16,11 @@ SETUP_MODE_NETMASK=255.255.255.0
 boot() {
 	local dir=/var/run/otm-configmode dev
 
-	[ -e /etc/otm-configmode ] || return 0
+	if [ ! -e /etc/otm-configmode ]; then
+		. /lib/otm-bridge/functions.sh
+		otm_ssh_setup
+		return 0
+	fi
 	rm -f /etc/otm-configmode
 	sync
 
