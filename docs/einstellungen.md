@@ -81,9 +81,11 @@ reload_config
 `reload_config` startet die Bridge mit den neuen Werten neu. Im Config-Mode genügt
 `uci commit`; wirksam wird es beim Neustart in den Normalbetrieb.
 
-Ein neuer Name ist für OpenTrafficMap und unser Grafana ein neuer Empfänger. Der alte Name
-bleibt im Grafana mit seinem Verlauf stehen und fällt aus den Tabellen, wenn er 24 Stunden
-offline ist; ganz entfernen: leere retained Nachricht auf `its/<alter name>/status` am Proxy.
+Unser Grafana erkennt den Empfänger an der MAC seines ITS-Radios wieder und führt den
+Verlauf unter dem neuen Namen fort; der alte Name verschwindet (`otm-stats` schreibt die
+Reihen in VictoriaMetrics um, siehe [mgmt-vpn/server/README.md](../mgmt-vpn/server/README.md)).
+Für OpenTrafficMap ist ein neuer Name ein neuer Empfänger; dort entfernt man den alten mit
+einer leeren retained Nachricht auf `its/<alter name>/status` am Proxy.
 Der Hostname des Geräts (DHCP, SSH, `<hostname>.otm` im Tunnel) ändert sich dabei nicht, und
 umgekehrt ändert ein neuer Hostname den Namen auf den Karten nicht.
 

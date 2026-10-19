@@ -49,19 +49,35 @@
 #                           Eigene Namen, damit Summen ueber die Gesamtwerte
 #                           nicht doppelt zaehlen
 #
+# Umbenennen: Feste Kennung eines Empfaengers ist die MAC seines ITS-Radios
+# (emac aus its/<node>/info, ab 0.18.4 auch mac in otm/<node>/build). Meldet
+# sich eine bekannte MAC unter neuem Namen, schreibt otm-stats alle Reihen des
+# alten Namens in VictoriaMetrics auf den neuen um (Export, Import, Loeschen;
+# Werte ab dem ersten des neuen Namens fallen weg). Grafana fragt weiter nach
+# node und sieht einen durchgehenden Verlauf unter dem aktuellen Namen.
+# Zuordnung in $STATE_DIRECTORY/namen.json; von Hand:
+#   otm-stats.py --umbenennen <alt> <neu>
+#
 # Absenderposition: Long Position Vector aus dem GeoNetworking-Header (bei
 # signierten Paketen im unsecuredData-Teil von IEEE 1609.2), gerundet auf
 # Raster RASTER_LAT x RASTER_LON Grad (seit 19.10.2026 ~50 x 50 m um 50 Grad Nord;
 # vorher 3 Nachkommastellen, ~110 x 70 m). Aus
 # demselben Vektor: Stationstyp (aus der GN-Adresse) und Geschwindigkeit.
-import json, struct, threading, time, urllib.request, collections, datetime
+import json, os, re, struct, sys, threading, time, urllib.parse, urllib.request, collections, datetime
 from zoneinfo import ZoneInfo
 import paho.mqtt.client as mqtt
 
 FENSTER = 5
 RASTER_LAT = 0.00045                 # ~50 m Nord-Sued
 RASTER_LON = 0.0007                  # ~50 m Ost-West bei 50 Grad Nord
-VM = 'http://127.0.0.1:8428/write'
+VMBASE = 'http://127.0.0.1:8428'
+VM = VMBASE + '/write'
+STATE = os.path.join(os.environ.get('STATE_DIRECTORY', '/var/lib/otm-stats'), 'namen.json')
+namen = {}                       # mac -> aktueller Name
+umbenannt = {}                   # alter Name -> neuer (retained Reste des alten ignorieren)
+# Zaehler/Gauges, deren Label der Knoten ist bzw. mit ihm beginnt
+KNOTEN_LABEL = ('frames', 'exclusive', 'mqtt', 'node_online', 'node_uptime')
+KNOTEN_TUPEL = ('pos', 'speed_node_sum', 'speed_node_n')
 lock = threading.Lock()
 offen = {}                       # key -> [erste_zeit, set(nodes)]
 zaehler = collections.Counter()  # (metrik, label) -> Wert, kumulativ
@@ -135,6 +151,8 @@ def lpv(f):
 
 def on_message(c, u, m):
 	t = m.topic.split('/')
+	if len(t) == 3 and t[1] in umbenannt and t[2] not in ('info', 'build'):
+		return
 	if len(t) == 3 and t[0] == 'otm' and t[2] == 'location':
 		with lock:
 			try:
@@ -169,6 +187,7 @@ def on_message(c, u, m):
 			return
 		with lock:
 			firmware[t[1]] = {k: str(b.get(k, '')) for k in ('version', 'commit', 'bridge', 'model')}
+			kennen(t[1], str(b.get('mac', '')))
 		return
 	if len(t) != 3 or t[0] != 'its':
 		return
@@ -182,6 +201,7 @@ def on_message(c, u, m):
 			f = firmware.setdefault(node, {'version': '', 'commit': ''})
 			f['bridge'] = str(i.get('ver', '')).replace('otm-bridge-', '')
 			f['model'] = str(i.get('hwv', ''))
+			kennen(node, str(i.get('emac', '')))
 		return
 	now = time.time()
 	with lock:
@@ -217,6 +237,105 @@ def on_message(c, u, m):
 				standorte.pop(node, None)
 				gesundheit.pop(node, None)
 				offline_seit.pop(node, None)
+
+def namen_laden():
+	try:
+		z = json.load(open(STATE))
+		namen.update(z.get('namen', {}))
+		umbenannt.update(z.get('umbenannt', {}))
+	except Exception:
+		pass
+
+def namen_speichern():
+	try:
+		os.makedirs(os.path.dirname(STATE), exist_ok=True)
+		with open(STATE + '.neu', 'w') as f:
+			json.dump({'namen': namen, 'umbenannt': umbenannt}, f, indent=1, sort_keys=True)
+		os.replace(STATE + '.neu', STATE)
+	except Exception as e:
+		print('Zustand:', e, flush=True)
+
+def kennen(name, mac):
+	"""name meldet sich mit mac (unter lock). Neuer Name fuer bekannte MAC:
+	alten Namen vergessen und in der Datenbank umschreiben."""
+	mac = mac.lower()
+	if not re.fullmatch(r'([0-9a-f]{2}:){5}[0-9a-f]{2}', mac) or mac == '00:00:00:00:00:00':
+		return
+	if umbenannt.pop(name, None) is not None:
+		namen_speichern()                 # alter Name wieder in Gebrauch
+	alt = namen.get(mac)
+	if alt == name:
+		return
+	namen[mac] = name
+	# alter Name gehoert inzwischen einem anderen Geraet: nichts umschreiben
+	if alt and alt not in namen.values():
+		umbenannt[alt] = name
+		vergessen(alt, name)
+		threading.Thread(target=db_umbenennen, args=(alt, name, 90), daemon=True).start()
+	namen_speichern()
+
+def vergessen(alt, neu):
+	"""Laufende Werte des alten Namens nicht weiter schreiben (unter lock).
+	Zaehler beginnen unter dem neuen Namen bei 0, das wertet increase() als
+	Zaehler-Neustart."""
+	for d in (zaehler, gauges):
+		for k in [k for k in d if k[1] == alt or (isinstance(k[1], tuple) and k[1][:1] == (alt,)
+		                                          and (k[0] in KNOTEN_TUPEL or k[0].startswith('traffic_node_')))]:
+			del d[k]
+	for d in (firmware, standorte, gesundheit, offline_seit, probleme):
+		d.pop(alt, None)
+	for v in offen.values():
+		if alt in v[1]:
+			v[1].discard(alt)
+			v[1].add(neu)
+	if stunde.get('knoten') and alt in stunde['knoten']:
+		stunde['knoten'].discard(alt)
+		stunde['knoten'].add(neu)
+	if stunde.get('nfz') and alt in stunde['nfz']:
+		stunde['nfz'][neu] |= stunde['nfz'].pop(alt)
+
+def vm_schluessel():
+	for f in (os.path.join(os.environ.get('CREDENTIALS_DIRECTORY', '/nonexistent'), 'vm'),
+	          '/etc/default/victoria-metrics'):
+		try:
+			k = re.search(r'deleteAuthKey=([0-9a-f]+)', open(f).read())
+			if k:
+				return k.group(1)
+		except OSError:
+			pass
+	return None
+
+def db_umbenennen(alt, neu, warten=0):
+	"""Alle Reihen node=alt in VictoriaMetrics nach node=neu umschreiben."""
+	time.sleep(warten)          # letzte Minute unter altem Namen ist geschrieben
+	sel = '{node="%s"}' % alt.replace('\\', '\\\\').replace('"', '\\"')
+	try:
+		key = vm_schluessel()
+		if not key:
+			raise RuntimeError('kein deleteAuthKey')
+		q = 'min(tfirst_over_time({node="%s"}[800d]))' % neu.replace('\\', '\\\\').replace('"', '\\"')
+		r = json.load(urllib.request.urlopen(VMBASE + '/api/v1/query?query=' + urllib.parse.quote(q), timeout=120))
+		res = r['data']['result']
+		t0 = float(res[0]['value'][1]) * 1000 if res else None
+		roh = urllib.request.urlopen(VMBASE + '/api/v1/export?match[]=' + urllib.parse.quote(sel), timeout=600).read()
+		zeilen, n = [], 0
+		for l in roh.splitlines():
+			o = json.loads(l)
+			o['metric']['node'] = neu
+			if t0 is not None:
+				paare = [(v, t) for v, t in zip(o['values'], o['timestamps']) if t < t0]
+				o['values'], o['timestamps'] = [v for v, _ in paare], [t for _, t in paare]
+			if o['timestamps']:
+				zeilen.append(json.dumps(o))
+				n += len(o['timestamps'])
+		if zeilen:
+			urllib.request.urlopen(VMBASE + '/api/v1/import', '\n'.join(zeilen).encode(), timeout=600).read()
+		urllib.request.urlopen(VMBASE + '/api/v1/admin/tsdb/delete_series?authKey=%s&match[]=%s'
+		                       % (key, urllib.parse.quote(sel)), timeout=120).read()
+		urllib.request.urlopen(VMBASE + '/internal/resetRollupResultCache?authKey=' + key, timeout=60).read()
+		print('umbenannt: %s -> %s, %d Reihen, %d Werte' % (alt, neu, len(zeilen), n), flush=True)
+	except Exception as e:
+		print('umbenennen %s -> %s gescheitert: %s' % (alt, neu, e), flush=True)
 
 def esc(v):
 	"""Tag-Wert fuer das Influx-Line-Protokoll."""
@@ -341,6 +460,18 @@ def auswerten():
 			print('VictoriaMetrics:', e, flush=True)
 
 def main():
+	if len(sys.argv) == 4 and sys.argv[1] == '--umbenennen':
+		# von Hand, bei angehaltenem Dienst: Datenbank umschreiben und den
+		# alten Namen merken (retained Reste nicht wieder als Empfaenger zaehlen)
+		db_umbenennen(sys.argv[2], sys.argv[3])
+		namen_laden()
+		umbenannt[sys.argv[2]] = sys.argv[3]
+		namen_speichern()
+		d = os.stat(os.path.dirname(STATE))
+		for f in (STATE,):
+			os.chown(f, d.st_uid, d.st_gid)
+		return
+	namen_laden()
 	c = mqtt.Client(client_id='otm-stats')
 	c.on_message = on_message
 	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0), ('otm/+/location', 0), ('otm/+/health', 0), ('otm/+/problem', 0)])
