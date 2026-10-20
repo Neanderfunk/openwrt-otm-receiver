@@ -832,7 +832,7 @@
   {
    "id": 6,
    "title": "Verkehrsmuster: Fahrzeuge pro Stunde (letzte 28 Tage)",
-   "description": "Wie viele verschiedene Fahrzeuge die Empfaenger zusammen im Mittel pro Stunde hoeren, nach Wochentag und Stunde (Ortszeit). Jedes Fahrzeug zaehlt je Stunde einmal, auch wenn es laenger in Reichweite ist; gemittelt ueber die Stunden, in denen mindestens ein Empfaenger online war. Fahrzeug = Absender mit Stationstyp Fahrzeug; wechselt ein Fahrzeug seine Kennung (Pseudonym), zaehlt es doppelt. Feste Zeitspanne 28 Tage, Daten ab 18.10.2026.",
+   "description": "Verschiedene Fahrzeuge je Stunde nach Wochentag und Uhrzeit (Ortszeit), gemittelt ueber die Stunden, in denen mindestens ein Empfaenger online war. Fahrzeug = Stationstyp 1-11 (keine RSU). Feste Zeitspanne 28 Tage, Daten ab 20.10.2026 (die fruehere Zaehlung war fehlerhaft).",
    "type": "table",
    "datasource": {
     "type": "prometheus",
@@ -852,7 +852,7 @@
       "type": "prometheus",
       "uid": "otm-vm"
      },
-     "expr": "sum by (wd, h) (increase(otm_traffic_fzh[$__range])) / sum by (wd, h) (increase(otm_traffic_hours[$__range]))",
+     "expr": "avg by (wd, h) (avg_over_time(otm_hour_fz[$__range]))",
      "instant": true,
      "range": false,
      "format": "table"
@@ -947,6 +947,44 @@
        {
         "id": "custom.width",
         "value": 70
+       },
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "1-Mo": {
+            "text": "Mo",
+            "index": 0
+           },
+           "2-Di": {
+            "text": "Di",
+            "index": 1
+           },
+           "3-Mi": {
+            "text": "Mi",
+            "index": 2
+           },
+           "4-Do": {
+            "text": "Do",
+            "index": 3
+           },
+           "5-Fr": {
+            "text": "Fr",
+            "index": 4
+           },
+           "6-Sa": {
+            "text": "Sa",
+            "index": 5
+           },
+           "7-So": {
+            "text": "So",
+            "index": 6
+           }
+          }
+         }
+        ]
        }
       ]
      }
@@ -960,7 +998,7 @@
   {
    "id": 7,
    "title": "Verkehrsmuster: Geschwindigkeit im Mittel in km/h (letzte 28 Tage)",
-   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen nach Wochentag und Stunde (Ortszeit), ueber alle Empfaenger. Blau = langsam. Stehende Fahrzeuge (unter 1 km/h) zaehlen nicht mit. Feste Zeitspanne 28 Tage, Daten ab 17.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
+   "description": "Mittlere Geschwindigkeit aller Fahrzeug-Meldungen nach Wochentag und Stunde (Ortszeit), ueber alle Empfaenger. Blau = langsam. Stehende Fahrzeuge (unter 1 km/h) zaehlen nicht mit. Feste Zeitspanne 28 Tage, Daten ab 20.10.2026. Farben: blau unter 10, hellblau ab 10, gruen ab 30, gelb ab 50, orange ab 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.",
    "type": "table",
    "datasource": {
     "type": "prometheus",
@@ -980,7 +1018,7 @@
       "type": "prometheus",
       "uid": "otm-vm"
      },
-     "expr": "sum by (wd, h) (increase(otm_traffic_speed_sum[$__range])) / sum by (wd, h) (increase(otm_traffic_speed_n[$__range]))",
+     "expr": "sum by (wd, h) (sum_over_time(otm_hour_vsum[$__range])) / sum by (wd, h) (sum_over_time(otm_hour_vn[$__range]))",
      "instant": true,
      "range": false,
      "format": "table"
@@ -1112,6 +1150,247 @@
        {
         "id": "custom.width",
         "value": 70
+       },
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "1-Mo": {
+            "text": "Mo",
+            "index": 0
+           },
+           "2-Di": {
+            "text": "Di",
+            "index": 1
+           },
+           "3-Mi": {
+            "text": "Mi",
+            "index": 2
+           },
+           "4-Do": {
+            "text": "Do",
+            "index": 3
+           },
+           "5-Fr": {
+            "text": "Fr",
+            "index": 4
+           },
+           "6-Sa": {
+            "text": "Sa",
+            "index": 5
+           },
+           "7-So": {
+            "text": "So",
+            "index": 6
+           }
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   }
+  },
+  {
+   "id": 8,
+   "title": "Verkehrsmuster: Hoechstgeschwindigkeit in km/h (letzte 28 Tage)",
+   "description": "Hoechste gemeldete Geschwindigkeit nach Wochentag und Stunde (Ortszeit), ueber alle Empfaenger, ueber 28 Tage. Ein einzelner Ausreisser bestimmt den Wert; Meldungen ueber 250 km/h gelten als unplausibel und fehlen. Daten ab 20.10.2026. Farben wie bei der mittleren Geschwindigkeit.",
+   "type": "table",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "otm-vm"
+   },
+   "timeFrom": "28d",
+   "gridPos": {
+    "x": 0,
+    "y": 48,
+    "w": 24,
+    "h": 9
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "otm-vm"
+     },
+     "expr": "max by (wd, h) (max_over_time(otm_hour_vmax[$__range]))",
+     "instant": true,
+     "range": false,
+     "format": "table"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "groupingToMatrix",
+     "options": {
+      "columnField": "h",
+      "rowField": "wd",
+      "valueField": "Value",
+      "emptyValue": "null"
+     }
+    },
+    {
+     "id": "organize",
+     "options": {
+      "renameByName": {
+       "wd\\h": "Tag"
+      },
+      "indexByName": {
+       "wd\\h": 0,
+       "00": 1,
+       "01": 2,
+       "02": 3,
+       "03": 4,
+       "04": 5,
+       "05": 6,
+       "06": 7,
+       "07": 8,
+       "08": 9,
+       "09": 10,
+       "10": 11,
+       "11": 12,
+       "12": 13,
+       "13": 14,
+       "14": 15,
+       "15": 16,
+       "16": 17,
+       "17": 18,
+       "18": 19,
+       "19": 20,
+       "20": 21,
+       "21": 22,
+       "22": 23,
+       "23": 24
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "Tag"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "custom": {
+      "align": "center",
+      "cellOptions": {
+       "type": "color-background",
+       "mode": "gradient"
+      },
+      "width": 52
+     },
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       },
+       {
+        "color": "light-blue",
+        "value": 10
+       },
+       {
+        "color": "green",
+        "value": 30
+       },
+       {
+        "color": "yellow",
+        "value": 50
+       },
+       {
+        "color": "orange",
+        "value": 70
+       },
+       {
+        "color": "red",
+        "value": 100
+       },
+       {
+        "color": "#e600e6",
+        "value": 130
+       },
+       {
+        "color": "#3d0066",
+        "value": 160
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Tag"
+      },
+      "properties": [
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "auto"
+        }
+       },
+       {
+        "id": "custom.width",
+        "value": 70
+       },
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "1-Mo": {
+            "text": "Mo",
+            "index": 0
+           },
+           "2-Di": {
+            "text": "Di",
+            "index": 1
+           },
+           "3-Mi": {
+            "text": "Mi",
+            "index": 2
+           },
+           "4-Do": {
+            "text": "Do",
+            "index": 3
+           },
+           "5-Fr": {
+            "text": "Fr",
+            "index": 4
+           },
+           "6-Sa": {
+            "text": "Sa",
+            "index": 5
+           },
+           "7-So": {
+            "text": "So",
+            "index": 6
+           }
+          }
+         }
+        ]
        }
       ]
      }

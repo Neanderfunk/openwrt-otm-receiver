@@ -32,20 +32,19 @@
 #                           Mittel = sum/n
 #   otm_speed_max{lat,lon}  hoechste Geschwindigkeit der Minute je Zelle (Gauge,
 #                           nur geschrieben, wenn es Meldungen gab)
-#   otm_traffic_fz{wd,h}    verschiedene Fahrzeuge je Minute, aufsummiert je
-#   otm_traffic_min{wd,h}   Wochentag/Stunde (Europe/Berlin), dazu die Zahl der
-#                           Minuten mit mindestens einem Empfaenger online;
-#                           Mittel = fz/min
-#   otm_traffic_speed_sum{wd,h}, otm_traffic_speed_n{wd,h}  Geschwindigkeit je
-#                           Wochentag/Stunde wie oben
-#   otm_traffic_fzh{wd,h}   verschiedene Fahrzeuge je ganzer Stunde, aufsummiert je
-#   otm_traffic_hours{wd,h} Wochentag/Stunde, dazu die Zahl dieser Stunden (mit
-#                           mindestens einem Empfaenger online); Mittel = fzh/hours.
-#                           Gezaehlt beim Stundenwechsel; die Stunde, in der
-#                           otm-stats startet, zaehlt unvollstaendig
-#   otm_speed_node_{sum,n,max}{node,lat,lon}, otm_traffic_node_{fz,min,fzh,hours,
-#                           speed_sum,speed_n}{node,wd,h}  dasselbe je Empfaenger (was er
-#                           gehoert hat; min = Minuten, in denen er online war).
+#   otm_hour_{fz,vsum,vn,vmax}{wd,h}  je abgeschlossener Stunde (Europe/Berlin), in
+#                           der mindestens ein Empfaenger online war, ein Wert mit dem
+#                           Zeitstempel des Stundenendes: verschiedene Fahrzeuge,
+#                           Summe und Zahl der Geschwindigkeiten fahrender Fahrzeuge
+#                           (ab VSTEHT), hoechste km/h (nur wenn es Fahrzeuge gab).
+#                           Grafana: avg_over_time(fz), sum(vsum)/sum(vn),
+#                           max_over_time(vmax). Seit 20.10.2026; davor kumulative
+#                           otm_traffic_*-Zaehler, die increase() bei einem Sprung je
+#                           Woche falsch auswertete. Die Stunde, in der otm-stats
+#                           startet, zaehlt unvollstaendig
+#   otm_speed_node_{sum,n,max}{node,lat,lon}, otm_hour_node_{fz,vsum,vn,vmax}{node,wd,h}
+#                           dasselbe je Empfaenger (was er gehoert hat; Stunden, in
+#                           denen er online war).
 #                           Eigene Namen, damit Summen ueber die Gesamtwerte
 #                           nicht doppelt zaehlen
 #
@@ -293,6 +292,12 @@ def vergessen(alt, neu):
 		stunde['knoten'].add(neu)
 	if stunde.get('nfz') and alt in stunde['nfz']:
 		stunde['nfz'][neu] |= stunde['nfz'].pop(alt)
+	if stunde.get('nv') and alt in stunde['nv']:
+		a, b = stunde['nv'].pop(alt), stunde['nv'][neu]
+		b[0] += a[0]
+		b[1] += a[1]
+		if a[2] is not None:
+			b[2] = a[2] if b[2] is None else max(b[2], a[2])
 
 def vm_schluessel():
 	for f in (os.path.join(os.environ.get('CREDENTIALS_DIRECTORY', '/nonexistent'), 'vm'),
@@ -348,7 +353,9 @@ def auswerten():
 	vmax = {}                        # Zelle -> hoechste km/h dieser Minute
 	vsum, vn = 0.0, 0
 	nfz = collections.defaultdict(set)    # node -> Fahrzeuge dieser Minute
-	nv = collections.defaultdict(lambda: [0.0, 0])
+	nv = collections.defaultdict(lambda: [0.0, 0, None])   # node -> [Summe, Zahl, hoechste km/h]
+	vhoch = None                     # hoechste km/h dieser Minute, alle Fahrzeuge
+	stundenzeilen = []
 	with lock:
 		fertig = [k for k, v in offen.items() if now - v[0] > FENSTER]
 		for k in fertig:
@@ -360,6 +367,7 @@ def auswerten():
 				zaehler[('pos_union', ('', pos))] += 1
 			if fz is not None:
 				fahrzeuge.add(k[0])
+				vhoch = fz if vhoch is None else max(vhoch, fz)
 				if fz >= VSTEHT:
 					vsum += fz
 					vn += 1
@@ -372,6 +380,7 @@ def auswerten():
 				zaehler[('frames', n)] += 1
 				if fz is not None:
 					nfz[n].add(k[0])
+					nv[n][2] = fz if nv[n][2] is None else max(nv[n][2], fz)
 					if fz >= VSTEHT:
 						nv[n][0] += fz
 						nv[n][1] += 1
@@ -389,30 +398,39 @@ def auswerten():
 		slot = (TAGE[lt.weekday()], '%02d' % lt.hour)
 		sid = lt.strftime('%Y%m%d%H')
 		if stunde['id'] != sid:
-			if stunde['id'] is not None:     # vorige Stunde abschliessen
+			if stunde['id'] is not None:     # vorige Stunde abschliessen: ein Wert je Stunde
+				tag = ',wd=%s,h=%s' % stunde['slot']
 				if stunde['online']:
-					zaehler[('traffic_fzh', stunde['slot'])] += len(stunde['fz'])
-					zaehler[('traffic_hours', stunde['slot'])] += 1
+					f = 'hour_fz=%d,hour_vsum=%.1f,hour_vn=%d' % (len(stunde['fz']), stunde['vsum'], stunde['vn'])
+					if stunde['vmax'] is not None:
+						f += ',hour_vmax=%.1f' % stunde['vmax']
+					stundenzeilen.append('otm%s %s' % (tag, f))
 				for n in stunde['knoten']:
-					zaehler[('traffic_node_fzh', (n,) + stunde['slot'])] += len(stunde['nfz'].get(n, ()))
-					zaehler[('traffic_node_hours', (n,) + stunde['slot'])] += 1
-			stunde.update(id=sid, slot=slot, fz=set(), nfz=collections.defaultdict(set), knoten=set(), online=False)
+					w = stunde['nv'].get(n, [0.0, 0, None])
+					f = 'hour_node_fz=%d,hour_node_vsum=%.1f,hour_node_vn=%d' % (len(stunde['nfz'].get(n, ())), w[0], w[1])
+					if w[2] is not None:
+						f += ',hour_node_vmax=%.1f' % w[2]
+					stundenzeilen.append('otm,node=%s%s %s' % (esc(n), tag, f))
+			stunde.update(id=sid, slot=slot, fz=set(), nfz=collections.defaultdict(set), knoten=set(),
+			              online=False, vsum=0.0, vn=0, vmax=None,
+			              nv=collections.defaultdict(lambda: [0.0, 0, None]))
 		stunde['fz'] |= fahrzeuge
+		stunde['vsum'] += vsum
+		stunde['vn'] += vn
+		if vhoch is not None:
+			stunde['vmax'] = vhoch if stunde['vmax'] is None else max(stunde['vmax'], vhoch)
 		for n, f in nfz.items():
 			stunde['nfz'][n] |= f
+		for n, (a_, b_, c_) in nv.items():
+			w = stunde['nv'][n]
+			w[0] += a_
+			w[1] += b_
+			if c_ is not None:
+				w[2] = c_ if w[2] is None else max(w[2], c_)
 		for (m, n), v in list(gauges.items()):
 			if m == 'node_online' and v == 1:
 				stunde['knoten'].add(n)
 				stunde['online'] = True
-				zaehler[('traffic_node_min', (n,) + slot)] += 1
-				zaehler[('traffic_node_fz', (n,) + slot)] += len(nfz.get(n, ()))
-				zaehler[('traffic_node_speed_sum', (n,) + slot)] += nv[n][0] if n in nv else 0.0
-				zaehler[('traffic_node_speed_n', (n,) + slot)] += nv[n][1] if n in nv else 0
-		if any(v == 1 for (m, _), v in gauges.items() if m == 'node_online'):
-			zaehler[('traffic_min', slot)] += 1
-			zaehler[('traffic_fz', slot)] += len(fahrzeuge)
-			zaehler[('traffic_speed_sum', slot)] += vsum
-			zaehler[('traffic_speed_n', slot)] += vn
 		weg = {n for n, t in offline_seit.items() if now - t > OFFLINE_MAX}
 		werte = list(zaehler.items()) + [(k, v) for k, v in gauges.items()
 		                                 if not (k[0] in ('node_online', 'node_uptime') and k[1] in weg)]
@@ -425,10 +443,6 @@ def auswerten():
 	for (metrik, label), wert in werte:
 		if metrik == 'receivers_n':
 			tag = ',n=' + label
-		elif metrik.startswith('traffic_node_'):
-			tag = ',node=%s,wd=%s,h=%s' % ((esc(label[0]),) + label[1:])
-		elif metrik.startswith('traffic_'):
-			tag = ',wd=%s,h=%s' % label
 		elif metrik in ('pos', 'pos_union', 'speed_sum', 'speed_n', 'speed_node_sum', 'speed_node_n'):
 			n, (lat, lon) = label
 			tag = (',node=' + n.replace(' ', '_').replace(',', '_') if n else '') + ',lat=%s,lon=%s' % (lat, lon)
@@ -437,6 +451,7 @@ def auswerten():
 		else:
 			tag = ''
 		zeilen.append('otm%s %s=%s %d' % (tag, metrik, round(wert, 1) if isinstance(wert, float) else wert, ts))
+	zeilen += ['%s %d' % (z, ts) for z in stundenzeilen]
 	for (n, (lat, lon)), v in vmax.items():
 		if n:
 			zeilen.append('otm,node=%s,lat=%s,lon=%s speed_node_max=%s %d' % (esc(n), lat, lon, v, ts))
