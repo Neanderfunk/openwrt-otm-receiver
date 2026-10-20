@@ -3,6 +3,8 @@
 # Wie Gluon (gluon-setup-mode, 50-gluon-setup-mode): Taster wps, reset oder
 # phone 3 s gedrueckt halten -> Neustart in den Config-Mode. OpenWrts eigenes
 # /etc/rc.button/reset (Neustart/Werksreset) ist im Image stillgelegt.
+# FRITZ!Box 3390: keiner dieser Taster, dort gilt der WLAN-Taster (rfkill;
+# /etc/rc.button/rfkill ist ebenfalls stillgelegt).
 
 wait=3
 
@@ -11,7 +13,13 @@ wait_setup_mode() {
 	otm-configmode enter
 }
 
-if [ "$BUTTON" = wps ] || [ "$BUTTON" = reset ] || [ "$BUTTON" = phone ]; then
+taster=0
+case "$BUTTON" in
+wps|reset|phone) taster=1 ;;
+rfkill) [ "$(cat /tmp/sysinfo/board_name 2>/dev/null)" = avm,fritz3390 ] && taster=1 ;;
+esac
+
+if [ $taster = 1 ]; then
 	case "$ACTION" in
 		pressed)
 			wait_setup_mode &

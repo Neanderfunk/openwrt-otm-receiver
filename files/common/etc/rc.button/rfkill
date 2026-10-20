@@ -1,0 +1,8 @@
+#!/bin/sh
+# OpenWrts WLAN-Taster-Behandlung ist stillgelegt: Sie setzt bei allen Funkteilen
+# disabled=0, schreibt das in den Flash und ruft "wifi up". Unsere Funkteile sind
+# absichtlich aus (sonst raeumt netifd das Monitor-Interface ab), ein Druck kostete
+# also den Empfang und braechte OpenWrts offenes Standard-WLAN hoch.
+# Auf der FRITZ!Box 3390 (kein Reset-Taster) wertet /etc/hotplug.d/button/50-otm-configmode
+# den WLAN-Taster fuer den Config-Mode aus.
+return 0

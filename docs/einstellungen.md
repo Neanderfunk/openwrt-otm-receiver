@@ -12,8 +12,12 @@ Ab otm-bridge 0.18.0. Der Empfänger hat keine Weboberfläche. Eingestellt wird 
 - per SSH im Normalbetrieb: `otm-configmode enter`.
 
 Ausgewertet werden die Taster `reset`, `wps` und `phone`, wie bei Gluon. Die FRITZ!Box 3390 hat
-keinen davon, sie kommt nur per Befehl in den Config-Mode. OpenWrts eigene Belegung des
-Reset-Tasters (kurz = Neustart, ab 5 s = Werksreset) ist stillgelegt, auch das wie bei Gluon.
+keinen davon; dort gilt der WLAN-Taster (ab otm-bridge 0.18.5), ebenfalls etwa 10 Sekunden
+halten. OpenWrts eigene Belegung des Reset-Tasters (kurz = Neustart, ab 5 s = Werksreset) ist
+stillgelegt, auch das wie bei Gluon. Ebenso stillgelegt ist die des WLAN-Tasters (WDR3600/4300/
+4900, FRITZ!Box 3390): Sie würde die absichtlich ausgeschalteten Funkteile einschalten, den
+Empfang beenden und OpenWrts offenes Standard-WLAN hochbringen. Der Power-Taster der 3390
+schaltet weiter aus.
 
 **Im Config-Mode:**
 
