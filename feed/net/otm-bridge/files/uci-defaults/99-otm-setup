@@ -33,6 +33,19 @@ case "$wan_dev" in
 esac
 ports=$(echo $ports)
 
+# NanoStation M XW: Der eingebaute Switch vertraegt eth0.1 und eth0.2 nicht
+# zusammen in einer Bridge (bmx6 #439, OpenWrt-Forum 110035; bei uns: keine
+# DHCP-Adresse). Switch ohne VLANs, beide Buchsen direkt an eth0.
+case "$(cat /tmp/sysinfo/board_name 2>/dev/null)" in
+ubnt,nanostation-m-xw)
+	while uci -q delete network.@switch_vlan[0]; do :; done
+	for v in $(uci -q show network | sed -n "s/^network\.\([^.=]*\)=switch$/\1/p"); do
+		uci set network.$v.enable_vlan='0'
+	done
+	ports=eth0
+	;;
+esac
+
 set -- $ports
 if [ $# -gt 1 ] || [ -n "$br" ]; then
 	if [ -z "$br" ]; then
