@@ -8,8 +8,12 @@ Ab otm-bridge 0.18.0. Der Empfänger hat keine Weboberfläche. Eingestellt wird 
 **Hinein:**
 
 - Reset-Taster etwa 10 Sekunden gedrückt halten (Auslösung wie bei Gluon), bis das Gerät neu
-  startet, oder
-- per SSH im Normalbetrieb: `otm-configmode enter`.
+  startet. Das ist der Weg für alle, die noch keinen SSH-Schlüssel auf dem Gerät haben: Ohne
+  Schlüssel ist SSH im Normalbetrieb zu, also kommt man auch nicht per SSH in den Config-Mode.
+- per SSH im Normalbetrieb: `otm-configmode enter`. Nur mit Schlüssel möglich, und wer den hat,
+  braucht den Config-Mode eigentlich nicht: Alle Einstellungen gehen per SSH genauso im
+  Normalbetrieb (siehe unten). Der Befehl ist für Betreuende gedacht, z. B. zum Testen, und
+  für die FRITZ!Box 3390 vor 0.18.5, die noch keinen Taster dafür hatte.
 
 Ausgewertet werden die Taster `reset`, `wps` und `phone`, wie bei Gluon. Die FRITZ!Box 3390 hat
 keinen davon; dort gilt der WLAN-Taster (ab otm-bridge 0.18.5), ebenfalls etwa 10 Sekunden
