@@ -71,7 +71,8 @@ sondern in `/etc/grafana/authentik-client-secret` (root:grafana, 640) und wird p
   `otm/<node>/build`; Zuordnung in `/var/lib/otm-stats/namen.json`). Meldet sich eine MAC
   unter neuem Namen, schreibt otm-stats nach 90 s alle Reihen `node=<alt>` in
   VictoriaMetrics auf den neuen Namen um (Export, Import, `delete_series`; Werte ab dem
-  ersten des neuen Namens fallen weg) und ignoriert retained Reste des alten Namens.
+  ersten des neuen Namens fallen weg), löscht die eigenen retained Nachrichten `otm/<alt>/…` am
+  Proxy und ignoriert sonstige retained Reste des alten Namens (z. B. `its/<alt>/status`).
   Grafana bleibt bei `by (node)`. Den `deleteAuthKey` bekommt der Dienst per
   `LoadCredential` aus `/etc/default/victoria-metrics`. Von Hand (Dienst vorher anhalten):
   `systemctl stop otm-stats; python3 /usr/local/lib/otm/otm-stats.py --umbenennen <alt> <neu>; systemctl start otm-stats`.

@@ -74,6 +74,7 @@ VM = VMBASE + '/write'
 STATE = os.path.join(os.environ.get('STATE_DIRECTORY', '/var/lib/otm-stats'), 'namen.json')
 namen = {}                       # mac -> aktueller Name
 umbenannt = {}                   # alter Name -> neuer (retained Reste des alten ignorieren)
+mqtt_client = None               # zum Loeschen retained Reste unter otm/<alter Name>/
 # Zaehler/Gauges, deren Label der Knoten ist bzw. mit ihm beginnt
 KNOTEN_LABEL = ('frames', 'exclusive', 'mqtt', 'node_online', 'node_uptime')
 KNOTEN_TUPEL = ('pos', 'speed_node_sum', 'speed_node_n')
@@ -185,8 +186,10 @@ def on_message(c, u, m):
 		except Exception:
 			return
 		with lock:
-			firmware[t[1]] = {k: str(b.get(k, '')) for k in ('version', 'commit', 'bridge', 'model')}
 			kennen(t[1], str(b.get('mac', '')))
+			# retained build eines umbenannten Namens: nicht wieder als Empfaenger fuehren
+			if t[1] not in umbenannt:
+				firmware[t[1]] = {k: str(b.get(k, '')) for k in ('version', 'commit', 'bridge', 'model')}
 		return
 	if len(t) != 3 or t[0] != 'its':
 		return
@@ -197,10 +200,11 @@ def on_message(c, u, m):
 		except Exception:
 			return
 		with lock:
-			f = firmware.setdefault(node, {'version': '', 'commit': ''})
-			f['bridge'] = str(i.get('ver', '')).replace('otm-bridge-', '')
-			f['model'] = str(i.get('hwv', ''))
 			kennen(node, str(i.get('emac', '')))
+			if node not in umbenannt:
+				f = firmware.setdefault(node, {'version': '', 'commit': ''})
+				f['bridge'] = str(i.get('ver', '')).replace('otm-bridge-', '')
+				f['model'] = str(i.get('hwv', ''))
 		return
 	now = time.time()
 	with lock:
@@ -270,6 +274,11 @@ def kennen(name, mac):
 	if alt and alt not in namen.values():
 		umbenannt[alt] = name
 		vergessen(alt, name)
+		# unsere eigenen retained Nachrichten des alten Namens am Proxy loeschen
+		# (otm/# geht nicht an OpenTrafficMap; its/<alt>/status bleibt dort stehen)
+		if mqtt_client:
+			for x in ('build', 'location', 'problem'):
+				mqtt_client.publish('otm/%s/%s' % (alt, x), b'', retain=True)
 		threading.Thread(target=db_umbenennen, args=(alt, name, 90), daemon=True).start()
 	namen_speichern()
 
@@ -487,7 +496,8 @@ def main():
 			os.chown(f, d.st_uid, d.st_gid)
 		return
 	namen_laden()
-	c = mqtt.Client(client_id='otm-stats')
+	global mqtt_client
+	c = mqtt_client = mqtt.Client(client_id='otm-stats')
 	c.on_message = on_message
 	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0), ('otm/+/location', 0), ('otm/+/health', 0), ('otm/+/problem', 0)])
 	c.connect_async('127.0.0.1', 1883, 60)
