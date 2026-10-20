@@ -19,7 +19,8 @@ if otm_configmode; then
 	echo "Config-Mode: an. Verlassen: otm-configmode exit (Neustart in den Normalbetrieb);"
 	echo "endet von selbst 120 Minuten nach dem Start in den Config-Mode."
 else
-	echo "Normalbetrieb. Config-Mode: otm-configmode enter, oder Reset-Taster (FRITZ!Box 3390: WLAN-Taster) ~10 s halten"
+	echo "Normalbetrieb. Alle Einstellungen unten gehen hier genauso, der Config-Mode ist"
+	echo "nur fuer Geraete ohne SSH-Schluessel (Reset-Taster, FRITZ!Box 3390: WLAN-Taster, ~10 s)."
 fi
 cat <<EOF
 Empfaenger $(uci -q get system.@system[0].hostname), Build $(cat /lib/otm/version 2>/dev/null)
@@ -71,7 +72,9 @@ im Normalbetrieb per Key offen, ohne Key zu; uebernommen beim Verlassen des
 Config-Mode.
 
 Weitere Befehle:
-  otm-configmode enter|exit   Config-Mode an/aus (Neustart)
+  otm-configmode exit         Config-Mode verlassen (Neustart)
+  otm-configmode enter        Config-Mode an (Neustart); nur zum Testen, mit SSH
+                              braucht man ihn nicht
   otm-autoupdater -n          pruefen, ob es neue Firmware gibt
   logread -e otm              Meldungen von otm-bridge, otm-uplink, ...
   firstboot -y && reboot      Werkszustand (alle Einstellungen weg)
