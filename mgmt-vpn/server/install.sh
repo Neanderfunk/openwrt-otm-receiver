@@ -22,6 +22,9 @@ install -m 644 mosquitto-otm.override /etc/systemd/system/mosquitto.service.d/ot
 install -d /usr/local/lib/otm
 install -m 755 otm-stats.py /usr/local/lib/otm/otm-stats.py
 install -m 644 otm-stats.service /etc/systemd/system/
+# fremde Empfaenger fuer otm-stats (LoadCredential, siehe otm-stats.py): Datei muss existieren
+install -d -m 755 /etc/otm
+[ -e /etc/otm/fremde-empfaenger ] || install -m 600 /dev/null /etc/otm/fremde-empfaenger
 # VictoriaMetrics nur lokal (das Paket lauscht sonst auf allen Adressen), Admin-
 # Endpunkte mit Schluessel (Grafana reicht GET-Anfragen per Proxy durch). Ein
 # vorhandener Schluessel bleibt.

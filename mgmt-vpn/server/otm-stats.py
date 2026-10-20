@@ -48,6 +48,15 @@
 #                           Eigene Namen, damit Summen ueber die Gesamtwerte
 #                           nicht doppelt zaehlen
 #
+# Fremde Empfaenger (z. B. ESP32 mit eigenem Zugang bei OpenTrafficMap): Fuer
+# jeden Eintrag "<name> <passwort>" in der Credential-Datei "fremde" (systemd
+# LoadCredential, auf wgiot /etc/otm/fremde-empfaenger) liest otm-stats per TLS
+# direkt bei cits1 genau its/<name>/{status,info,stats,packet} mit und wertet sie
+# wie die eigenen aus. Nur lesen: eigene Client-ID, kein Last Will, nichts wird
+# gesendet, und die Nachrichten kommen nie in unseren mosquitto (dessen Bridge
+# its/# zu OpenTrafficMap schickt). Der Zugang eines Knotens darf nur dessen
+# eigene Topics abonnieren, ohne Platzhalter.
+#
 # Umbenennen: Feste Kennung eines Empfaengers ist die MAC seines ITS-Radios
 # (emac aus its/<node>/info, ab 0.18.4 auch mac in otm/<node>/build). Meldet
 # sich eine bekannte MAC unter neuem Namen, schreibt otm-stats alle Reihen des
@@ -483,6 +492,32 @@ def auswerten():
 		except Exception as e:
 			print('VictoriaMetrics:', e, flush=True)
 
+FREMD_BROKER = ('cits1.opentrafficmap.org', 8883)
+
+def fremde_lesen():
+	"""Eine Lese-Verbindung je fremdem Empfaenger aus der Credential-Datei."""
+	try:
+		zeilen = open(os.path.join(os.environ.get('CREDENTIALS_DIRECTORY', '/nonexistent'), 'fremde')).read().splitlines()
+	except OSError:
+		return []
+	clients = []
+	for z in zeilen:
+		f = z.split()
+		if len(f) != 2 or z.lstrip().startswith('#'):
+			continue
+		name, pw = f
+		c = mqtt.Client(client_id='otm-wgiot-lesen-' + name)
+		c.username_pw_set(name, pw)
+		c.tls_set(ca_certs='/etc/ssl/certs/ca-certificates.crt')
+		c.on_message = on_message
+		c.on_connect = (lambda n: lambda c, u, fl, rc: c.subscribe(
+			[('its/%s/%s' % (n, x), 0) for x in ('status', 'info', 'stats', 'packet')]))(name)
+		c.connect_async(*FREMD_BROKER, 60)
+		c.loop_start()
+		clients.append(c)
+		print('lese fremden Empfaenger %s bei %s' % (name, FREMD_BROKER[0]), flush=True)
+	return clients
+
 def main():
 	if len(sys.argv) == 4 and sys.argv[1] == '--umbenennen':
 		# von Hand, bei angehaltenem Dienst: Datenbank umschreiben und den
@@ -502,6 +537,7 @@ def main():
 	c.on_connect = lambda c, u, f, rc: c.subscribe([('its/#', 0), ('otm/+/build', 0), ('otm/+/location', 0), ('otm/+/health', 0), ('otm/+/problem', 0)])
 	c.connect_async('127.0.0.1', 1883, 60)
 	c.loop_start()
+	fremde = fremde_lesen()     # Verweis halten, sonst raeumt Python die Clients ab
 	while True:
 		time.sleep(60 - time.time() % 60)
 		auswerten()

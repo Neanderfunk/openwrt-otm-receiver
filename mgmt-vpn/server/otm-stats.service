@@ -10,6 +10,9 @@ DynamicUser=yes
 StateDirectory=otm-stats
 # deleteAuthKey zum Umschreiben umbenannter Empfaenger; die Datei ist nur fuer root lesbar
 LoadCredential=vm:/etc/default/victoria-metrics
+# fremde Empfaenger "<name> <passwort>" je Zeile (root, 600); muss existieren (leer = nur lokal),
+# sonst startet der Dienst nicht; install.sh legt sie leer an
+LoadCredential=fremde:/etc/otm/fremde-empfaenger
 Restart=always
 RestartSec=10
 
