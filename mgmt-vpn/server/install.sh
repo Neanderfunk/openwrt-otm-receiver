@@ -35,10 +35,12 @@ for f in deleteAuthKey snapshotAuthKey forceMergeAuthKey forceFlushAuthKey flags
 	a="$a -$f=$k"
 done
 (umask 077; echo "ARGS=\"-storageDataPath=/var/lib/victoria-metrics -httpListenAddr=127.0.0.1:8428 -retentionPeriod=24$a\"" > /etc/default/victoria-metrics)
-# Journal hoechstens 1 GB (Vorgabe systemd: 10 % der Platte, bis 4 GB;
-# Sicherheitsrundgang 22.10.2026, gilt fuer alle Hosts)
+# Journal: Hausstandard aller Hosts (Sicherheitsrundgang 22.10.2026; dieselbe
+# Datei legt die Ansible-Rolle log_hygiene an, daher genau dieser Name).
+# Vorgabe systemd waere 10 % der Platte, bis 4 GB.
 mkdir -p /etc/systemd/journald.conf.d
-printf '[Journal]\nSystemMaxUse=1G\n' > /etc/systemd/journald.conf.d/groesse.conf
+rm -f /etc/systemd/journald.conf.d/groesse.conf
+printf '[Journal]\nSystemMaxUse=1G\nSystemKeepFree=2G\nMaxRetentionSec=4week\n' > /etc/systemd/journald.conf.d/90-groesse.conf
 systemctl restart systemd-journald
 systemctl daemon-reload
 systemctl enable --now otm-mgmt-net.service dnsmasq-otm.service fastd@otm.service

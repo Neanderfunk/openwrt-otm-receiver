@@ -66,8 +66,10 @@ sondern in `/etc/grafana/authentik-client-secret` (root:grafana, 640) und wird p
 
 ## Betrieb
 
-- **Journal:** höchstens 1 GB (`/etc/systemd/journald.conf.d/groesse.conf`, legt `install.sh`
-  an; Vorgabe von systemd wäre 10 % der Platte, bis 4 GB). Prüfen:
+- **Journal:** Hausstandard aller Hosts in `/etc/systemd/journald.conf.d/90-groesse.conf`:
+  höchstens 1 GB, mindestens 2 GB frei lassen, höchstens 4 Wochen (`install.sh` legt die Datei
+  an, ebenso die Ansible-Rolle `log_hygiene`; Vorgabe von systemd wäre 10 % der Platte, bis
+  4 GB). Prüfen:
   `systemd-analyze cat-config systemd/journald.conf | grep SystemMaxUse; journalctl --disk-usage`.
 - **Station umbenennen** (`otm-bridge.main.node`): otm-stats kennt jeden Empfänger an der MAC
   seines ITS-Radios (`emac` aus `its/<node>/info`, ab 0.18.4 auch `mac` in
