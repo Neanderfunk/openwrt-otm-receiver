@@ -35,6 +35,11 @@ for f in deleteAuthKey snapshotAuthKey forceMergeAuthKey forceFlushAuthKey flags
 	a="$a -$f=$k"
 done
 (umask 077; echo "ARGS=\"-storageDataPath=/var/lib/victoria-metrics -httpListenAddr=127.0.0.1:8428 -retentionPeriod=24$a\"" > /etc/default/victoria-metrics)
+# Journal hoechstens 1 GB (Vorgabe systemd: 10 % der Platte, bis 4 GB;
+# Sicherheitsrundgang 22.10.2026, gilt fuer alle Hosts)
+mkdir -p /etc/systemd/journald.conf.d
+printf '[Journal]\nSystemMaxUse=1G\n' > /etc/systemd/journald.conf.d/groesse.conf
+systemctl restart systemd-journald
 systemctl daemon-reload
 systemctl enable --now otm-mgmt-net.service dnsmasq-otm.service fastd@otm.service
 nft -f /etc/otm-mgmt/nft.conf
