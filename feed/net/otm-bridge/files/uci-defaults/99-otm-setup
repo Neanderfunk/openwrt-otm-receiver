@@ -33,16 +33,22 @@ case "$wan_dev" in
 esac
 ports=$(echo $ports)
 
-# NanoStation M XW: Der eingebaute Switch vertraegt eth0.1 und eth0.2 nicht
-# zusammen in einer Bridge (bmx6 #439, OpenWrt-Forum 110035; bei uns: keine
-# DHCP-Adresse). Switch ohne VLANs, beide Buchsen direkt an eth0.
+# NanoStation M XW (Switch AR8236): eth0.1 und eth0.2 zusammen in einer Bridge
+# vertraegt er nicht (bmx6 #439; bei uns keine DHCP-Adresse), und ohne VLANs
+# (enable_vlan=0, roh eth0, 0.18.7) haengt der Sendepfad (eth0: tx timeout,
+# Test 21.10.2026). Deshalb wie Stock-OpenWrt mit VLANs, aber nur VLAN 1 mit
+# beiden Buchsen: CPU tagged, Port 1 und Port 5 untagged; nur eth0.1.
 case "$(cat /tmp/sysinfo/board_name 2>/dev/null)" in
 ubnt,nanostation-m-xw)
 	while uci -q delete network.@switch_vlan[0]; do :; done
 	for v in $(uci -q show network | sed -n "s/^network\.\([^.=]*\)=switch$/\1/p"); do
-		uci set network.$v.enable_vlan='0'
+		uci set network.$v.enable_vlan='1'
 	done
-	ports=eth0
+	v=$(uci add network switch_vlan)
+	uci set network.$v.device='switch0'
+	uci set network.$v.vlan='1'
+	uci set network.$v.ports='0t 1 5'
+	ports=eth0.1
 	;;
 esac
 
