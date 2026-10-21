@@ -19,6 +19,7 @@ export OTM_VERSION="${OTM_VERSION:-$(date -u +%Y%m%d%H%M)}"
 
 # OpenWrt 25.12.4, ath79: alle ath9k-5-GHz-Geraete
 ATH79="tplink_tl-wdr3600-v1 tplink_tl-wdr4300-v1 tplink_tl-wdr4310-v1 tplink_tl-wdr3500-v1 tplink_tl-wdr4900-v2
+	buffalo_wzr-hp-ag300h buffalo_wzr-600dhp
 	tplink_cpe510-v1 tplink_cpe510-v2 tplink_cpe510-v3 tplink_cpe610-v1 tplink_cpe610-v2
 	tplink_wbs510-v1 tplink_wbs510-v2
 	ubnt_litebeam-m5-xw ubnt_nanostation-m-xw ubnt_nanostation-loco-m-xw

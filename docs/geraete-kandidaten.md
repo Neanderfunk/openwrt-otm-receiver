@@ -42,7 +42,7 @@ spezifiziert. Wie viel bei 5.9 GHz verloren geht, muss man je Gerät messen
 | AVM FRITZ!Box 3390 | AR9580-Klasse | 128/NAND | ✘ (erst ab 22.03) | ~0 | 8–39 € (13) | Münsters Referenzgerät (25.12); für uns braucht es einen Backport |
 | D-Link DIR-825 B1/B2 · C1 | AR9220 · AR9382 | 64/8 · 128/16 | ✔ | ~10 | 5–30 € (3) | Revision steht selten in der Anzeige |
 | Aruba AP-105 | AR9220 | 128/16 | ✔ | 7 | 4 Stück 20 € VB | |
-| Buffalo WZR-HP-AG300H / WZR-600DHP | AR9220 | 128/32 | ✔ | 6 | nicht abgefragt | |
+| Buffalo WZR-HP-AG300H / WZR-600DHP | AR9220 | 128/32 | ✔ | 6 | nicht abgefragt | im Release ab 21.10.2026 |
 | Meraki MR16, Open-Mesh MR900 v1/v2 | AR9220 · AR9580 | 64/16 · 128/16 | ✔ | 4 · 5 | nicht abgefragt | selten |
 | Linksys EA4500 v3, EnGenius ESR900 | AR9580 | 128 | ✘ (erst ab 22.03 bzw. 15.05/später) | ~0 | nicht abgefragt | |
 
