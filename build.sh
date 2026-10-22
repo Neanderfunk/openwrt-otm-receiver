@@ -315,6 +315,14 @@ patches=$(echo $GENOMMEN | tr ' ' '\n' | sort | tr '\n' ' ')
 patches_ausgelassen=${SKIP_PATCHES:-keine}
 EOF
 
+# Rechte im Image unabhaengig von der umask des Bau-Rechners (Debian neuerdings
+# 002): ohne das landet /etc/dropbear gruppenbeschreibbar im Image, und dropbear
+# weist jeden Key ab ("/etc/dropbear must be owned by user or root, and not
+# writable by group or others"). Das Geraet korrigiert es ab 0.18.11 zwar beim
+# Start, aber das Image soll stimmen. Eigentuemer setzt der ImageBuilder auf root.
+chmod -R go-w "$FILES"
+[ -d "$FILES/etc/dropbear" ] && chmod 700 "$FILES/etc/dropbear"
+[ -f "$FILES/etc/dropbear/authorized_keys" ] && chmod 600 "$FILES/etc/dropbear/authorized_keys"
 OUT="$BUILD/out/$OWRT_VER${OTM_VARIANT:+-$OTM_VARIANT}"
 # Geraete, bei denen TLS (direct/auto) das Overlay fast aufbraucht: 8 MB Flash
 # und ein grosses Kernel-/Loader-Layout. Mit TLS bleiben dort grob 300 KB,
