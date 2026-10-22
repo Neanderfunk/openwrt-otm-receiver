@@ -50,6 +50,38 @@ jedem Start (ab otm-bridge 0.18.2; vorher nur bei `otm-configmode exit`). Ein im
 eingetragener Key gilt deshalb nach jedem Weg hinaus auch im Normalbetrieb, auch auf Geräten,
 deren Image ohne Key gebaut wurde. Keys bleiben bei Updates erhalten.
 
+Schlüsseltypen: ed25519, RSA und ECDSA, auch auf den XM-Images mit OpenWrt 21.02.7 (dropbear
+2020.81 mit ed25519).
+
+### Wenn der Login mit Key nicht klappt
+
+- **Dateirechte:** dropbear weist den Key ab, wenn `/etc/dropbear` oder
+  `/etc/dropbear/authorized_keys` für Gruppe oder andere beschreibbar ist oder nicht root
+  gehört (lesbar für alle ist in Ordnung). Richtig:
+  `chmod 700 /etc/dropbear && chmod 600 /etc/dropbear/authorized_keys && chown root:root /etc/dropbear /etc/dropbear/authorized_keys`
+- **Format:** je Key genau eine Zeile `ssh-ed25519 AAAA… kommentar` bzw. `ssh-rsa AAAA…`. Das
+  mehrzeilige PuTTY-Format (`---- BEGIN SSH2 PUBLIC KEY ----`) geht nicht; in PuTTYgen den
+  Text aus „Public key for pasting into OpenSSH authorized_keys file“ nehmen. Keine
+  Windows-Zeilenenden, keine Zeilenumbrüche im Key.
+- **Privater Key am Rechner:** OpenSSH verweigert einen privaten Key, der für andere lesbar ist
+  („UNPROTECTED PRIVATE KEY FILE“), also `chmod 600` auf die Datei.
+- **Ältere Firmware (vor otm-bridge 0.18.2):** Ein im Config-Mode eingetragener Key gilt dort
+  nur nach `otm-configmode exit`, nicht nach Neustart oder Strom aus/an.
+- **Log am Gerät** (z. B. im Config-Mode): `logread -e dropbear`. Bei falschen Rechten steht
+  dort sinngemäß „must be owned by user or root, and not writable by group or others“; bei
+  falschem Format oder falschem Key nur ein fehlgeschlagener Pubkey-Versuch.
+
+### Wenn 192.168.1.1 im Config-Mode nicht antwortet
+
+- `br-lan` läuft mit STP: Nach dem Einstecken leitet die Bridge erst nach etwa 30 s weiter.
+- Hat der Rechner keine Adresse per DHCP bekommen, fest `192.168.1.2/24` setzen.
+- Bei Außengeräten mit PoE an die LAN-Buchse des PoE-Adapters.
+- Link-lokal per IPv6 geht unabhängig von der IPv4-Einrichtung, dropbear lauscht auch dort:
+  `ping -6 ff02::1%<if>` zeigt die Adresse des Geräts, dann `ssh root@fe80::…%<if>`
+  (`<if>` = Netzwerkkarte des Rechners).
+- Antwortet auch link-lokal nichts, liegt es an Kabel, Switch oder Treiber; dann hilft nur die
+  serielle Konsole.
+
 ## Einstellungen (UCI)
 
 `otm-help` zeigt die wichtigsten Schlüssel mit ihren aktuellen Werten, in beiden Modi; beim
