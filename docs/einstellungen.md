@@ -55,12 +55,13 @@ Schlüsseltypen: ed25519, RSA und ECDSA, auch auf den XM-Images mit OpenWrt 21.0
 
 ### Wenn der Login mit Key nicht klappt
 
-- **Dateirechte** von `/etc/dropbear` und `authorized_keys` korrigiert das Gerät ab otm-bridge
-  0.18.11 bei jedem Start selbst (`logread -e otm-ssh`).
+- **Dateirechte** von `/etc/dropbear` und `authorized_keys` sowie **Windows-Zeilenenden** in
+  `authorized_keys` korrigiert das Gerät ab otm-bridge 0.18.11 bei jedem Start selbst
+  (`logread -e otm-ssh`).
 - **Format:** je Key genau eine Zeile `ssh-ed25519 AAAA… kommentar` bzw. `ssh-rsa AAAA…`. Das
   mehrzeilige PuTTY-Format (`---- BEGIN SSH2 PUBLIC KEY ----`) geht nicht; in PuTTYgen den
   Text aus „Public key for pasting into OpenSSH authorized_keys file“ nehmen. Keine
-  Windows-Zeilenenden, keine Zeilenumbrüche im Key.
+  Zeilenumbrüche im Key.
 - **Privater Key am Rechner:** OpenSSH verweigert einen privaten Key, der für andere lesbar ist
   („UNPROTECTED PRIVATE KEY FILE“), also `chmod 600` auf die Datei.
 - **Ältere Firmware (vor otm-bridge 0.18.2):** Ein im Config-Mode eingetragener Key gilt dort

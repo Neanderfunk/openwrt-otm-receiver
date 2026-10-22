@@ -100,10 +100,19 @@ otm_24_phy() {
 # /etc/dropbear/authorized_keys laeuft dropbear, nur per Key, und die
 # wan-Zone laesst Port 22 zu; ohne Key bleibt SSH zu. Schreibt nur, was sich
 # aendert (laeuft bei jedem Start, kein Flash-Schreiben im Normalfall).
-# Rechte, die dropbear verlangt, sonst weist es Keys ab: /etc/dropbear 700 und
-# authorized_keys 600, beide root. Aendert nur, was falsch ist (jeder Start).
+# Was dropbear verlangt, sonst weist es Keys ab: Unix-Zeilenenden in
+# authorized_keys, /etc/dropbear 700 und authorized_keys 600, beide root.
+# Aendert nur, was falsch ist (jeder Start).
 otm_ssh_rechte() {
 	local x m
+	# Windows-Zeilenenden (CRLF, z. B. aus PuTTYgen kopiert): dropbear liest den
+	# Key dann nicht. Vor den Rechten (sed -i legt die Datei neu an); nur
+	# schreiben, wenn wirklich ein CR drinsteht.
+	x=/etc/dropbear/authorized_keys
+	if [ -f $x ] && grep -q "$(printf '\r')" $x; then
+		sed -i 's/\r$//; s/\r/ /g' $x
+		logger -t otm-ssh "Windows-Zeilenenden in $x entfernt"
+	fi
 	for x in /etc/dropbear:700 /etc/dropbear/authorized_keys:600; do
 		[ -e "${x%:*}" ] || continue
 		set -- $(ls -ldn "${x%:*}")
