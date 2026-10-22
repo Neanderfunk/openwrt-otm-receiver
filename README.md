@@ -218,8 +218,9 @@ erhaltener Konfiguration bleiben vorhandene Keys erhalten.
   empfangen, siehe [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md).
   Findet der Wrapper gar kein Funkteil für 5900 MHz, meldet er das stündlich retained an
   `otm/<node>/problem` (ab 0.18.3), samt der vorhandenen Funkteile (`phy0:2.4GHz` oder
-  `none`); im Grafana steht das Gerät dann unter „Geraete ohne Empfang“. Solche Geräte
-  heißen schon ab der Ersteinrichtung `opentrafficmap` statt `<Modell>-xxxx`.
+  `none`); im Grafana steht das Gerät dann unter „Geraete ohne Empfang“ und in „Empfangs-Health“
+  als „kein 5-GHz-Radio“. Ubiquiti-M-Geräte ohne 5-GHz-Funkteil heißen ab 0.18.10 `…M2…`
+  statt `…M5…` (z. B. `NSM2XM-xxxx`; vorher Hostname `opentrafficmap`).
 - **Position** (wie bei Gluon, `gluon-node-info.@location[0]`): standardmäßig nicht geteilt.
 
   ```

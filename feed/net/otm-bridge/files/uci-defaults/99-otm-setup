@@ -139,7 +139,11 @@ phy=$(otm_its_phy "${freq:-5900}")
 if [ -n "$phy" ]; then
 	name=$(otm_node_name "$(cat /sys/class/ieee80211/$phy/macaddress)")
 else
-	name=opentrafficmap
+	# kein ITS-Funkteil (z. B. NanoStation M2): Name wie die Problem-Meldung in
+	# otm-bridge-run, aus dem ersten Funkteil bzw. eth0 (frueher "opentrafficmap")
+	mac=$(cat /sys/class/ieee80211/*/macaddress 2>/dev/null | head -n 1)
+	[ -n "$mac" ] || mac=$(cat /sys/class/net/eth0/address 2>/dev/null)
+	name=$(otm_node_name "$mac")
 fi
 uci set system.@system[0].hostname="$name"
 uci commit system
