@@ -44,6 +44,7 @@ dieselbe Datei steht im Gerät unter `/etc/otm-build-info`.
 | `OTM_AUTOUPDATER` | `1` (Vorgabe), `0` | Autoupdater ins Image, siehe unten |
 | `OTM_BRANCH` | `stable` (Vorgabe) | Branch für Manifest und Upload-Verzeichnis |
 | `OTM_VERSION` | Ziffern | Versionsnummer in Image und Manifest; Vorgabe Bauzeit `JJJJMMTThhmm` (UTC) |
+| `OTM_EXTRA_PACKAGES` (oder `EXTRA_PACKAGES`) | Paketnamen, Leerzeichen-getrennt | zusätzliche Pakete ins Image (im ROM statt später ins Overlay), `-paket` nimmt eines heraus; Achtung: der Autoupdater spielt das Standard-Image vom Server ein, die Extras sind danach weg (dann `OTM_AUTOUPDATER=0` oder eigenen Server) |
 | `OTM_VARIANT` | Text | Anhang für Image-Name und Ausgabeverzeichnis, damit Varianten sich nicht überschreiben |
 
 Weg zum Broker:

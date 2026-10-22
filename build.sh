@@ -63,6 +63,10 @@ OTM_SSH_KEYS="${OTM_SSH_KEYS:-}"
 OTM_AUTOUPDATER="${OTM_AUTOUPDATER:-1}"
 OTM_BRANCH="${OTM_BRANCH:-stable}"
 OTM_VERSION="${OTM_VERSION:-$(date -u +%Y%m%d%H%M)}"
+# Zusaetzliche Pakete ins Image (Leerzeichen-getrennt, "-paket" nimmt eines
+# heraus), z. B. fuer Geraete mit Platz: OTM_EXTRA_PACKAGES="tcpdump-mini htop".
+# EXTRA_PACKAGES geht auch.
+OTM_EXTRA_PACKAGES="${OTM_EXTRA_PACKAGES:-${EXTRA_PACKAGES:-}}"
 case "$OTM_MQTT" in proxy|direct|auto) ;; *)
 	echo "OTM_MQTT=$OTM_MQTT: erlaubt sind proxy, direct, auto" >&2; exit 1 ;;
 esac
@@ -115,6 +119,8 @@ lantiq) IMAGE_PACKAGES="$IMAGE_PACKAGES -ppp-mod-pppoa -ltq-vdsl-app -ltq-vdsl-v
 	-kmod-ltq-vdsl-vr9 -kmod-ltq-vdsl-vr9-mei -kmod-ltq-atm-vr9 -kmod-ltq-ptm-vr9 \
 	-dsl-vrx200-firmware-xdsl-a -dsl-vrx200-firmware-xdsl-b-patch" ;;
 esac
+# eigene Zusatzpakete zuletzt, damit "-paket" auch unsere Vorgaben herausnehmen kann
+[ -n "$OTM_EXTRA_PACKAGES" ] && IMAGE_PACKAGES="$IMAGE_PACKAGES $OTM_EXTRA_PACKAGES"
 
 log()  { printf '\033[1;34m[otm]\033[0m %s\n' "$*"; }
 uebersprungen() { # Patchpfad -> 0, wenn er laut SKIP_PATCHES entfallen soll
@@ -306,6 +312,7 @@ uci commit otm-bridge
 UCIEOF
 cat > "$FILES/etc/otm-build-info" <<EOF
 otm_commit=$OTM_COMMIT
+extra_packages=$OTM_EXTRA_PACKAGES
 built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 openwrt=$OWRT_VER $TARGET/$SUBTARGET (SDK + ImageBuilder)
 otm_pkg_release=$OTM_RELEASE
