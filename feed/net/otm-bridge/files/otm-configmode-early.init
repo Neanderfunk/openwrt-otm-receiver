@@ -23,6 +23,8 @@ boot() {
 	fi
 	rm -f /etc/otm-configmode
 	sync
+	. /lib/otm-bridge/functions.sh
+	otm_ssh_rechte
 
 	mkdir -p "$dir/config"
 	cp /etc/config/network "$dir/config/"

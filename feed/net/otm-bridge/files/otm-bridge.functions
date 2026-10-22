@@ -100,8 +100,25 @@ otm_24_phy() {
 # /etc/dropbear/authorized_keys laeuft dropbear, nur per Key, und die
 # wan-Zone laesst Port 22 zu; ohne Key bleibt SSH zu. Schreibt nur, was sich
 # aendert (laeuft bei jedem Start, kein Flash-Schreiben im Normalfall).
+# Rechte, die dropbear verlangt, sonst weist es Keys ab: /etc/dropbear 700 und
+# authorized_keys 600, beide root. Aendert nur, was falsch ist (jeder Start).
+otm_ssh_rechte() {
+	local x m
+	for x in /etc/dropbear:700 /etc/dropbear/authorized_keys:600; do
+		[ -e "${x%:*}" ] || continue
+		set -- $(ls -ldn "${x%:*}")
+		m=${1#?}
+		[ "${m#???}" = ------ ] && [ "$3" = 0 ] && [ "$4" = 0 ] && continue
+		chmod "${x#*:}" "${x%:*}"
+		chown 0:0 "${x%:*}"
+		logger -t otm-ssh "Rechte von ${x%:*} korrigiert (waren $1, uid $3, gid $4)"
+	done
+	return 0
+}
+
 otm_ssh_setup() {
 	local has_key=0 sec o
+	otm_ssh_rechte
 	grep -q '^ssh-\|^ecdsa-' /etc/dropbear/authorized_keys 2>/dev/null && has_key=1
 	for o in PasswordAuth RootPasswordAuth; do
 		[ "$(uci -q get dropbear.@dropbear[0].$o)" = off ] || uci set dropbear.@dropbear[0].$o='off'
