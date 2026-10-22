@@ -546,7 +546,7 @@
    "id": 10,
    "title": "Empfangs-Health (6 h)",
    "type": "table",
-   "description": "Ab otm-bridge 0.16.0. Bewertung ueber die letzten 6 Stunden: 'empfaengt ITS' = mindestens ein ITS-Frame; 'nur Rauschen' = das Radio sieht Frames, CRC- oder PHY-Fehler, aber kein ITS (Standort ohne Verkehr?); 'taub?' = kein einziger Zaehler bewegt sich (so sah der NanoStation-Nachbau aus). CRC-Fehler: Praeambel erkannt, Inhalt kaputt. PHY-Fehler: Energie gesehen, nichts Dekodierbares. 'kein 5-GHz-Radio' = das Geraet hat kein Funkteil fuer 5.9 GHz (z. B. NanoStation M2 mit dem M-Image, Name dann NSM2..., ab otm-bridge 0.18.10); Einzelheiten in 'Geraete ohne Empfang'. Klick auf den Namen: Graphen zu diesem Empfaenger (OTM Knoten).",
+   "description": "Ab otm-bridge 0.16.0. Bewertung ueber die letzten 6 Stunden: 'empfaengt ITS' = mindestens ein ITS-Frame; 'nur Rauschen' = das Radio sieht Frames, CRC- oder PHY-Fehler, aber kein ITS (Standort ohne Verkehr?); 'taub?' = kein einziger Zaehler bewegt sich (so sah der NanoStation-Nachbau aus). CRC-Fehler: Praeambel erkannt, Inhalt kaputt. PHY-Fehler: Energie gesehen, nichts Dekodierbares. 'kein 5-GHz-Radio (nur 2.4 GHz)' = nur ein 2.4-GHz-Funkteil (z. B. NanoStation M2 mit dem M-Image, Name dann NSM2..., ab otm-bridge 0.18.10); 'kein Funkteil erkannt' = gar kein WLAN-Funkteil (defekt oder nicht erkannt); Einzelheiten in 'Geraete ohne Empfang'. Klick auf den Namen: Graphen zu diesem Empfaenger (OTM Knoten).",
    "datasource": {
     "type": "prometheus",
     "uid": "otm-vm"
@@ -567,7 +567,7 @@
      "instant": true,
      "range": false,
      "format": "table",
-     "expr": "(clamp_max(sum by (node) (increase(otm_rx_pkts[6h]) + increase(otm_rx_crc[6h]) + increase(otm_rx_phy[6h])), 1) + (clamp_max(sum by (node) (increase(otm_frames[6h])), 1) or on(node) (sum by (node) (increase(otm_rx_pkts[6h]) + increase(otm_rx_crc[6h]) + increase(otm_rx_phy[6h])) * 0))) or on(node) (max by (node) (last_over_time(otm_node_problem[3h])) * -1)"
+     "expr": "(clamp_max(sum by (node) (increase(otm_rx_pkts[6h]) + increase(otm_rx_crc[6h]) + increase(otm_rx_phy[6h])), 1) + (clamp_max(sum by (node) (increase(otm_frames[6h])), 1) or on(node) (sum by (node) (increase(otm_rx_pkts[6h]) + increase(otm_rx_crc[6h]) + increase(otm_rx_phy[6h])) * 0))) or on(node) (max by (node) (last_over_time(otm_node_problem{problem=~\".* none\"}[3h])) * -2) or on(node) (max by (node) (last_over_time(otm_node_problem[3h])) * -1)"
     },
     {
      "refId": "B",
@@ -726,9 +726,14 @@
             "index": 2
            },
            "-1": {
-            "text": "kein 5-GHz-Radio",
+            "text": "kein 5-GHz-Radio (nur 2.4 GHz)",
             "color": "purple",
             "index": 3
+           },
+           "-2": {
+            "text": "kein Funkteil erkannt",
+            "color": "dark-red",
+            "index": 4
            }
           }
          }
