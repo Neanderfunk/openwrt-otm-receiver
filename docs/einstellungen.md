@@ -55,12 +55,8 @@ Schlüsseltypen: ed25519, RSA und ECDSA, auch auf den XM-Images mit OpenWrt 21.0
 
 ### Wenn der Login mit Key nicht klappt
 
-- **Dateirechte:** dropbear weist den Key ab, wenn `/etc/dropbear` oder
-  `/etc/dropbear/authorized_keys` für Gruppe oder andere beschreibbar ist oder nicht root
-  gehört (lesbar für alle ist in Ordnung). Richtig:
-  `chmod 700 /etc/dropbear && chmod 600 /etc/dropbear/authorized_keys && chown root:root /etc/dropbear /etc/dropbear/authorized_keys`
-  Ab otm-bridge 0.18.11 korrigiert das Gerät das bei jedem Start selbst (auch im Config-Mode)
-  und vermerkt es im Log (`logread -e otm-ssh`).
+- **Dateirechte** von `/etc/dropbear` und `authorized_keys` korrigiert das Gerät ab otm-bridge
+  0.18.11 bei jedem Start selbst (`logread -e otm-ssh`).
 - **Format:** je Key genau eine Zeile `ssh-ed25519 AAAA… kommentar` bzw. `ssh-rsa AAAA…`. Das
   mehrzeilige PuTTY-Format (`---- BEGIN SSH2 PUBLIC KEY ----`) geht nicht; in PuTTYgen den
   Text aus „Public key for pasting into OpenSSH authorized_keys file“ nehmen. Keine
@@ -69,9 +65,8 @@ Schlüsseltypen: ed25519, RSA und ECDSA, auch auf den XM-Images mit OpenWrt 21.0
   („UNPROTECTED PRIVATE KEY FILE“), also `chmod 600` auf die Datei.
 - **Ältere Firmware (vor otm-bridge 0.18.2):** Ein im Config-Mode eingetragener Key gilt dort
   nur nach `otm-configmode exit`, nicht nach Neustart oder Strom aus/an.
-- **Log am Gerät** (z. B. im Config-Mode): `logread -e dropbear`. Bei falschen Rechten steht
-  dort sinngemäß „must be owned by user or root, and not writable by group or others“; bei
-  falschem Format oder falschem Key nur ein fehlgeschlagener Pubkey-Versuch.
+- **Log am Gerät** (z. B. im Config-Mode): `logread -e dropbear`; bei falschem Format oder
+  falschem Key steht dort ein fehlgeschlagener Pubkey-Versuch.
 
 ### Wenn 192.168.1.1 im Config-Mode nicht antwortet
 
