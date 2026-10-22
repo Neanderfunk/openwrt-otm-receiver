@@ -45,6 +45,9 @@ dieselbe Datei steht im Gerät unter `/etc/otm-build-info`.
 | `OTM_BRANCH` | `stable` (Vorgabe) | Branch für Manifest und Upload-Verzeichnis |
 | `OTM_VERSION` | Ziffern | Versionsnummer in Image und Manifest; Vorgabe Bauzeit `JJJJMMTThhmm` (UTC) |
 | `OTM_EXTRA_PACKAGES` (oder `EXTRA_PACKAGES`) | Paketnamen, Leerzeichen-getrennt | zusätzliche Pakete ins Image (im ROM statt später ins Overlay), `-paket` nimmt eines heraus; Achtung: der Autoupdater spielt das Standard-Image vom Server ein, die Extras sind danach weg (dann `OTM_AUTOUPDATER=0` oder eigenen Server) |
+| `OTM_AUTOUPDATER_MIRROR` | URL(s) | eigener Update-Server statt `http://firmware.ffnef.de/otm/stable/sysupgrade` (Verzeichnis mit `<branch>.manifest`); bei `OTM_MQTT=proxy` nur `http://`, die Signaturen sichern das Manifest |
+| `OTM_AUTOUPDATER_PUBKEYS` | Datei | eigene Signierschlüssel (ecdsautils, 64 Hex-Zeichen je Zeile) statt unserer |
+| `OTM_AUTOUPDATER_SIGNATURES` | Zahl | Mindestzahl gültiger Signaturen; mit eigenen Schlüsseln Vorgabe 1, sonst 3 |
 | `OTM_VARIANT` | Text | Anhang für Image-Name und Ausgabeverzeichnis, damit Varianten sich nicht überschreiben |
 
 Weg zum Broker:

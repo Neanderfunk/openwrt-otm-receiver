@@ -62,6 +62,18 @@ OTM_SSH_KEYS="${OTM_SSH_KEYS:-}"
 # Ziffernfolge, damit der Autoupdater per Textvergleich "neuer" erkennt.
 OTM_AUTOUPDATER="${OTM_AUTOUPDATER:-1}"
 OTM_BRANCH="${OTM_BRANCH:-stable}"
+# Eigener Update-Server (fuer eigene Builds, z. B. mit OTM_EXTRA_PACKAGES): ohne
+# diese Variablen holen die Geraete von firmware.ffnef.de mit unseren Schluesseln.
+#   OTM_AUTOUPDATER_MIRROR      URL(s) zum Verzeichnis mit <branch>.manifest,
+#                               Leerzeichen-getrennt
+#   OTM_AUTOUPDATER_PUBKEYS     Datei mit oeffentlichen Signierschluesseln (ecdsautils,
+#                               64 Hex-Zeichen je Zeile, "#" Kommentar)
+#   OTM_AUTOUPDATER_SIGNATURES  Mindestzahl gueltiger Signaturen; Vorgabe mit
+#                               eigenen Schluesseln 1, sonst unveraendert (3)
+# Branch ist OTM_BRANCH. Gesetzt wird per uci-defaults bei jedem Flashen.
+OTM_AUTOUPDATER_MIRROR="${OTM_AUTOUPDATER_MIRROR:-}"
+OTM_AUTOUPDATER_PUBKEYS="${OTM_AUTOUPDATER_PUBKEYS:-}"
+OTM_AUTOUPDATER_SIGNATURES="${OTM_AUTOUPDATER_SIGNATURES:-}"
 OTM_VERSION="${OTM_VERSION:-$(date -u +%Y%m%d%H%M)}"
 # Zusaetzliche Pakete ins Image (Leerzeichen-getrennt, "-paket" nimmt eines
 # heraus), z. B. fuer Geraete mit Platz: OTM_EXTRA_PACKAGES="tcpdump-mini htop".
@@ -310,9 +322,52 @@ cat > "$FILES/etc/uci-defaults/97-otm-transport" <<UCIEOF
 uci set otm-bridge.main.transport='$OTM_MQTT'
 uci commit otm-bridge
 UCIEOF
+# Eigener Update-Server (OTM_AUTOUPDATER_*), siehe oben
+if [ -n "$OTM_AUTOUPDATER_MIRROR$OTM_AUTOUPDATER_PUBKEYS$OTM_AUTOUPDATER_SIGNATURES" ]; then
+	[ "$OTM_AUTOUPDATER" = 1 ] || die "OTM_AUTOUPDATER_* gesetzt, aber OTM_AUTOUPDATER=$OTM_AUTOUPDATER"
+	for m in $OTM_AUTOUPDATER_MIRROR; do
+		case "$m" in http://*) ;; https://*)
+			[ "$OTM_MQTT" = proxy ] && printf '\033[1;33m[otm]\033[0m %s\n' "$m: https braucht TLS im Image, mit OTM_MQTT=proxy ist keins drin; http nehmen (die Signaturen sichern das Manifest)" >&2 ;;
+		*) die "OTM_AUTOUPDATER_MIRROR: keine URL: $m" ;; esac
+	done
+	keys=""
+	if [ -n "$OTM_AUTOUPDATER_PUBKEYS" ]; then
+		[ -f "$OTM_AUTOUPDATER_PUBKEYS" ] || die "OTM_AUTOUPDATER_PUBKEYS: $OTM_AUTOUPDATER_PUBKEYS gibt es nicht"
+		keys=$(sed 's/#.*//' "$OTM_AUTOUPDATER_PUBKEYS" | tr -d ' \t\r' | grep -v '^$' || true)
+		[ -n "$keys" ] || die "OTM_AUTOUPDATER_PUBKEYS: keine Schluessel in $OTM_AUTOUPDATER_PUBKEYS"
+		for k in $keys; do
+			echo "$k" | grep -qE '^[0-9a-f]{64}$' || die "OTM_AUTOUPDATER_PUBKEYS: kein ecdsautils-Schluessel: $k"
+		done
+		[ -n "$OTM_AUTOUPDATER_SIGNATURES" ] || OTM_AUTOUPDATER_SIGNATURES=1
+	fi
+	case "$OTM_AUTOUPDATER_SIGNATURES" in ""|[1-9]|[1-9][0-9]) ;; *)
+		die "OTM_AUTOUPDATER_SIGNATURES: keine Zahl ab 1: $OTM_AUTOUPDATER_SIGNATURES" ;;
+	esac
+	{
+		echo '#!/bin/sh'
+		echo "# aus build.sh (OTM_AUTOUPDATER_*): eigener Update-Server, bei jedem Flashen gesetzt"
+		echo "b='$OTM_BRANCH'"
+		echo 'uci set autoupdater.settings.branch="$b"'
+		echo 'uci -q get autoupdater."$b" >/dev/null || uci set autoupdater."$b"=branch'
+		echo 'uci set autoupdater."$b".name="$b"'
+		if [ -n "$OTM_AUTOUPDATER_MIRROR" ]; then
+			echo 'uci -q delete autoupdater."$b".mirror'
+			for m in $OTM_AUTOUPDATER_MIRROR; do echo "uci add_list autoupdater.\"\$b\".mirror='$m'"; done
+		fi
+		if [ -n "$keys" ]; then
+			echo 'uci -q delete autoupdater."$b".pubkey'
+			for k in $keys; do echo "uci add_list autoupdater.\"\$b\".pubkey='$k'"; done
+		fi
+		[ -n "$OTM_AUTOUPDATER_SIGNATURES" ] &&
+			echo "uci set autoupdater.\"\$b\".good_signatures='$OTM_AUTOUPDATER_SIGNATURES'"
+		echo 'uci commit autoupdater'
+	} > "$FILES/etc/uci-defaults/95-otm-autoupdater-quelle"
+	log "Autoupdater: branch $OTM_BRANCH${OTM_AUTOUPDATER_MIRROR:+, mirror $OTM_AUTOUPDATER_MIRROR}${keys:+, $(echo $keys | wc -w) eigene Schluessel}${OTM_AUTOUPDATER_SIGNATURES:+, mindestens $OTM_AUTOUPDATER_SIGNATURES Signaturen}"
+fi
 cat > "$FILES/etc/otm-build-info" <<EOF
 otm_commit=$OTM_COMMIT
 extra_packages=$OTM_EXTRA_PACKAGES
+autoupdater_mirror=$OTM_AUTOUPDATER_MIRROR
 built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 openwrt=$OWRT_VER $TARGET/$SUBTARGET (SDK + ImageBuilder)
 otm_pkg_release=$OTM_RELEASE
