@@ -73,12 +73,37 @@ dropbear startet nicht, lokal bleibt nur der Failsafe-Modus. Passwort-Logins sin
 abgeschaltet, denn frisches OpenWrt lässt root ohne Passwort herein. Beim Update mit
 erhaltener Konfiguration bleiben vorhandene Keys erhalten.
 
+## Zusatzpakete
+
+```sh
+OTM_EXTRA_PACKAGES="tcpdump-mini" ./build.sh
+```
+
+Die Pakete kommen aus den OpenWrt-Feeds und landen im ROM statt später im Overlay; `-paket`
+nimmt eines heraus. Welche drin sind, steht danach in `/etc/otm-build-info`
+(`extra_packages=`).
+
+**Achtung:** Der Autoupdater spielt beim nächsten Release unser Standard-Image vom Server ein,
+die Zusatzpakete sind danach weg. Wer sie behalten will, baut mit `OTM_AUTOUPDATER=0` oder
+betreibt einen eigenen Update-Server (nächster Abschnitt).
+
 ## Autoupdater und eigener Update-Server
 
-Wie der Autoupdater arbeitet: [README, Abschnitt Autoupdater](../README.md#autoupdater). Eigener
-Server: `OTM_AUTOUPDATER_MIRROR`, `OTM_AUTOUPDATER_PUBKEYS`, `OTM_AUTOUPDATER_SIGNATURES`
-(siehe [Optionen](#optionen)); `build.sh` legt Manifest und Upload-Verzeichnis unter
-`build/out/otm<variante>/<branch>/` an, signiert wird wie unten beschrieben.
+Wie der Autoupdater arbeitet: [README, Abschnitt Autoupdater](../README.md#autoupdater).
+
+Eigener Server:
+
+- `OTM_AUTOUPDATER_MIRROR`: URL des Verzeichnisses mit `<branch>.manifest`; bei
+  `OTM_MQTT=proxy` nur `http://`, die Signaturen sichern das Manifest
+- `OTM_AUTOUPDATER_PUBKEYS`: Datei mit den eigenen öffentlichen Schlüsseln (ecdsautils,
+  64 Hex-Zeichen je Zeile)
+- `OTM_AUTOUPDATER_SIGNATURES`: Mindestzahl gültiger Signaturen, mit eigenen Schlüsseln
+  Vorgabe 1
+- Branch ist `OTM_BRANCH`
+
+`build.sh` legt Manifest und Upload-Verzeichnis unter `build/out/otm<variante>/<branch>/`
+an; signiert wird wie bei Gluon, siehe Ende von [So veröffentlichen wir](#so-veröffentlichen-wir).
+Den Inhalt von `sysupgrade/` samt signiertem Manifest dann auf den eigenen Server.
 
 ## So veröffentlichen wir
 
