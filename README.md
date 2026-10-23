@@ -114,8 +114,9 @@ die Status-LED blinkt), Rechner per Kabel anstecken, <http://192.168.1.1> öffne
 **Von OpenWrt mit LuCI, im Browser:** **System → Backup / Flash Firmware**,
 „Flash image…“, Datei wählen, **Haken bei „Keep settings“ entfernen**, **Continue**.
 
-Beide Browser-Wege rufen dasselbe auf wie der SSH-Weg unten und sollten gehen; ausprobiert
-haben wir sie mit diesen Images noch nicht.
+Der Weg über die Gluon-Weboberfläche hat im Feld funktioniert (Oktober 2026). Der LuCI-Weg ruft
+dasselbe auf wie der SSH-Weg unten und sollte gehen; ausprobiert haben wir ihn mit diesen
+Images noch nicht.
 
 **Per SSH** (so bei uns erprobt, von Gluon und OpenWrt):
 
