@@ -153,9 +153,9 @@ Feldanleitung: [docs/cpe510-aufbau.md](docs/cpe510-aufbau.md).
   bewertet die Tabelle „Empfangs-Health (6 h)“ jedes Gerät; die Tabelle „Geraete ohne
   Empfang“ nennt Einzelheiten.
 
-| Bewertung | Bedeutung |
+| Bewertung (so in Grafana) | Bedeutung |
 |---|---|
-| empfängt ITS | alles gut |
+| empfaengt ITS | alles gut |
 | nur Rauschen | Das Funkteil arbeitet, am Standort fährt nur nichts mit ITS-G5 vorbei, oder die Sicht zur Straße ist schlecht. |
 | taub? | Kein Zähler bewegt sich: Funkteil, Antenne oder Frontend hört nichts, siehe [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md#taub-trotz-passendem-chip). |
 | kein 5-GHz-Radio (nur 2.4 GHz) | falsches Gerät, etwa eine NanoStation M2 mit dem M5-Image |
@@ -263,13 +263,13 @@ Proxy.
   `otm/<node>/health` (ab 0.16.0): Rahmen seit Start, die ath9k-Zähler aus debugfs (alle
   Rahmen, CRC-Fehler = Präambel erkannt, PHY-Fehler = Energie gesehen) und der Survey des
   Kanals (Rauschen, Belegtzeit). Im Grafana bewertet die Tabelle „Empfangs-Health (6 h)“
-  jede Station: empfängt ITS, nur Rauschen (Radio lebt, kein Verkehr) oder taub (kein
+  jede Station: „empfaengt ITS“, „nur Rauschen“ (Radio lebt, kein Verkehr) oder „taub?“ (kein
   Zähler bewegt sich). Hintergrund: Es gibt Geräte, die 5.9 GHz trotz passendem Chip nicht
   empfangen, siehe [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md).
   Findet der Wrapper gar kein Funkteil für 5900 MHz, meldet er das stündlich retained an
   `otm/<node>/problem` (ab 0.18.3), samt der vorhandenen Funkteile (`phy0:2.4GHz` oder
   `none`); im Grafana steht das Gerät dann unter „Geraete ohne Empfang“ und in „Empfangs-Health“
-  als „kein 5-GHz-Radio“. Ubiquiti-M-Geräte ohne 5-GHz-Funkteil heißen ab 0.18.10 `…M2…`
+  als „kein 5-GHz-Radio (nur 2.4 GHz)“ bzw. „kein Funkteil erkannt“. Ubiquiti-M-Geräte ohne 5-GHz-Funkteil heißen ab 0.18.10 `…M2…`
   statt `…M5…` (z. B. `NSM2XM-xxxx`; vorher Hostname `opentrafficmap`).
 - **Position** (wie bei Gluon, `gluon-node-info.@location[0]`): standardmäßig nicht geteilt.
 
