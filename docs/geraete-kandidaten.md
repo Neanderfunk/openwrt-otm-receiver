@@ -90,8 +90,8 @@ Antennen nutzt, sollte die Antennen per Referenzmessung prüfen (siehe
 |---|---|
 | **eingebaut** | FRITZ!Box 3370 und 3390, FRITZ!WLAN Repeater 300E, Enterasys WS-AP3710i/3705i, Aerohive HiveAP-121/330, Netgear WNDR3700/3800/4300, UniFi AP Pro, Aruba AP-105, Meraki MR16 |
 | **eingebaut, für 5 GHz ausgelegt (outdoor)** | NanoStation (Loco) M5, LiteBeam/NanoBeam/PowerBeam M5, TP-Link CPE510/CPE610, MikroTik SXT/LHG |
-| **abnehmbar** | TL-WDR3600 (2×), TL-WDR4300 (3×), D-Link DIR-825 (prüfen), Bullet M5 und Rocket M5 (N-Buchse; Außenantennen tragen meist ein Band-Etikett) |
-| prüfen | TL-WDR4900 v1, Buffalo WZR-HP-AG300H |
+| **abnehmbar** | TL-WDR3600 (2×), TL-WDR4300 (3×), TL-WDR4900 v1 (3×), D-Link DIR-825 (prüfen), Bullet M5 und Rocket M5 (N-Buchse; Außenantennen tragen meist ein Band-Etikett) |
+| prüfen | Buffalo WZR-HP-AG300H |
 
 ## Sonderfälle (unerprobt)
 
