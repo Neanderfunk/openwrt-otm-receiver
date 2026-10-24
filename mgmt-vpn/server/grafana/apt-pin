@@ -1,0 +1,18 @@
+# Von grafana/install-grafana.sh als /etc/apt/preferences.d/grafana installiert
+# (Muster: Mapserver-Repo zeitreihe/grafana/apt-pin).
+#
+# Grafana nur innerhalb der Hauptversion 13 aktualisieren. apt.grafana.com
+# liefert unter "stable" auch die naechste Hauptversion, und ein
+# dist-upgrade wuerde sie ohne Rueckfrage einspielen; Hauptversionen haben
+# schon Dashboards und Marker gebrochen (Grafana 13). Eine neue Hauptversion
+# also von Hand: /var/lib/grafana/grafana.db sichern, hier die Zahl aendern,
+# Skript laufen lassen, Dashboards pruefen (adorfer 24.10.2026).
+#
+# Es zaehlt der erste passende Eintrag: 13.x normal, alles andere gesperrt.
+Package: grafana
+Pin: version 13.*
+Pin-Priority: 500
+
+Package: grafana
+Pin: version *
+Pin-Priority: -1

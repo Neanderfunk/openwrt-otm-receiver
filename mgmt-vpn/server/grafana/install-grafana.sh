@@ -3,6 +3,8 @@
 # README). Auf dem Server als root aus diesem Verzeichnis ausfuehren.
 set -e
 cd "$(dirname "$0")"
+# Hauptversion festgenagelt, siehe apt-pin
+install -m 644 apt-pin /etc/apt/preferences.d/grafana
 f=/etc/default/grafana-server
 sed -i '/^# an \/etc\/default\/grafana-server angehaengt/,$d' "$f"
 cat grafana-server.env >> "$f"

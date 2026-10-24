@@ -101,3 +101,10 @@ sondern in `/etc/grafana/authentik-client-secret` (root:grafana, 640) und wird p
   Zurück: `otm-fastd modus offen`. Die Sperrliste gilt in beiden Modi.
 - **Neue Dashboards oder Änderungen:** JSON unter `grafana/` ändern und neu installieren;
   Grafana liest die Dateien nach wenigen Sekunden neu.
+- **Grafana-Updates:** `grafana/apt-pin` (installiert als `/etc/apt/preferences.d/grafana`)
+  hält Grafana auf Hauptversion 13; Updates innerhalb von 13.x kommen per `apt-get
+  dist-upgrade`, nicht per unattended-upgrades. Vor einem Hauptversionssprung
+  `/var/lib/grafana/grafana.db` sichern (Grafana migriert sie beim ersten Start), dann die
+  Zahl in `apt-pin` ändern, `install-grafana.sh` laufen lassen und die Dashboards prüfen.
+  Werte in `/etc/default/grafana-server` mit Leerzeichen brauchen Anführungszeichen, sonst
+  bricht der postinst ab (er liest die Datei per `sh`).
