@@ -3,7 +3,8 @@
 # ein vorhandener fastd-Schluessel bleibt erhalten.
 set -e
 cd "$(dirname "$0")"
-install -d /etc/fastd/otm /etc/otm-mgmt
+install -d -m 700 /etc/fastd/otm
+install -d /etc/otm-mgmt
 install -m 644 fastd.conf /etc/fastd/otm/fastd.conf
 install -m 755 peer-up.sh peer-log.sh /etc/fastd/otm/
 install -m 755 fastd-verify.sh /etc/fastd/otm/verify.sh
@@ -23,7 +24,7 @@ install -d /usr/local/lib/otm
 install -m 755 otm-stats.py /usr/local/lib/otm/otm-stats.py
 install -m 644 otm-stats.service /etc/systemd/system/
 # fremde Empfaenger fuer otm-stats (LoadCredential, siehe otm-stats.py): Datei muss existieren
-install -d -m 755 /etc/otm
+install -d -m 700 /etc/otm
 [ -e /etc/otm/fremde-empfaenger ] || install -m 600 /dev/null /etc/otm/fremde-empfaenger
 # VictoriaMetrics nur lokal (das Paket lauscht sonst auf allen Adressen), Admin-
 # Endpunkte mit Schluessel (Grafana reicht GET-Anfragen per Proxy durch). Ein

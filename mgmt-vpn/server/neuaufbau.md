@@ -90,14 +90,14 @@ Besitzer wie unten, danach starten. Liste: Abschnitt "Daten".
 
 | Pfad auf der VM | Besitzer, Rechte | Zweck | Neu erzeugen? |
 | --- | --- | --- | --- |
-| `/etc/fastd/otm/secret.conf` | root, 600 | geheimer fastd-Schlüssel der Gegenstelle | **erhalten**: der öffentliche Teil steht in jedem Image (`98-otm-mgmt-vpn`, Peer `mgmt_wgiot`); ein neuer hieße neue Firmware für alle Empfänger |
-| `/etc/fastd/otm/sperrliste`, `freigabeliste` | root, 644 | gesperrte und freigegebene Empfänger (heute leer) | erhalten, sonst sind Sperren weg |
-| `/etc/otm/fremde-empfaenger` | root, 600 | Lesezugänge zu fremden Empfängern bei OpenTrafficMap (otm-stats, `LoadCredential`) | erhalten; neu nur mit neuen Zugängen von OpenTrafficMap |
+| `/etc/fastd/otm/secret.conf` | root, 600 (Verzeichnis 700) | geheimer fastd-Schlüssel der Gegenstelle | **erhalten**: der öffentliche Teil steht in jedem Image (`98-otm-mgmt-vpn`, Peer `mgmt_wgiot`); ein neuer hieße neue Firmware für alle Empfänger |
+| `/etc/fastd/otm/sperrliste`, `freigabeliste` | root, 644 (im Verzeichnis 700) | gesperrte und freigegebene Empfänger (heute leer) | erhalten, sonst sind Sperren weg |
+| `/etc/otm/fremde-empfaenger` | root, 600 (Verzeichnis 700) | Lesezugänge zu fremden Empfängern bei OpenTrafficMap (otm-stats, `LoadCredential`) | erhalten; neu nur mit neuen Zugängen von OpenTrafficMap |
 | `/etc/default/victoria-metrics` | root, 600 | Startargumente mit dem Schlüssel für die Verwaltungsfunktionen | darf neu entstehen (`install.sh`); außerhalb kennt ihn nur die Wartung |
 | `/etc/grafana/authentik-client-secret` | root:grafana, 640 | OAuth-Client-Secret für die Anmeldung über Authentik | erhalten; neu nur mit neuem Secret in Authentik |
 | `/etc/default/grafana-server` | root, 644 | Umgebung für Grafana, hinten der Teil aus `grafana/grafana-server.env` | entsteht aus Paket und Skript neu; Sicherung nur zum Vergleich |
-| `/etc/wireguard/wg0.conf` | root, 644 (Verzeichnis 700) | WireGuard `wg0`: eigener privater Schlüssel, alle Peers | **erhalten**: jeder Client kennt unseren öffentlichen Schlüssel |
-| `/etc/wireguard/<nr><name>.prv`, `.pub` | root, 644 | für Clients erzeugte Schlüsselpaare | erhalten; nur so lässt sich ein Client neu einrichten, ohne die Konfiguration hier zu ändern |
+| `/etc/wireguard/wg0.conf` | root, 600 (Verzeichnis 700) | WireGuard `wg0`: eigener privater Schlüssel, alle Peers | **erhalten**: jeder Client kennt unseren öffentlichen Schlüssel |
+| `/etc/wireguard/<nr><name>.prv`, `.pub` | root, 600 | für Clients erzeugte Schlüsselpaare | erhalten; nur so lässt sich ein Client neu einrichten, ohne die Konfiguration hier zu ändern |
 | `/etc/sysctl.d/90-ip-fwd.conf`, `/etc/hosts` | root, 644 | Weiterleitung für wg0, Namen der wg0-Clients | erhalten |
 | `/etc/ssh/ssh_host_*_key` | root, 600 | Hostschlüssel | besser erhalten, sonst warnt jeder SSH-Client |
 | `/home/<konto>/.ssh/authorized_keys` | Konto, 600 | Zugänge aller Konten | erhalten |
