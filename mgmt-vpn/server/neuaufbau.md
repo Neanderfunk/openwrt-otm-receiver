@@ -73,8 +73,9 @@ Danach, ohne Skript:
 
 - **wg0:** `/etc/wireguard/` und `/etc/sysctl.d/90-ip-fwd.conf` sind zurückgespielt;
   `sysctl --system`, `systemctl enable --now wg-quick@wg0`. Die Namen der Clients stehen in
-  `/etc/hosts` (Sicherung). Die NAT-Regeln in `PostUp` nennen `eth0`, die Netzkarte heißt
-  aber `ens18`; so war es schon vor dem Neuaufbau, nicht stillschweigend ändern.
+  `/etc/hosts` (Sicherung). `PostUp` erlaubt nur die Weiterleitung aus `wg0`; NAT gibt es
+  keins (die frühere MASQUERADE-Regel auf `eth0` griff nie, weil die Netzkarte `ens18`
+  heißt, und ist seit 24.10.2026 entfernt).
 - **Checkmk:** Agent installieren (Paket vom Checkmk-Server), Drop-in für
   `cmk-agent-ctl-daemon` setzt die Ansible-Rolle in neanderfunk/ansible. `/etc/rc.local`
   (Sicherung) reicht IPv6-Port 6559 per `socat` an den Agenten auf 6556 weiter.
