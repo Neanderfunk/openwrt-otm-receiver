@@ -34,6 +34,9 @@ sudo ./install.sh                 # fastd, Netz, dnsmasq, mosquitto, otm-stats
 sudo ./grafana/install-grafana.sh  # Grafana-Einstellungen, Datenquelle, Dashboards
 ```
 
+Neuaufbau auf einer frischen VM (Reihenfolge, zu erhaltende Schlüssel, Daten, Abhängigkeiten
+außerhalb): [neuaufbau.md](neuaufbau.md).
+
 Beide Skripte sind wiederholbar. `install.sh` erzeugt den fastd-Schlüssel nur, wenn noch
 keiner da ist; dessen öffentlicher Teil gehört in
 `feed/net/otm-mgmt-vpn/files/98-otm-mgmt-vpn` (Peer `mgmt_wgiot`). Die Gegenstelle erreicht
