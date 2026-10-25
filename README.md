@@ -9,7 +9,8 @@ Nach dem Flashen läuft das Gerät ohne Handarbeit: Kabel mit Internet an irgend
 fertig. Es gibt keine Weboberfläche. Name und Position stellt man bei Bedarf per SSH ein.
 
 - Fertige Images: <http://firmware.ffnef.de/otm/stable/>
-- Welche Empfänger laufen und was sie hören: <https://otm.ffnef.de> (ohne Anmeldung)
+- Welche Empfänger laufen und was sie hören: <https://otm.ffnef.de> (ohne Anmeldung),
+  erklärt in [docs/grafana.md](docs/grafana.md)
 
 Vorbild und Basis: [MPW1412/openwrt-otm-bridge](https://github.com/MPW1412/openwrt-otm-bridge)
 und [MPW1412/avm-fritz3390-802.11p-otm](https://github.com/MPW1412/avm-fritz3390-802.11p-otm),
@@ -166,7 +167,8 @@ Genauer nachsehen geht am Gerät per SSH, siehe [Fehlersuche am Gerät](#fehlers
 
 ### Statistik unter otm.ffnef.de
 
-Grafana unter <https://otm.ffnef.de>, ohne Anmeldung lesbar:
+Grafana unter <https://otm.ffnef.de>, ohne Anmeldung lesbar. Jedes Panel kurz erklärt, als
+Tabelle je Seite: [docs/grafana.md](docs/grafana.md). Überblick:
 
 - **OTM Empfang**: Frames je Empfänger, nur von einem Empfänger gesehene Frames, Anteil,
   verschiedene Absender, Online/Uptime, Firmware je Empfänger, Empfangs-Health (6 h)

@@ -34,6 +34,20 @@
    "url": "/d/otm-knoten",
    "icon": "dashboard",
    "keepTime": true
+  },
+  {
+   "title": "Was zeigen die Seiten? (GitHub)",
+   "type": "link",
+   "url": "https://github.com/Neanderfunk/openwrt-otm-receiver/blob/main/docs/grafana.md",
+   "icon": "info",
+   "targetBlank": true
+  },
+  {
+   "title": "Projekt (GitHub)",
+   "type": "link",
+   "url": "https://github.com/Neanderfunk/openwrt-otm-receiver#readme",
+   "icon": "external link",
+   "targetBlank": true
   }
  ],
  "templating": {
