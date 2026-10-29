@@ -2092,7 +2092,7 @@
   {
    "id": 20,
    "title": "Verkehrsmuster: Hoechstgeschwindigkeit in km/h (letzte 28 Tage)",
-   "description": "Hoechste gemeldete Geschwindigkeit nach Wochentag und Stunde (Ortszeit), an diesem Empfaenger, ueber 28 Tage. Ein einzelner Ausreisser bestimmt den Wert; Meldungen ueber 250 km/h gelten als unplausibel und fehlen. Daten ab 20.10.2026. Farben wie bei der mittleren Geschwindigkeit.",
+   "description": "Hoechste gemeldete Geschwindigkeit nach Wochentag und Stunde (Ortszeit), an diesem Empfaenger, ueber 28 Tage. Ein einzelner Ausreisser bestimmt den Wert; Meldungen ueber 300 km/h gelten als unplausibel und fehlen. Daten ab 20.10.2026. Farben wie bei der mittleren Geschwindigkeit.",
    "type": "table",
    "datasource": {
     "type": "prometheus",

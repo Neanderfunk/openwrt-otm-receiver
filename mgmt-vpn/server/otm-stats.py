@@ -101,7 +101,7 @@ offline_seit = {}                # node -> Zeitpunkt der Offline-Meldung (seit S
 OFFLINE_MAX = 86400              # laenger offline: nicht mehr fortschreiben (faellt aus den Tabellen)
 stunde = {'id': None}             # laufende Stunde: Fahrzeuge gesamt und je Empfaenger
 FAHRZEUG = range(1, 12)          # ETSI StationType: 1 Fussgaenger .. 11 Tram; 15 = RSU
-VMAX = 250                       # km/h, darueber unplausibel
+VMAX = 300                       # km/h, darueber unplausibel
 VSTEHT = 1                       # km/h, darunter steht es: zaehlt nicht in Mittelwerte
 TZ = ZoneInfo('Europe/Berlin')
 TAGE = ('1-Mo', '2-Di', '3-Mi', '4-Do', '5-Fr', '6-Sa', '7-So')

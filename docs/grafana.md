@@ -50,7 +50,7 @@ Bewertungen in „Empfangs-Health“:
 | Hoechstgeschwindigkeit | Karte: höchster Einzelwert je Rasterzelle; ein Einsatzfahrzeug reicht für Rot |
 | Verkehrsmuster: Fahrzeuge pro Stunde | Tabelle Wochentag × Stunde (Ortszeit): verschiedene Fahrzeuge, gemittelt über die Stunden mit mindestens einem Empfänger online |
 | Verkehrsmuster: Geschwindigkeit im Mittel in km/h | dasselbe Raster, mittlere Geschwindigkeit; blau = langsam |
-| Verkehrsmuster: Hoechstgeschwindigkeit in km/h | dasselbe Raster, höchster Einzelwert; über 250 km/h gilt als unplausibel und fehlt |
+| Verkehrsmuster: Hoechstgeschwindigkeit in km/h | dasselbe Raster, höchster Einzelwert; über 300 km/h gilt als unplausibel und fehlt |
 
 Farben der Geschwindigkeit: blau unter 10, hellblau ab 10, grün ab 30, gelb ab 50, orange ab
 70, rot ab 100, magenta ab 130, dunkelviolett ab 160 km/h.
