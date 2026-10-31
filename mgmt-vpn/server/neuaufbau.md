@@ -76,6 +76,10 @@ Danach, ohne Skript:
   `/etc/hosts` (Sicherung). `PostUp` erlaubt nur die Weiterleitung aus `wg0`; NAT gibt es
   keins (die frühere MASQUERADE-Regel auf `eth0` griff nie, weil die Netzkarte `ens18`
   heißt, und ist seit 24.10.2026 entfernt).
+- **wgsupernodetest:** eigenes WireGuard-Interface für Tests der Supernode-Rollen, kein Teil
+  von OTM. `/etc/wireguard/wgsupernodetest.conf` und `.nft` sind zurückgespielt;
+  `systemctl enable --now wg-quick@wgsupernodetest`. Die `.nft`-Datei hält Exit mit SNAT,
+  Trennung von `wg0`, `br-otm` und privaten Netzen sowie das Limit von 50 MBit/s je Richtung.
 - **Checkmk:** Agent installieren (Paket vom Checkmk-Server), Drop-in für
   `cmk-agent-ctl-daemon` setzt die Ansible-Rolle in neanderfunk/ansible. `/etc/rc.local`
   (Sicherung) reicht IPv6-Port 6559 per `socat` an den Agenten auf 6556 weiter.
@@ -98,6 +102,7 @@ Besitzer wie unten, danach starten. Liste: Abschnitt "Daten".
 | `/etc/default/grafana-server` | root, 644 | Umgebung für Grafana, hinten der Teil aus `grafana/grafana-server.env` | entsteht aus Paket und Skript neu; Sicherung nur zum Vergleich |
 | `/etc/wireguard/wg0.conf` | root, 600 (Verzeichnis 700) | WireGuard `wg0`: eigener privater Schlüssel, alle Peers | **erhalten**: jeder Client kennt unseren öffentlichen Schlüssel |
 | `/etc/wireguard/<nr><name>.prv`, `.pub` | root, 600 | für Clients erzeugte Schlüsselpaare | erhalten; nur so lässt sich ein Client neu einrichten, ohne die Konfiguration hier zu ändern |
+| `/etc/wireguard/wgsupernodetest.conf`, `.nft` | root, 600 | Testtunnel: eigener privater Schlüssel, Firewall und NAT | erhalten: die Gegenstelle kennt unseren öffentlichen Schlüssel |
 | `/etc/sysctl.d/90-ip-fwd.conf`, `/etc/hosts` | root, 644 | Weiterleitung für wg0, Namen der wg0-Clients | erhalten |
 | `/etc/ssh/ssh_host_*_key` | root, 600 | Hostschlüssel | besser erhalten, sonst warnt jeder SSH-Client |
 | `/home/<konto>/.ssh/authorized_keys` | Konto, 600 | Zugänge aller Konten | erhalten |
