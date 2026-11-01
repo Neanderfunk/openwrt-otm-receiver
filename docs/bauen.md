@@ -109,13 +109,22 @@ Den Inhalt von `sysupgrade/` samt signiertem Manifest dann auf den eigenen Serve
 
 `./release.sh` baut alle Geräte zweimal, ohne Key und mit Key, mit derselben Versionsnummer
 (Vorgabe: Startzeit, sonst `OTM_VERSION=…`), und legt alles unter
-`build/release-<version>/otm/` ab. Das Verzeichnis kommt so nach `firmware.ffnef.de/otm/`:
+`build/release-<version>/otm/` ab; ein vorhandenes Verzeichnis derselben Version wird ersetzt.
+Das dauert etwa drei Stunden. Das Verzeichnis kommt so nach `firmware.ffnef.de/otm/`:
 
 - `stable/sysupgrade/`: Images und `stable.manifest`, **unsigniert**
 - `stable/factory/`: Images für den Erstumstieg von der Herstellerfirmware
 - `stable-key/{sysupgrade,factory}/`: dieselben Images mit eingebauten SSH-Keys, ohne
   Manifest. Auch Geräte mit Key aktualisieren aus `stable`; ihre Keys stehen in der
   Konfiguration und bleiben erhalten.
+
+Kommen nur neue Geräte hinzu, ändert sich für die vorhandenen nichts: Dann mit der bisherigen
+Version bauen (`OTM_VERSION=…`), damit die Geräte im Feld nicht ohne Grund aktualisieren.
+
+Ein neues Gerät gehört in die Profilliste seines Subtargets in `release.sh`, ein neues Subtarget
+braucht dort einen eigenen `lauf`. Kürzere Profilnamen stehen vor längeren, die sie enthalten
+(`netgear_wndr3700` vor `netgear_wndr3700-v2`), weil `build.sh` Altes per Muster löscht. Ein
+Profil, das nicht baut, bricht den Release ab.
 
 Einzelne `build.sh`-Läufe legen ihr Ergebnis unter `build/out/otm<variante>/<branch>/` ab;
 weitere Targets ergänzen das Verzeichnis, ein neu gebautes Profil ersetzt seine alten Dateien

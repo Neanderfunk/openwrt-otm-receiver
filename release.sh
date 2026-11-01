@@ -11,7 +11,7 @@
 # Key-Geraete aktualisieren ebenfalls aus otm/stable (ihre Keys stehen in der
 # Konfiguration), deshalb hat stable-key kein Manifest.
 #
-# Laeuft lange (etwa eine Stunde). Abbruch bei einem gescheiterten Teillauf.
+# Laeuft lange (etwa drei Stunden). Abbruch bei einem gescheiterten Teillauf.
 set -euo pipefail
 cd "$(dirname "$0")"
 

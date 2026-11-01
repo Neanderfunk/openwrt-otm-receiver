@@ -11,11 +11,15 @@ Nur auf Geräten mit **eigenem 2.4-GHz-Radio neben dem ITS-Radio** (5 GHz):
 | Gerät | 2.4-GHz-Radio | Rückfall |
 |---|---|---|
 | TP-Link TL-WDR3600, TL-WDR4300, TL-WDR3500, TL-WDR4310 | im SoC (phy0) | ja (WDR3600 getestet) |
+| weitere Geräte mit zwei Funkteilen, z. B. Buffalo WZR, Aruba AP-105/175, Netgear WNDR, UniFi AP Pro | eigenes Funkteil | greift automatisch, dort nicht getestet |
 | AVM FRITZ!Box 3390 | hängt am Zweitprozessor, unter OpenWrt nicht nutzbar | nein |
 | TP-Link CPE510/610, WBS510, Ubiquiti LiteBeam/NanoStation/PowerBeam/Bullet | keins (nur 5 GHz) | nein |
+| TP-Link TL-WR2543ND, FRITZ!WLAN Repeater 300E | keins neben dem ITS-Radio (nur ein Funkteil) | nein |
 
 Erkannt wird das automatisch (`otm_24_phy` in `/lib/otm-bridge/functions.sh`: ein phy mit
-2.4-GHz-Band, das nicht das ITS-phy ist). Ohne solches Radio startet der Dienst nicht.
+2.4-GHz-Band, das nicht das ITS-phy ist). Ohne solches Radio startet der Dienst nicht. Bei zwei
+Dualband-Funkteilen (z. B. Aruba AP-175, HPE MSM460) empfängt das erste, das die ITS-Frequenz
+kennt; der Rückfall nimmt das andere.
 
 ## Ablauf
 

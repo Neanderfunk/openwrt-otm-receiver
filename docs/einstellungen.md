@@ -15,11 +15,15 @@ Ab otm-bridge 0.18.0. Der Empfänger hat keine Weboberfläche. Eingestellt wird 
   Normalbetrieb (siehe unten). Der Befehl ist für Betreuende gedacht, z. B. zum Testen, und
   für die FRITZ!Box 3390 vor 0.18.5, die noch keinen Taster dafür hatte.
 
-Ausgewertet werden die Taster `reset`, `wps` und `phone`, wie bei Gluon. Die FRITZ!Box 3390 hat
+Ausgewertet werden die Taster `reset`, `wps` und `phone`, wie bei Gluon. Der FRITZ!WLAN Repeater
+300E hat nur `wps`. Die FRITZ!Box 3370 hat keinen dieser Taster, und ihr WLAN-Taster ist bisher
+nicht belegt: Dort führt derzeit kein Taster in den Config-Mode, Name und Position lassen sich
+nur mit einem Image mit eigenem SSH-Key setzen ([bauen.md](bauen.md)). Der Empfang läuft auch
+ohne das. Die FRITZ!Box 3390 hat
 keinen davon; dort gilt der WLAN-Taster (ab otm-bridge 0.18.5), ebenfalls etwa 10 Sekunden
 halten. OpenWrts eigene Belegung des Reset-Tasters (kurz = Neustart, ab 5 s = Werksreset) ist
-stillgelegt, auch das wie bei Gluon. Ebenso stillgelegt ist die des WLAN-Tasters (WDR3600/4300/
-4900, FRITZ!Box 3390): Sie würde die absichtlich ausgeschalteten Funkteile einschalten, den
+stillgelegt, auch das wie bei Gluon. Ebenso stillgelegt ist die des WLAN-Tasters (z. B. WDR3600/4300/
+4900, Netgear WNDR, FRITZ!Box 3390): Sie würde die absichtlich ausgeschalteten Funkteile einschalten, den
 Empfang beenden und OpenWrts offenes Standard-WLAN hochbringen. Der Power-Taster der 3390
 schaltet weiter aus.
 

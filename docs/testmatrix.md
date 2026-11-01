@@ -130,7 +130,7 @@ Ein zweiter WDR3600 erlaubt zusätzlich Parallelvergleiche auf identischer Hardw
 | WDR3600, 22-ours | 65 | 27 % | −86 dBm | 1 257 | 0,04 % |
 
 **Die Kernfrage von R3 ist beantwortet: Es liegt an der Software.** Dieselbe 3390, dasselbe
-Fenster, nur ein anderes Image — und sie geht von 101 auf 181 Frames, während die beiden
+Fenster, nur ein anderes Image - und sie geht von 101 auf 181 Frames, während die beiden
 unveränderten Empfänger daneben einbrechen (WDR3600 136 → 65, node749 271 → 68). Der Tag war
 also insgesamt schwächer, und trotzdem ist die 3390 gestiegen. Normiert:
 
@@ -142,7 +142,7 @@ also insgesamt schwächer, und trotzdem ist die 3390 gestiegen. Normiert:
 Beide Normierungen zeigen in dieselbe Richtung, im Betrag unterscheiden sie sich um fast das
 Doppelte. Belastbar ist damit die Richtung, nicht die Zahl: **auf der 3390 ist unser
 22.03-Image deutlich schlechter als Münsters 25.12.4.** In R1 war der Vorsprung derselben
-Software gegenüber dem WDR3600 mit 1,34 allerdings viel kleiner als hier mit 2,78 — die
+Software gegenüber dem WDR3600 mit 1,34 allerdings viel kleiner als hier mit 2,78 - die
 Streuung zwischen Tagen ist erheblich.
 
 Die Fehlauslösungen sind auch unter 25-MPW da, aber schwächer: 4,6 Mio. statt 6,2 Mio., und
@@ -214,20 +214,20 @@ nicht, sie bestätigt die Tagesschwankung.
 | WDR3600, 25-ours | 160 | 44 % | 1 589 | 0,21 % |
 | node749 (ESP32) | 102 | 28 % | – | – |
 
-Verhältnis 3390/WDR3600: **1,59** — am Vortag mit identischem Aufbau 0,74. Zwei
+Verhältnis 3390/WDR3600: **1,59** - am Vortag mit identischem Aufbau 0,74. Zwei
 aufeinanderfolgende Tage, dieselbe Hardware, dieselbe Software, Faktor 2,1 Unterschied.
 Damit ist die Tagesschwankung noch einmal belegt.
 
 Über alle acht Runden: unter Münsters Bau 0,74 / 1,34 / 1,59 / 2,02 / 2,78 (geometrisches
 Mittel 1,55), unter unserem 0,53 / 0,74 / 1,21 (Mittel 0,78). Der Rangsummentest kommt auf
-p ≈ 0,07 — ein Faktor 2 wäre also nicht auszuschließen, belegt ist er nicht, und er läge
+p ≈ 0,07 - ein Faktor 2 wäre also nicht auszuschließen, belegt ist er nicht, und er läge
 in derselben Größenordnung wie der Unterschied zwischen zwei aufeinanderfolgenden Tagen.
 
 node749 hatte mit 28 % seine schwächste Runde überhaupt; die 3390 hatte 180 Frames, die
 sonst niemand sah. Auch das spricht dafür, dass an solchen Tagen die Richtung zählt, aus
 der gesendet wird, und nicht die Software.
 
-### Ergebnis R7 (3390 zurück auf 25-MPW, Verkehrstag mit 640 Frames) — zwei Korrekturen
+### Ergebnis R7 (3390 zurück auf 25-MPW, Verkehrstag mit 640 Frames) - zwei Korrekturen
 
 Endlich ein Tag mit brauchbaren Zahlen:
 
@@ -238,7 +238,7 @@ Endlich ein Tag mit brauchbaren Zahlen:
 | FB3390, **25-MPW** | 295 | 46 % | 6 188 310 | 58 % |
 
 **Korrektur 1: Die Trennung „unser Bau schlecht, Münsters gut" hält nicht.** Mit Münsters
-Bau und ordentlicher Statistik liegt die 3390 bei 0,74 gegenüber dem WDR3600 — demselben
+Bau und ordentlicher Statistik liegt die 3390 bei 0,74 gegenüber dem WDR3600 - demselben
 Wert wie in R2 mit unserem Bau. Alle Runden im Überblick:
 
 | Runde | Software 3390 | Frames 3390 / WDR3600 | Verhältnis |
@@ -254,31 +254,31 @@ Wert wie in R2 mit unserem Bau. Alle Runden im Überblick:
 Die Streuung **innerhalb** der Münster-Gruppe (0,74 bis 2,78) ist größer als der Abstand
 zwischen den Gruppenmitteln. Damit ist die Aussage aus R5 nicht haltbar: Was ich für einen
 Software-Effekt gehalten habe, war überwiegend Tagesschwankung, verstärkt durch Runden mit
-nur 30 bis 190 Frames. Die Runden mit den größten Zahlen — R1 (1,34) und R7 (0,74) — laufen
+nur 30 bis 190 Frames. Die Runden mit den größten Zahlen - R1 (1,34) und R7 (0,74) - laufen
 beide unter Münsters Bau und unterscheiden sich um Faktor 1,8.
 
 **Korrektur 2: ANI ist nicht der Mechanismus, und der Tagesgang war ein Zufallsbefund.**
 Das Minutenprotokoll zeigt auf **beiden** Geräten unter **beiden** Bauten 24 Stunden lang
 unverändert `OFDM LEVEL 3`. Die Regelung rührt sich also gar nicht. Und die
 Fehlauslösungsrate unter Münsters Bau bleibt in R7 den ganzen Tag bei 41 bis 87 pro
-Sekunde — flach, genau wie bei uns. Die Tagesdelle aus R4 (Abfall auf 6/s) gehörte zu
+Sekunde - flach, genau wie bei uns. Die Tagesdelle aus R4 (Abfall auf 6/s) gehörte zu
 jenem Tag, nicht zu jener Software.
 
 **Was als robuster Unterschied übrig bleibt, ist einzig die Kanalbelegung:** unser Bau 82
 bis 93 %, Münsters 45 bis 60 %, über sieben Runden und abwechselnde Tage. Dabei ist die
 Zahl der Fehlauslösungen inzwischen gleich (R6 unser Bau 6,46 Mio. bei 82 %, R7 Münster
-6,19 Mio. bei 58 %) — unter unserem Bau hält jede Fehlauslösung den Empfänger also länger
+6,19 Mio. bei 58 %) - unter unserem Bau hält jede Fehlauslösung den Empfänger also länger
 fest. Ob das überhaupt Frames kostet, ist nach R7 offen: Münster hatte hier die niedrigere
 Belegung und trotzdem weniger Frames als der WDR3600.
 
 **Konsequenz für die Matrix.** Der Softwarestand der 3390 ändert am Empfang nichts, was
-über die Tagesschwankung hinausragt — „Jacke wie Hose", genau das Ergebnis, das als
+über die Tagesschwankung hinausragt - „Jacke wie Hose", genau das Ergebnis, das als
 Möglichkeit von Anfang an im Raum stand. Weitere Runden gegen dieselbe Frage lohnen nicht.
 Was dagegen sauber messbar ist, sind **gleichzeitige Gerätevergleiche**: Alle Empfänger am
 selben Fenster zur selben Zeit, damit der Tag als Störgröße herausfällt. Genau dafür kommen
 die NanoStation M5 und der WDR4300 ans Fenster.
 
-### Ergebnis R6 (3390 ohne Patch 997) — Hypothese widerlegt, dafür eine bessere Spur
+### Ergebnis R6 (3390 ohne Patch 997) - Hypothese widerlegt, dafür eine bessere Spur
 
 | Empfänger | Frames | Anteil (von 80) | Fehlauslösungen | Kanal belegt |
 |---|---|---|---|---|
@@ -319,9 +319,9 @@ Geräten ein Minutenprotokoll der ANI-Stufen (`werkzeug/ani-log.sh`).
 
 Was als Unterschied zwischen den Bauten übrig bleibt, nachdem 997 ausgeschlossen ist:
 unsere regdb-Regel trägt **NO-IR**, Münsters nicht. Ein Kanal, auf dem nicht gesendet werden
-darf, könnte im Treiber anders behandelt werden — belegt ist das nicht.
+darf, könnte im Treiber anders behandelt werden - belegt ist das nicht.
 
-### Ergebnis R5 (beide Geräte 25-ours) — es liegt an unserem Bau
+### Ergebnis R5 (beide Geräte 25-ours) - es liegt an unserem Bau
 
 24 h auf den Geräten, dazu der Abgleich im Zeitfenster der Referenz (00:59 bis 21:43 UTC,
 danach ist der lokale `mosquitto_sub` weggebrochen), 105 verschiedene Frames:
@@ -361,7 +361,7 @@ Der Code von 997 und 610 ist zeichengleich, Münsters `build.sh` kopiert den Pat
 mit. Damit bleibt genau ein Verdächtiger, der die Hardware anfasst: **wir erzwingen
 `CHANNEL_HALF` in `ath9k_cmn_update_ichannel`, Münster nicht.** Und wir wissen aus dem
 fcsfail-Mitschnitt vom 14.09., dass die 3390 auch ohne diesen Patch im Half-Rate läuft
-(Radiotap-Kanalflags 0x4140, 3 Mbit/s) — auf 25.12 ist er schlicht überflüssig. Die
+(Radiotap-Kanalflags 0x4140, 3 Mbit/s) - auf 25.12 ist er schlicht überflüssig. Die
 naheliegende Erklärung: Das erzwungene Umschreiben der Kanalflags bringt die
 Rauschflur-Kalibrierung und ANI der AR9580 durcheinander, der Empfänger triggert sich
 tot. Der zweite Unterschied, NO-IR, betrifft nur die Sendeerlaubnis und sollte die
@@ -369,7 +369,7 @@ PHY nicht berühren.
 
 Bemerkenswert: **Der WDR3600 zeigt davon nichts** (0,21 % Belegung mit demselben Bau, 
 demselben Patch). Der Effekt hängt am AR9580 der 3390. Der WDR4300 hat denselben Chip und
-läuft an seinem Standort seit Monaten mit Münsters Bau unauffällig — er wäre die
+läuft an seinem Standort seit Monaten mit Münsters Bau unauffällig - er wäre die
 Gegenprobe.
 
 Nächster Schritt (R6): dieselbe 3390, derselbe Bau, **nur ohne Patch 997**. Ein einziger
@@ -400,7 +400,7 @@ wie Hose.
 Damit ist die naheliegende Erklärung für R3 vom Tisch: Es ist nicht einfach „25.12 ist
 besser als 22.03". Der Effekt sitzt in der Kombination aus der 3390 und unserem
 22.03-Bau. Dazu passt auch, dass der WDR3600 unter 25.12 weiterhin praktisch keine
-Fehlauslösungen hat (1620 in 24 h, 0,22 % Belegung) — der neuere ath9k erzeugt sie also
+Fehlauslösungen hat (1620 in 24 h, 0,22 % Belegung) - der neuere ath9k erzeugt sie also
 nicht, und der alte verhindert sie nicht. Die Fehlauslösungen gehören zur 3390.
 
 node749 lief wieder lückenlos (1439 Meldungen, kein Neustart, 33,6–37,8 °C), schwankt
@@ -412,7 +412,7 @@ Einzelschritt, der unsere Patches und die NO-IR-Regdomain von der OpenWrt-Versio
 und zwar genau auf dem Gerät, auf dem der Effekt groß genug ist, um aus dem Rauschen zu
 ragen.
 
-### Antennenmessung (16.09. und 19.09.) — Methodikfehler
+### Antennenmessung (16.09. und 19.09.) - Methodikfehler
 
 Die Wiederholung am 19.09. zeigt den WDR3600 bei denselben Access Points durchgängig
 schlechter als am 16.09.:
@@ -430,7 +430,7 @@ die 3390 von 22-ours auf 25-MPW. Die Referenz war also nicht fest. Ob jemand zwi
 die Antennen umgesteckt hat, ist damit nicht von der Software zu trennen.
 
 Lehre für die Methode: **Der Antennenvergleich muss unmittelbar vor und nach dem Umstecken
-laufen, ohne jede Softwareänderung dazwischen** — am besten beide Messungen innerhalb einer
+laufen, ohne jede Softwareänderung dazwischen** - am besten beide Messungen innerhalb einer
 Stunde. Die Werte vom 19.09. dienen ab jetzt als neue Ausgangsbasis (`geraete/antennen/nachher-r4-*`).
 
 ### Vorab-Antennenmessung (16.09., vor einem möglichen Tausch)
@@ -446,7 +446,7 @@ Rohdaten in `geraete/antennen/vorher-*`):
 | 5900 MHz (ITS-Frames, R1/R2/R3) | −5, −3, −5 dB |
 
 Unter 5,7 GHz sind die beiden praktisch gleich, bei 5900 MHz fällt der WDR3600 ab. Das passt
-zu Antennen, die zu hohen Frequenzen hin abfallen — genau der Verdacht bei unbekannten
+zu Antennen, die zu hohen Frequenzen hin abfallen - genau der Verdacht bei unbekannten
 TP-Link-Dipolen. Unabhängig davon hat die 3390 **drei Empfangsketten** (`rx_chainmask 7`,
 AR9580 3x3), der WDR3600 nur **zwei** (`rx_chainmask 3`, AR9582 2x2); das sind rechnerisch
 etwa 1,8 dB, die kein Antennentausch ändert. Der geplante Tausch gegen die Antennen des

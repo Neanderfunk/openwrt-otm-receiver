@@ -16,7 +16,8 @@ ath10k, mt76 o. Ä. läuft, scheiden aus (siehe unten).
 - **21.02.7**: ✔ = fertiges Release-Image von OpenWrt 21.02.7. Das war im September die
   Bauvorlage. Seit Oktober 2026 bauen wir mit **25.12.4**; welche Geräte es dort als fertiges
   Image gibt, steht in der README (Abschnitt Geräte) und in `release.sh`. Seit dem 01.11.2026
-  sind alle Geräte aus den Tabellen „Indoor“ und „Outdoor“ im Release. Für die dort nachgetragenen
+  sind alle Geräte aus den Tabellen „Indoor“ und „Outdoor“ im Release, außer der AirGrid M5 XM.
+  Für die dort nachgetragenen
   Geräte stammen die Hardwareangaben nur aus der Table of Hardware, die Knotenzahlen nur aus
   dem Darmstädter Census vom 01.11.2026.
 
@@ -81,7 +82,7 @@ kalibrieren (externe Antennen als Vorgabe), und die Gluon-Maintainer wollten das
 mehr tragen, dafür belangt zu werden. Für OTM gilt das nicht: Die Images senden auf diesen
 Geräten gar nicht (Radios in `/etc/config/wireless` aus, ITS-Band in der regdb mit `NO-IR`,
 nur ein Monitor-Interface). Gesendet wird nur beim WLAN-Rückfall auf 2.4 GHz, und den gibt es
-nur auf den TP-Link-Dualband-Routern. Welches OTM-Image zu welchem Ubiquiti-Gerät gehört
+nur auf Geräten mit eigenem 2.4-GHz-Funkteil; die Ubiquiti-M-Geräte haben keins. Welches OTM-Image zu welchem Ubiquiti-Gerät gehört
 (XM oder XW, und wie man das erkennt): Tabelle „Ubiquiti: welches Image?“ in der README.
 
 ## Antennen als Kaufkriterium
@@ -131,8 +132,9 @@ AR7241 + AR9280, Weboberfläche und `board.info` von Ubiquiti abgeschrieben).
 
 Folgen:
 
-- Jeden neuen Gerätetyp, und erst recht jeden Nachbau, mit einem Sendetest oder am Fenster mit
-  echtem Verkehr prüfen, bevor er draußen hängt.
+- Wer einen neuen Gerätetyp oder Nachbau draußen aufhängen will, prüft ihn besser vorher am
+  Fenster mit echtem Verkehr oder mit einem Sendetest. Für die Aufnahme in den Release ist das
+  keine Bedingung: Der Beweis sind Frames im Feld.
 - Ein Empfänger, der lange nichts meldet, kann taub sein und nicht nur ungünstig stehen. Das
   soll die Empfangs-Health-Metrik erkennen (siehe README, Abschnitt MQTT).
 
