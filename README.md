@@ -34,18 +34,24 @@ Schritt beschreiben wir hier nicht.
 |---|---|
 | TP-Link TL-WDR3600 v1, TL-WDR4300 v1, Ubiquiti NanoStation M5 XM (OpenWrt 21.02.7) | im Feld, jeweils mehrere |
 | TP-Link CPE510 v1, WBS510 v1, TL-WDR4900 v1, AVM FRITZ!Box 3390, Ubiquiti LiteBeam M5 XW | im Feld |
-| Buffalo WZR-HP-AG300H | im Feld seit 22.10.2026, bisher wenige Frames |
-| Aruba AP-105 | im Feld seit 28.10.2026 mit einem Eigenbau; im Release ab dem nächsten Build |
+| Buffalo WZR-HP-AG300H | im Feld seit 22.10.2026 |
+| Aruba AP-105 | im Feld seit 28.10.2026 mit einem Eigenbau |
 | Ubiquiti NanoStation M5 XW | bis otm-bridge 0.18.8 kein Netz (`eth0` tx timeout); Korrektur in 0.18.9, am Gerät noch nicht bestätigt |
 | TP-Link TL-WDR4900 v2, TL-WDR3500 v1, TL-WDR4310 v1, CPE610 v1/v2, WBS510 v2, Buffalo WZR-600DHP | gebaut, noch nicht im Feld gesehen |
-| übrige Ubiquiti M5 (Loco, NanoBeam, PowerBeam, AirGrid, Bullet, Rocket, PowerBridge) | gebaut, noch nicht im Feld gesehen; welches Image: Tabelle unten |
+| übrige Ubiquiti M5 (Loco, NanoBeam, PowerBeam, AirGrid, Bullet, Rocket, PowerBridge), UniFi AP Pro | gebaut, noch nicht im Feld gesehen; welches Image: Tabelle unten |
+| Netgear WNDR3700 v1/v2/v4, WNDR3800, WNDR3800CH, WNDRMAC v2, WNDR4300 v1/v2, WNDR4500 v3, AVM FRITZ!Box 3370 Rev. 2, FRITZ!WLAN Repeater 300E, D-Link DIR-825 B1/C1, TP-Link TL-WR2543ND v1, Mercury MW4530R v1, Linksys EA4500 v3, EnGenius ESR900 | gebaut, noch nicht im Feld gesehen |
+| Aruba AP-175, Enterasys WS-AP3705i/3710i/3715i, Extreme WS-AP3825i, Aerohive HiveAP-121/330, HPE MSM460, Meraki MR16, Open-Mesh MR900 v1/v2, Fortinet FAP-220-B/221-B, Huawei AP6010DN, Ruckus ZF7351/7363/7372, MikroTik SXT Lite5/LHG 5 | gebaut, noch nicht im Feld gesehen |
 | LiteBeam 5AC, UniFi AC Mesh, CPE710 | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
 | CPE210/220, WBS210, alle Ubiquiti M2 | ungeeignet: nur 2.4 GHz |
 
 „Im Feld“ heißt: Geräte dieses Typs laufen bei Dritten und haben laut <https://otm.ffnef.de> in
-den letzten 14 Tagen ITS-Frames geliefert (Stand 23.10.2026). Das sind keine Labortests, und
+den letzten 14 Tagen ITS-Frames geliefert (Stand 01.11.2026). Das sind keine Labortests, und
 es sagt nichts über jedes einzelne Exemplar: Gebrauchte Geräte können defekt sein, siehe
 [Fehlersuche am Gerät](#fehlersuche-am-gerät).
+
+OTM ist ein Experiment. Wir bauen Images für jedes Gerät mit ath9k-Funkteil für 5 GHz und
+OpenWrt-Profil, ohne jedes davon selbst zu testen. Ob ein Gerät empfängt, zeigt sich im Betrieb:
+Der Beweis sind Frames im Feld.
 
 Zur Hardware: Buffalo WZR-HP-AG300H und WZR-600DHP haben AR7161, 128 MB RAM, 32 MB Flash und
 zwei ath9k-Funkteile (AR9220/AR9223), 5 GHz über AR9220. Das Aruba AP-105 ist ähnlich gebaut:
