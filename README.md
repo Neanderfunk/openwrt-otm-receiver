@@ -35,6 +35,7 @@ Schritt beschreiben wir hier nicht.
 | TP-Link TL-WDR3600 v1, TL-WDR4300 v1, Ubiquiti NanoStation M5 XM (OpenWrt 21.02.7) | im Feld, jeweils mehrere |
 | TP-Link CPE510 v1, WBS510 v1, TL-WDR4900 v1, AVM FRITZ!Box 3390, Ubiquiti LiteBeam M5 XW | im Feld |
 | Buffalo WZR-HP-AG300H | im Feld seit 22.10.2026, bisher wenige Frames |
+| Aruba AP-105 | im Feld seit 28.10.2026 mit einem Eigenbau; im Release ab dem nächsten Build |
 | Ubiquiti NanoStation M5 XW | bis otm-bridge 0.18.8 kein Netz (`eth0` tx timeout); Korrektur in 0.18.9, am Gerät noch nicht bestätigt |
 | TP-Link TL-WDR4900 v2, TL-WDR3500 v1, TL-WDR4310 v1, CPE610 v1/v2, WBS510 v2, Buffalo WZR-600DHP | gebaut, noch nicht im Feld gesehen |
 | übrige Ubiquiti M5 (Loco, NanoBeam, PowerBeam, AirGrid, Bullet, Rocket, PowerBridge) | gebaut, noch nicht im Feld gesehen; welches Image: Tabelle unten |
@@ -47,7 +48,8 @@ es sagt nichts über jedes einzelne Exemplar: Gebrauchte Geräte können defekt 
 [Fehlersuche am Gerät](#fehlersuche-am-gerät).
 
 Zur Hardware: Buffalo WZR-HP-AG300H und WZR-600DHP haben AR7161, 128 MB RAM, 32 MB Flash und
-zwei ath9k-Funkteile (AR9220/AR9223), 5 GHz über AR9220. Der TL-WDR4900 empfängt in beiden
+zwei ath9k-Funkteile (AR9220/AR9223), 5 GHz über AR9220. Das Aruba AP-105 ist ähnlich gebaut:
+AR7161, 128 MB RAM, 16 MB Flash, ebenfalls AR9220 für 5 GHz. Der TL-WDR4900 empfängt in beiden
 Versionen über AR9580 (ath9k); v1 ist PowerPC (Target mpc85xx), v2 eine QCA9558-Platine (ath79).
 
 Die meisten Geräte bekommen OpenWrt 25.12.4, die Ubiquiti XM mit 32 MB RAM OpenWrt 21.02.7.
