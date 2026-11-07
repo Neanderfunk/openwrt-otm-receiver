@@ -250,8 +250,8 @@
    "gridPos": {
     "x": 0,
     "y": 24,
-    "w": 12,
-    "h": 8
+    "w": 24,
+    "h": 20
    },
    "targets": [
     {
@@ -295,7 +295,8 @@
     "mergeValues": true,
     "legend": {
      "showLegend": false
-    }
+    },
+    "rowHeight": 0.8
    },
    "description": "Grün = online, rot = offline. Grundlage ist die retained Statusmeldung jedes Empfängers am Proxy; 'offline' setzt der Broker, wenn die Verbindung abreißt (Last Will). Stationen, die länger als 24 Stunden offline sind, schreibt otm-stats nicht mehr fort: Sie verschwinden aus Online- und Firmware-Tabelle, ihr Verlauf bleibt. Ganz entfernen: leere retained Nachricht auf its/<node>/status."
   },
@@ -308,10 +309,10 @@
     "uid": "otm-vm"
    },
    "gridPos": {
-    "x": 12,
-    "y": 24,
-    "w": 12,
-    "h": 8
+    "x": 0,
+    "y": 44,
+    "w": 24,
+    "h": 14
    },
    "targets": [
     {
@@ -341,7 +342,22 @@
     },
     "overrides": []
    },
-   "options": {},
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "lastNotNull"
+     ],
+     "sortBy": "Last *",
+     "sortDesc": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
    "description": "Zeit seit dem letzten Neustart des Empfängers (aus its/<node>/stats, jede Minute). Ein Sprung auf 0 ist ein Neustart, z. B. durch ein Update."
   },
   {
@@ -354,7 +370,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 32,
+    "y": 58,
     "w": 24,
     "h": 8
    },
@@ -399,7 +415,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 40,
+    "y": 66,
     "w": 24,
     "h": 8
    },
@@ -553,7 +569,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 48,
+    "y": 74,
     "w": 24,
     "h": 8
    },
@@ -794,7 +810,7 @@
    },
    "gridPos": {
     "x": 0,
-    "y": 56,
+    "y": 82,
     "w": 24,
     "h": 5
    },
