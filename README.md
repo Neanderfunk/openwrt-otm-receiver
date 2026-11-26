@@ -33,19 +33,19 @@ Schritt beschreiben wir hier nicht.
 | Gerät | Stand |
 |---|---|
 | TP-Link TL-WDR3600 v1, TL-WDR4300 v1, Ubiquiti NanoStation M5 XM (OpenWrt 21.02.7) | im Feld, jeweils mehrere |
-| TP-Link CPE510 v1, WBS510 v1, TL-WDR4900 v1, AVM FRITZ!Box 3390, Ubiquiti LiteBeam M5 XW | im Feld |
+| TP-Link CPE510 v1, WBS510 v1, TL-WDR4900 v1, TL-WR2543ND v1, AVM FRITZ!Box 3390, FRITZ!Box 3370 Rev. 2 (Micron-NAND), Ubiquiti LiteBeam M5 XW, NanoStation Loco M5 XW | im Feld |
 | Buffalo WZR-HP-AG300H | im Feld seit 22.10.2026 |
 | Aruba AP-105 | im Feld seit 28.10.2026 mit einem Eigenbau |
 | Ubiquiti NanoStation M5 XW | bis otm-bridge 0.18.8 kein Netz (`eth0` tx timeout); Korrektur in 0.18.9, am Gerät noch nicht bestätigt |
 | TP-Link TL-WDR4900 v2, TL-WDR3500 v1, TL-WDR4310 v1, CPE610 v1/v2, WBS510 v2, Buffalo WZR-600DHP | gebaut, noch nicht im Feld gesehen |
-| übrige Ubiquiti M5 (Loco, NanoBeam, PowerBeam, AirGrid, Bullet, Rocket, PowerBridge) | gebaut, noch nicht im Feld gesehen; welches Image: Tabelle unten |
-| Netgear WNDR3700 v1/v2/v4, WNDR3800, WNDR3800CH, WNDRMAC v2, WNDR4300 v1/v2, WNDR4500 v3, AVM FRITZ!Box 3370 Rev. 2, FRITZ!WLAN Repeater 300E, D-Link DIR-825 B1/C1, TP-Link TL-WR2543ND v1, Mercury MW4530R v1, Linksys EA4500 v3, EnGenius ESR900 | gebaut, noch nicht im Feld gesehen |
+| übrige Ubiquiti M5 (NanoBeam, PowerBeam, AirGrid, Bullet, Rocket, PowerBridge) | gebaut, noch nicht im Feld gesehen; welches Image: Tabelle unten |
+| Netgear WNDR3700 v1/v2/v4, WNDR3800, WNDR3800CH, WNDRMAC v2, WNDR4300 v1/v2, WNDR4500 v3, AVM FRITZ!Box 3370 Rev. 2 (Hynix-NAND), FRITZ!WLAN Repeater 300E, D-Link DIR-825 B1/C1, Mercury MW4530R v1, Linksys EA4500 v3, EnGenius ESR900 | gebaut, noch nicht im Feld gesehen |
 | Aruba AP-175, UniFi AP Pro, Enterasys WS-AP3705i/3710i/3715i, Extreme WS-AP3825i, Aerohive HiveAP-121/330, HPE MSM460, Meraki MR16, Open-Mesh MR900 v1/v2, Fortinet FAP-220-B/221-B, Huawei AP6010DN, Ruckus ZF7351/7363/7372, MikroTik SXT Lite5/LHG 5 | gebaut, noch nicht im Feld gesehen |
 | LiteBeam 5AC, UniFi AC Mesh, CPE710 | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
 | CPE210/220, WBS210, alle Ubiquiti M2 | ungeeignet: nur 2.4 GHz |
 
 „Im Feld“ heißt: Geräte dieses Typs laufen bei Dritten und haben laut <https://otm.ffnef.de> in
-den letzten 14 Tagen ITS-Frames geliefert (Stand 01.11.2026). Das sind keine Labortests, und
+den letzten 14 Tagen ITS-Frames geliefert (Stand 26.11.2026). Das sind keine Labortests, und
 es sagt nichts über jedes einzelne Exemplar: Gebrauchte Geräte können defekt sein, siehe
 [Fehlersuche am Gerät](#fehlersuche-am-gerät).
 
@@ -82,7 +82,7 @@ So erkennt man die Platine:
 | Gerät | XW: Image (OpenWrt 25.12.4) | XM: Image |
 |---|---|---|
 | NanoStation M5 | `ubnt_nanostation-m-xw` | `ubnt_nanostation-m` (21.02.7), **im Feld** |
-| NanoStation Loco M5 | `ubnt_nanostation-loco-m-xw` | `ubnt_nanostation-loco-m` (21.02.7) |
+| NanoStation Loco M5 | `ubnt_nanostation-loco-m-xw`, **im Feld** | `ubnt_nanostation-loco-m` (21.02.7) |
 | NanoBeam M5, PowerBeam M5 300, AirGrid M5 HP | `ubnt_nanostation-loco-m-xw` (dasselbe Image) | – |
 | PowerBeam M5 (400) | `ubnt_powerbeam-m5-xw` | – |
 | LiteBeam M5 | `ubnt_litebeam-m5-xw`, **im Feld** | – |
@@ -90,7 +90,7 @@ So erkennt man die Platine:
 | Rocket M5 | `ubnt_bullet-m-xw` (dasselbe Image wie Bullet) | `ubnt_rocket-m` (25.12.4) |
 | PowerBridge M5 | – | `ubnt_powerbridge-m` (25.12.4) |
 
-Im Feld laufen davon bisher LiteBeam M5 XW und NanoStation M5 XM. Bei einer NanoStation M5 XM
+Im Feld laufen davon bisher LiteBeam M5 XW, NanoStation Loco M5 XW und NanoStation M5 XM. Bei einer NanoStation M5 XM
 (ein Nachbau) kam ab 5825 MHz nichts mehr an, siehe
 [docs/geraete-kandidaten.md](docs/geraete-kandidaten.md#taub-trotz-passendem-chip).
 
@@ -102,7 +102,7 @@ Vorsicht bei Ubiquiti XW: Beim Umstieg schreibt noch das alte System den Flash, 
 XW-Bootloader sperren ihn. Bootet danach wieder das alte System, hilft TFTP-Rescue, siehe
 [Umstieg auf XW-Geräten](#umstieg-auf-xw-geräten).
 
-### Image holen
+### Image holen / Firmware download
 
 Aus <http://firmware.ffnef.de/otm/stable/sysupgrade/> die Datei für das Gerät nehmen:
 `openwrt-…-<Profil>-squashfs-sysupgrade.bin`, wobei `<Profil>` das Gerät nennt, z. B.
