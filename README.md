@@ -44,8 +44,8 @@ Schritt beschreiben wir hier nicht.
 | LiteBeam 5AC, UniFi AC Mesh, CPE710 | ungeeignet: 5 GHz nur über ath10k, keine 10-MHz-Kanäle |
 | CPE210/220, WBS210, alle Ubiquiti M2 | ungeeignet: nur 2.4 GHz |
 
-„Im Feld“ heißt: Geräte dieses Typs laufen bei Dritten und haben laut <https://otm.ffnef.de> in
-den letzten 14 Tagen ITS-Frames geliefert (Stand 26.11.2026). Das sind keine Labortests, und
+„Im Feld“ heißt: Geräte dieses Typs laufen bei Dritten und haben laut <https://otm.ffnef.de> seit
+dem letzten Firmware-Release (01.11.2026) Daten geliefert (Stand 26.11.2026). Das sind keine Labortests, und
 es sagt nichts über jedes einzelne Exemplar: Gebrauchte Geräte können defekt sein, siehe
 [Fehlersuche am Gerät](#fehlersuche-am-gerät).
 
